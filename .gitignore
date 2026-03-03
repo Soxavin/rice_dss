@@ -23,6 +23,9 @@ env/
 .pytest_cache/
 .cache/
 
+# Streamlit
+.streamlit/
+
 # Environment variables
 .env
 .env.*
