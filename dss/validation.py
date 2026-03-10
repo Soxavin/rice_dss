@@ -18,6 +18,10 @@
 #   cleaned = validate_answers(raw_answers_dict)
 # =============================================================================
 
+import logging
+
+logger = logging.getLogger('rice_dss.validation')
+
 
 # =============================================================================
 # SECTION 1: VALID INPUT VALUES
@@ -160,6 +164,97 @@ VALID_ADDITIONAL_SYMPTOMS = {
 
 
 # =============================================================================
+# SECTION 1B: ML PROBABILITY VALIDATION
+# -----------------------------------------------------------------------------
+# The ML model outputs softmax probabilities for 3 biotic conditions.
+# Keys must match BIOTIC_CONDITIONS in dss/output_builder.py.
+# Values must be floats in [0.0, 1.0].
+# Sum should be approximately 1.0 (softmax guarantee).
+#
+# WHY VALIDATE:
+#   Malformed ML output (wrong keys, out-of-range values, non-numeric types)
+#   would silently corrupt the fusion math in decision.py STEP 6.
+#   Validating here prevents that and logs warnings for debugging.
+# =============================================================================
+
+VALID_ML_KEYS = {'blast', 'brown_spot', 'bacterial_blight'}
+ML_SUM_TOLERANCE = 0.15  # Allow ±0.15 from 1.0 for floating point drift
+
+
+def validate_ml_probabilities(ml_probs) -> dict:
+    """
+    Validates and sanitizes ML probability output before it reaches scoring.
+
+    Checks performed:
+    1. Must be a dict (or None → pass through as None)
+    2. Keys must be exactly {'blast', 'brown_spot', 'bacterial_blight'}
+    3. All values must be numeric and in [0.0, 1.0]
+    4. Sum should be approximately 1.0 (warn if not, but don't reject)
+
+    If validation fails, returns None (disables ML fusion safely)
+    and logs a warning explaining why.
+
+    Args:
+        ml_probs: Raw ml_probabilities value from input
+
+    Returns:
+        dict or None: Validated probabilities or None if invalid
+    """
+    # None = no ML input → pass through
+    if ml_probs is None:
+        return None
+
+    # Must be a dict
+    if not isinstance(ml_probs, dict):
+        logger.warning(
+            f"[ML Validation] ml_probabilities is not a dict (got {type(ml_probs).__name__}). "
+            f"Disabling ML fusion."
+        )
+        return None
+
+    # Check keys match exactly
+    provided_keys = set(ml_probs.keys())
+    if provided_keys != VALID_ML_KEYS:
+        missing = VALID_ML_KEYS - provided_keys
+        extra = provided_keys - VALID_ML_KEYS
+        logger.warning(
+            f"[ML Validation] Invalid keys in ml_probabilities. "
+            f"Missing: {missing or 'none'}, Extra: {extra or 'none'}. "
+            f"Expected exactly: {VALID_ML_KEYS}. Disabling ML fusion."
+        )
+        return None
+
+    # Check all values are numeric and in [0.0, 1.0]
+    validated = {}
+    for key in VALID_ML_KEYS:
+        val = ml_probs[key]
+        if not isinstance(val, (int, float)):
+            logger.warning(
+                f"[ML Validation] ml_probabilities['{key}'] is not numeric "
+                f"(got {type(val).__name__}: {val!r}). Disabling ML fusion."
+            )
+            return None
+        if val < 0.0 or val > 1.0:
+            logger.warning(
+                f"[ML Validation] ml_probabilities['{key}'] = {val} is out of "
+                f"range [0.0, 1.0]. Disabling ML fusion."
+            )
+            return None
+        validated[key] = float(val)
+
+    # Warn (but don't reject) if sum is far from 1.0
+    total = sum(validated.values())
+    if abs(total - 1.0) > ML_SUM_TOLERANCE:
+        logger.warning(
+            f"[ML Validation] ml_probabilities sum = {total:.4f} "
+            f"(expected ~1.0, tolerance ±{ML_SUM_TOLERANCE}). "
+            f"Probabilities may not be properly softmaxed. Proceeding anyway."
+        )
+
+    return validated
+
+
+# =============================================================================
 # SECTION 2: ANSWER VALIDATION FUNCTION
 # -----------------------------------------------------------------------------
 # Before scoring, we validate the incoming answer dictionary.
@@ -238,8 +333,8 @@ def validate_answers(raw_answers: dict) -> dict:
         # Section 9
         'additional_symptoms':  get_valid_list('additional_symptoms', VALID_ADDITIONAL_SYMPTOMS),
 
-        # ML output (injected at runtime — None until ML is integrated)
-        'ml_probabilities':     raw_answers.get('ml_probabilities', None)
+        # ML output (validated — None until ML is integrated)
+        'ml_probabilities':     validate_ml_probabilities(raw_answers.get('ml_probabilities', None))
     }
 
     return cleaned

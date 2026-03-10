@@ -28,6 +28,7 @@
 from dss.decision import generate_output
 from dss.output_builder import CONDITION_LABELS, CONFIDENCE_LABELS
 from dss.recommendations import get_recommendations
+from dss.logger import dss_logger
 
 
 # =============================================================================
@@ -53,8 +54,21 @@ def ml_only_logic(raw_answers: dict) -> dict:
         return {
             "status": "no_image",
             "primary_condition": None,
-            "message": "No ML probabilities provided.",
-            "warning": "Non-biotic nutrient stresses cannot be detected in ML-only mode."
+            "condition_key": None,
+            "confidence_label": None,
+            "confidence_level": "low",
+            "score": 0.0,
+            "all_scores": {},
+            "recommendations": None,
+            "secondary_note": None,
+            "warnings": [
+                "⚠️ No ML probabilities provided.",
+                "⚠️ Non-biotic nutrient stresses cannot be detected in ML-only mode."
+            ],
+            "disclaimer": (
+                "This ML-only mode does not consider fertilizer history, "
+                "soil type, or water management. Use hybrid mode for full assessment."
+            )
         }
 
     allowed_conditions = {"blast", "brown_spot", "bacterial_blight"}
@@ -64,8 +78,21 @@ def ml_only_logic(raw_answers: dict) -> dict:
         return {
             "status": "invalid_ml_output",
             "primary_condition": None,
-            "message": "ML output missing valid disease classes.",
-            "warning": "Non-biotic nutrient stresses cannot be detected in ML-only mode."
+            "condition_key": None,
+            "confidence_label": None,
+            "confidence_level": "low",
+            "score": 0.0,
+            "all_scores": {},
+            "recommendations": None,
+            "secondary_note": None,
+            "warnings": [
+                "⚠️ ML output missing valid disease classes.",
+                "⚠️ Non-biotic nutrient stresses cannot be detected in ML-only mode."
+            ],
+            "disclaimer": (
+                "This ML-only mode does not consider fertilizer history, "
+                "soil type, or water management. Use hybrid mode for full assessment."
+            )
         }
 
     top_condition = max(filtered, key=filtered.get)
@@ -78,9 +105,22 @@ def ml_only_logic(raw_answers: dict) -> dict:
     else:
         return {
             "status": "uncertain",
-            "primary_condition": None,
-            "message": "ML confidence too low to assess.",
-            "warning": "Non-biotic nutrient stresses cannot be detected in ML-only mode."
+            "primary_condition": CONDITION_LABELS.get('uncertain'),
+            "condition_key": "uncertain",
+            "confidence_label": CONFIDENCE_LABELS.get('low'),
+            "confidence_level": "low",
+            "score": round(top_score, 3),
+            "all_scores": {k: round(v, 3) for k, v in filtered.items()},
+            "recommendations": get_recommendations('uncertain', raw_answers),
+            "secondary_note": None,
+            "warnings": [
+                "⚠️ ML confidence too low to assess.",
+                "⚠️ Non-biotic nutrient stresses cannot be detected in ML-only mode."
+            ],
+            "disclaimer": (
+                "This ML-only mode does not consider fertilizer history, "
+                "soil type, or water management. Use hybrid mode for full assessment."
+            )
         }
 
     return {
@@ -147,16 +187,19 @@ def run_dss(raw_answers: dict, mode: str = "hybrid") -> dict:
     if mode == "questionnaire":
         output = questionnaire_only_logic(raw_answers)
         output["mode_used"] = "Questionnaire Only"
+        dss_logger.log_run(raw_answers, output, mode='questionnaire')
         return output
 
     elif mode == "ml":
         output = ml_only_logic(raw_answers)
         output["mode_used"] = "ML Only"
+        dss_logger.log_run(raw_answers, output, mode='ml')
         return output
 
     elif mode == "hybrid":
         output = hybrid_logic(raw_answers)
         output["mode_used"] = "Hybrid (Recommended)"
+        dss_logger.log_run(raw_answers, output, mode='hybrid')
         return output
 
     else:

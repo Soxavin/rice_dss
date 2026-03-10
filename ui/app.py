@@ -23,6 +23,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import streamlit as st
 from dss.decision import generate_output
+from dss.validation import validate_answers
+from dss.explainer import explain_scores
+from dss.logger import dss_logger
 from tests.test_dss import TEST_CASES
 
 # =============================================================================
@@ -260,6 +263,68 @@ def render_score_bars(all_scores: dict):
 
 
 # =============================================================================
+# EXPLANATION RENDERER
+# =============================================================================
+
+CONDITION_DISPLAY = {
+    'iron_toxicity':    '🟣 Iron Toxicity',
+    'n_deficiency':     '🟢 Nitrogen Deficiency',
+    'salt_toxicity':    '🔵 Salt Toxicity',
+    'bacterial_blight': '🔴 Bacterial Blight',
+    'brown_spot':       '🟠 Brown Spot',
+    'blast':            '🔴 Blast',
+}
+
+
+def render_explanation(breakdown: dict, top_condition: str | None = None):
+    """
+    Renders the explain_scores() breakdown as a readable panel.
+    Highlights the winning condition and shows all signals.
+    """
+    conf_mod = breakdown.get('confidence_modifier', '—')
+    conf_src = breakdown.get('confidence_source', '—')
+    st.markdown(
+        f"**Confidence modifier:** `{conf_mod}` "
+        f"(farmer said: `{conf_src}`)"
+    )
+
+    # Show the top condition first, then the rest
+    conditions = [
+        'iron_toxicity', 'n_deficiency', 'salt_toxicity',
+        'bacterial_blight', 'brown_spot', 'blast'
+    ]
+    if top_condition and top_condition in conditions:
+        conditions.remove(top_condition)
+        conditions.insert(0, top_condition)
+
+    for cond in conditions:
+        info = breakdown.get(cond)
+        if not info or not isinstance(info, dict):
+            continue
+
+        signals = info.get('signals', [])
+        raw_total = info.get('raw_total', 0)
+        display = CONDITION_DISPLAY.get(cond, cond)
+        marker = " ← **winner**" if cond == top_condition else ""
+
+        with st.expander(f"{display}  (raw: {raw_total:+.2f}){marker}",
+                         expanded=(cond == top_condition)):
+            if not signals:
+                st.caption("No signals activated for this condition.")
+                continue
+
+            for s in signals:
+                icon = "🟢" if s['weight'] >= 0 else "🔴"
+                st.markdown(
+                    f"{icon} **{s['field']}** = `{s['value']}` "
+                    f"→ {s['effect']}{abs(s['weight']):.2f}  \n"
+                    f"&nbsp;&nbsp;&nbsp;&nbsp;_{s['reason']}_"
+                )
+
+            st.caption(info.get('note', ''))
+
+
+# =============================================================================
 # RESULT RENDERER
 # =============================================================================
 
@@ -394,7 +459,11 @@ with st.sidebar:
     st.caption("All 20 cases are from the validated specification. "
                "Each one is guaranteed to produce the expected result.")
 
+# =============================================================================
+# QUESTIONNAIRE FORM
+# =============================================================================
 
+with st.form("questionnaire_form"):
 
     # -------------------------------------------------------------------------
     # SECTION 1 — Growth Stage
@@ -557,22 +626,13 @@ with st.sidebar:
 # =============================================================================
 
 if submitted:
-    # --- Required field validation ---
+    # --- Minimal validation: only block if there's truly nothing to work with ---
     missing = []
-    if not growth_stage:        missing.append("Growth Stage")
-    if not symptoms:            missing.append("Symptoms (Section 2)")
-    if not symptom_location:    missing.append("Symptom Location (Section 2)")
-    if not symptom_origin:      missing.append("Which leaves (Section 2)")
-    if not farmer_confidence:   missing.append("How sure are you (Section 2)")
-    if fertilizer_applied is None: missing.append("Fertilizer applied? (Section 3)")
-    if not weather:             missing.append("Recent Weather (Section 4)")
-    if not water_condition:     missing.append("Water Condition (Section 5)")
-    if not spread_pattern:      missing.append("Spread Pattern (Section 6)")
-    if not symptom_timing:      missing.append("When symptoms appeared (Section 7)")
-    if not onset_speed:         missing.append("How fast symptoms spread (Section 7)")
+    if not symptoms and not additional_symptoms:
+        missing.append("At least one symptom (Section 2 or Section 9)")
 
     if missing:
-        st.error("⚠️ Please fill in the following required fields before running:")
+        st.error("⚠️ Please fill in the following before running:")
         for m in missing:
             st.markdown(f"- {m}")
         st.stop()
@@ -603,9 +663,20 @@ if submitted:
 
     with st.spinner("Running DSS..."):
         output = generate_output(raw_answers)
+        # Also generate explanation for the validated answers
+        validated = validate_answers(raw_answers)
+        breakdown = explain_scores(validated)
 
     st.markdown("## 🩺 Diagnosis Result")
     render_result(output)
+
+    # --- Explanation panel ---
+    st.markdown("#### 🔍 Why This Diagnosis?")
+    st.caption(
+        "Shows every signal (positive and penalty) that contributed to each "
+        "condition's score. The winning condition is expanded by default."
+    )
+    render_explanation(breakdown, top_condition=output.get('condition_key'))
 
     # --- Raw JSON expander (debug mode for teammates) ---
     with st.expander("🔧 Raw Output (Debug / JSON)"):
@@ -615,3 +686,19 @@ if submitted:
     with st.expander("📥 Raw Answers Sent to DSS"):
         import json
         st.code(json.dumps(raw_answers, indent=2, ensure_ascii=False), language="json")
+
+    with st.expander("📊 Full Explanation JSON"):
+        import json
+        st.code(json.dumps(breakdown, indent=2, ensure_ascii=False), language="json")
+
+    # --- Logger summary in sidebar ---
+    with st.sidebar:
+        st.divider()
+        st.header("📋 Session Log")
+        summary = dss_logger.get_summary()
+        st.metric("Total Runs", summary.get('total_runs', 0))
+        dist = summary.get('condition_distribution', {})
+        if dist:
+            st.markdown("**Condition distribution:**")
+            for cond, count in sorted(dist.items(), key=lambda x: x[1], reverse=True):
+                st.markdown(f"- {cond}: {count}")

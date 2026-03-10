@@ -17,6 +17,7 @@
 # =============================================================================
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from api.main import app
 
@@ -25,7 +26,7 @@ from api.main import app
 # SHARED FIXTURE — provides a running test client
 # =============================================================================
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client():
     """Async HTTP client pointed at the FastAPI app."""
     async with AsyncClient(
@@ -213,3 +214,110 @@ async def test_hybrid_non_biotic_overrides_ml(client):
     assert data['condition_key'] == 'iron_toxicity', (
         f"Non-biotic dominance failed — expected iron_toxicity, got {data['condition_key']}"
     )
+
+
+# =============================================================================
+# /explain ENDPOINT TESTS
+# =============================================================================
+
+@pytest.mark.asyncio
+async def test_explain_endpoint_returns_all_conditions(client):
+    """
+    /explain should return signal breakdowns for all 6 conditions
+    plus confidence_modifier and confidence_source.
+    """
+    payload = {
+        'growth_stage': 'flowering',
+        'symptoms': ['dark_spots', 'dried_areas'],
+        'symptom_location': ['leaf_blade', 'panicle'],
+        'farmer_confidence': 'very_sure',
+        'weather': 'high_humidity',
+        'water_condition': 'wet',
+        'spread_pattern': 'patches',
+        'onset_speed': 'sudden',
+        'additional_symptoms': ['none'],
+    }
+    response = await client.post('/explain', json=payload)
+    assert response.status_code == 200
+    data = response.json()
+
+    explanations = data['explanations']
+    for cond in ['blast', 'brown_spot', 'bacterial_blight',
+                 'iron_toxicity', 'n_deficiency', 'salt_toxicity']:
+        assert cond in explanations, f"Missing condition: {cond}"
+        assert 'signals' in explanations[cond]
+        assert 'raw_total' in explanations[cond]
+
+    assert 'confidence_modifier' in explanations
+    assert 'confidence_source' in explanations
+
+
+@pytest.mark.asyncio
+async def test_explain_endpoint_blast_has_signals(client):
+    """
+    For a classic blast case, the blast explanation should have positive signals.
+    """
+    payload = {
+        'growth_stage': 'flowering',
+        'symptoms': ['dark_spots'],
+        'symptom_location': ['panicle'],
+        'farmer_confidence': 'very_sure',
+        'weather': 'high_humidity',
+        'additional_symptoms': ['none'],
+    }
+    response = await client.post('/explain', json=payload)
+    data = response.json()
+
+    blast_signals = data['explanations']['blast']['signals']
+    assert len(blast_signals) > 0, "Blast should have active signals"
+    # At least one positive signal
+    assert any(s['weight'] > 0 for s in blast_signals)
+
+
+@pytest.mark.asyncio
+async def test_explain_endpoint_empty_input(client):
+    """
+    /explain with minimal input should still return valid structure.
+    """
+    payload = {
+        'symptoms': ['yellowing'],
+        'farmer_confidence': 'not_sure',
+        'additional_symptoms': ['none'],
+    }
+    response = await client.post('/explain', json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert 'explanations' in data
+
+
+# =============================================================================
+# /logs ENDPOINT TESTS
+# =============================================================================
+
+@pytest.mark.asyncio
+async def test_logs_summary_endpoint(client):
+    """
+    /logs/summary should return aggregate run statistics.
+    """
+    response = await client.get('/logs/summary')
+    assert response.status_code == 200
+    data = response.json()
+    assert 'total_runs' in data
+
+
+@pytest.mark.asyncio
+async def test_logs_runs_endpoint(client):
+    """
+    /logs/runs should return a list of recent runs.
+    """
+    # First make a DSS call so there's something to log
+    await client.post('/questionnaire', json={
+        'symptoms': ['yellowing'],
+        'farmer_confidence': 'not_sure',
+        'additional_symptoms': ['none'],
+    })
+    response = await client.get('/logs/runs')
+    assert response.status_code == 200
+    data = response.json()
+    assert 'runs' in data
+    assert 'total' in data

@@ -25,3 +25,6 @@ from .output_builder import (
 )
 from .recommendations import get_recommendations
 from .mode_layer import run_dss, questionnaire_only_logic, ml_only_logic, hybrid_logic
+from .logger import dss_logger
+from .validation import validate_ml_probabilities
+from .explainer import explain_scores

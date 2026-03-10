@@ -748,18 +748,46 @@ def flag_out_of_scope(answers: dict) -> bool:
 
     Returns True if no meaningful diagnostic pattern is present.
     When True: output "Cannot assess" message.
+
+    PATTERNS DETECTED:
+    1. No symptoms at all → out of scope
+    2. Only 'slow_growth' with no additional signs → not a disease
+    3. Only one vague symptom + 'not_sure' confidence + no additional signs
+       → insufficient evidence to attempt diagnosis
+    4. Only 'dried_areas' on stem with few plants → likely physical/insect damage
     """
     symptoms = answers.get('symptoms', [])
     additional = answers.get('additional_symptoms', [])
+    confidence = answers.get('farmer_confidence')
 
-    # No symptoms at all
+    # Meaningful additional symptoms (excluding 'none')
+    meaningful_additional = [a for a in additional if a != 'none']
+
+    # PATTERN 1: No symptoms at all
     if not symptoms:
         return True
 
-    # Only "slow growth" with no other symptoms or additional signs
+    # PATTERN 2: Only "slow growth" with no other symptoms or additional signs
     # This pattern doesn't match any disease in scope
-    if (symptoms == ['slow_growth'] and
-            (not additional or additional == ['none'])):
+    if (symptoms == ['slow_growth'] and not meaningful_additional):
+        return True
+
+    # PATTERN 3: Single vague symptom + not_sure + no meaningful additional signs
+    # Vague symptoms are those that appear across many conditions and cannot
+    # narrow the diagnosis on their own
+    vague_symptoms = {'slow_growth', 'dried_areas', 'yellowing'}
+    if (len(symptoms) == 1 and
+            symptoms[0] in vague_symptoms and
+            confidence == 'not_sure' and
+            not meaningful_additional):
+        return True
+
+    # PATTERN 4: Only 'dried_areas' on stem with few plants
+    # This pattern strongly suggests physical damage or insect boring,
+    # not any of the 6 conditions in scope
+    if (symptoms == ['dried_areas'] and
+            answers.get('spread_pattern') == 'few_plants' and
+            'stem' in answers.get('symptom_location', [])):
         return True
 
     return False

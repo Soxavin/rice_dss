@@ -26,8 +26,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.schemas import QuestionnaireRequest, DSSResponse
+from api.schemas import QuestionnaireRequest, DSSResponse, ExplainResponse
 from dss.mode_layer import run_dss
+from dss.validation import validate_answers
+from dss.explainer import explain_scores
+from dss.logger import dss_logger
 
 
 # =============================================================================
@@ -153,6 +156,62 @@ async def hybrid_endpoint(request: QuestionnaireRequest) -> dict:
         return run_dss(raw, mode="hybrid")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
+
+
+# =============================================================================
+# EXPLAINABILITY ENDPOINT
+# =============================================================================
+
+@app.post(
+    "/explain",
+    response_model=ExplainResponse,
+    summary="Score Explanation / Traceability",
+    description=(
+        "Returns a detailed breakdown of every signal (positive or penalty) "
+        "that contributed to each condition's score. Useful for debugging, "
+        "FYP defence, and farmer transparency. Does NOT run the full DSS — "
+        "only computes explanations for the validated answers."
+    ),
+    tags=["DSS Endpoints"]
+)
+async def explain_endpoint(request: QuestionnaireRequest) -> dict:
+    """
+    Explanation endpoint.
+    Validates the incoming answers, then returns signal-level breakdown
+    for all six conditions without running the decision engine.
+    """
+    raw = _request_to_dict(request)
+    try:
+        validated = validate_answers(raw)
+        breakdown = explain_scores(validated)
+        return {"explanations": breakdown}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Explainer error: {str(e)}")
+
+
+# =============================================================================
+# LOGGER / AUDIT ENDPOINTS
+# =============================================================================
+
+@app.get(
+    "/logs/summary",
+    summary="DSS Run Summary",
+    description="Returns aggregated statistics from all DSS runs in this session.",
+    tags=["Utility"]
+)
+async def logs_summary():
+    return dss_logger.get_summary()
+
+
+@app.get(
+    "/logs/runs",
+    summary="Recent DSS Runs",
+    description="Returns the most recent DSS run logs (newest first).",
+    tags=["Utility"]
+)
+async def logs_runs(limit: int = 20):
+    runs = dss_logger.get_runs()
+    return {"total": len(runs), "runs": runs[-limit:][::-1]}
 
 
 # =============================================================================

@@ -21,8 +21,8 @@
 # =============================================================================
 
 from __future__ import annotations
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any, Union
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # =============================================================================
@@ -123,25 +123,24 @@ class QuestionnaireRequest(BaseModel):
                     "Leave None for questionnaire-only mode."
     )
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "growth_stage": "flowering",
-                "symptoms": ["dark_spots", "dried_areas"],
-                "symptom_location": ["leaf_blade", "panicle"],
-                "symptom_origin": "upper_leaves",
-                "farmer_confidence": "very_sure",
-                "fertilizer_applied": True,
-                "fertilizer_amount": "normal",
-                "weather": "high_humidity",
-                "water_condition": "wet",
-                "spread_pattern": "patches",
-                "onset_speed": "sudden",
-                "previous_crop": "rice_same",
-                "additional_symptoms": ["none"],
-                "ml_probabilities": None
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "growth_stage": "flowering",
+            "symptoms": ["dark_spots", "dried_areas"],
+            "symptom_location": ["leaf_blade", "panicle"],
+            "symptom_origin": "upper_leaves",
+            "farmer_confidence": "very_sure",
+            "fertilizer_applied": True,
+            "fertilizer_amount": "normal",
+            "weather": "high_humidity",
+            "water_condition": "wet",
+            "spread_pattern": "patches",
+            "onset_speed": "sudden",
+            "previous_crop": "rice_same",
+            "additional_symptoms": ["none"],
+            "ml_probabilities": None
         }
+    })
 
 
 # =============================================================================
@@ -200,25 +199,77 @@ class DSSResponse(BaseModel):
         description="Questionnaire Only | ML Only | Hybrid (Recommended)"
     )
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "status": "assessed",
-                "primary_condition": "ជំងឺប្លាស (Rice Blast)",
-                "condition_key": "blast",
-                "confidence_label": "ប្រហែលជា — ទំនុកចិត្តខ្ពស់ (Probable — High Confidence)",
-                "confidence_level": "high",
-                "score": 0.812,
-                "all_scores": {
-                    "blast": 0.812,
-                    "brown_spot": 0.421,
-                    "bacterial_blight": 0.183,
-                    "iron_toxicity": 0.0,
-                    "n_deficiency": 0.0,
-                    "salt_toxicity": 0.0
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "status": "assessed",
+            "primary_condition": "ជំងឺប្លាស (Rice Blast)",
+            "condition_key": "blast",
+            "confidence_label": "ប្រហែលជា — ទំនុកចិត្តខ្ពស់ (Probable — High Confidence)",
+            "confidence_level": "high",
+            "score": 0.812,
+            "all_scores": {
+                "blast": 0.812,
+                "brown_spot": 0.421,
+                "bacterial_blight": 0.183,
+                "iron_toxicity": 0.0,
+                "n_deficiency": 0.0,
+                "salt_toxicity": 0.0
+            },
+            "secondary_note": None,
+            "warnings": [],
+            "mode_used": "Hybrid (Recommended)"
+        }
+    })
+
+
+# =============================================================================
+# EXPLANATION RESPONSE SCHEMA
+# =============================================================================
+
+class SignalEntry(BaseModel):
+    """A single signal that contributed to a condition's score."""
+    field: str
+    value: str
+    effect: str
+    weight: float
+    reason: str
+
+class ConditionExplanation(BaseModel):
+    """Explanation for a single condition."""
+    signals: List[SignalEntry] = Field(default_factory=list)
+    confidence_modifier: float
+    raw_total: float
+    note: str = ""
+
+class ExplainResponse(BaseModel):
+    """
+    Response from the /explain endpoint.
+    Contains signal-level breakdowns for all six conditions.
+    """
+    explanations: Dict[str, Any] = Field(
+        description="Keyed by condition (blast, brown_spot, etc.) plus "
+                    "confidence_modifier and confidence_source at top level."
+    )
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "explanations": {
+                "blast": {
+                    "signals": [
+                        {
+                            "field": "weather",
+                            "value": "high_humidity",
+                            "effect": "+",
+                            "weight": 0.30,
+                            "reason": "High humidity essential for blast (PDF1)"
+                        }
+                    ],
+                    "confidence_modifier": 1.0,
+                    "raw_total": 0.80,
+                    "note": "All signals scaled by confidence modifier, then capped [0, 1]"
                 },
-                "secondary_note": None,
-                "warnings": [],
-                "mode_used": "Hybrid (Recommended)"
+                "confidence_modifier": 1.0,
+                "confidence_source": "very_sure"
             }
         }
+    })
