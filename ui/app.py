@@ -178,26 +178,23 @@ ADDITIONAL_LABELS = {
 # HELPER: selectbox with human-readable options
 # =============================================================================
 
+# Maps used to translate between raw DSS keys and display labels.
+# Populated at form-render time so the loader can convert presets.
+ALL_OPTION_DICTS = {}   # filled by labeled_select / labeled_multiselect
+
+
 def labeled_select(label, options_dict, key, help_text=None):
     """
     Renders a selectbox with no default selection (index=None).
-    If session_state has a value for this key (set by Load Test Case),
-    pre-selects that option.
     Returns the raw DSS key, or None if nothing has been picked yet.
     """
+    ALL_OPTION_DICTS[key] = options_dict
     labels = list(options_dict.values())
     keys   = list(options_dict.keys())
 
-    # Check if a test case pre-filled this field
-    preset = st.session_state.get(key, None)
-    if preset in keys:
-        default_index = keys.index(preset)
-        chosen = st.selectbox(label, labels, index=default_index,
-                              key=key, help=help_text)
-    else:
-        chosen = st.selectbox(label, labels, index=None,
-                              placeholder="Select an option...",
-                              key=key, help=help_text)
+    chosen = st.selectbox(label, labels, index=None,
+                          placeholder="Select an option...",
+                          key=key, help=help_text)
 
     if chosen is None:
         return None
@@ -207,22 +204,13 @@ def labeled_select(label, options_dict, key, help_text=None):
 def labeled_multiselect(label, options_dict, key, help_text=None):
     """
     Renders a multiselect — defaults to nothing selected.
-    If session_state has a value for this key (set by Load Test Case),
-    pre-selects those options.
     Returns list of raw DSS keys.
     """
+    ALL_OPTION_DICTS[key] = options_dict
     labels = list(options_dict.values())
     keys   = list(options_dict.keys())
 
-    # Check if a test case pre-filled this field
-    preset = st.session_state.get(key, [])
-    if isinstance(preset, list):
-        preset_labels = [options_dict[k] for k in preset if k in options_dict]
-    else:
-        preset_labels = []
-
-    selected_labels = st.multiselect(label, labels, default=preset_labels,
-                                     key=key, help=help_text)
+    selected_labels = st.multiselect(label, labels, key=key, help=help_text)
     return [keys[labels.index(l)] for l in selected_labels]
 
 
@@ -444,14 +432,61 @@ with st.sidebar:
     if st.button("▶ Load", use_container_width=True, type="primary"):
         if selected_case_label != "— none —":
             preset = case_options[selected_case_label]
-            # Store each field into session_state so the form widgets pick it up
-            for field, value in preset.items():
-                if field != 'ml_probabilities':
-                    st.session_state[field] = value
-            # fertilizer_applied must be a bool
-            if 'fertilizer_applied' not in preset:
-                st.session_state['fertilizer_applied'] = None
-            st.success("Test case loaded — scroll down and click **Run Diagnosis**.")
+
+            # --- Map from raw DSS keys → display labels for each widget ---
+            # selectbox widgets: store the display LABEL string
+            # multiselect widgets: store a LIST of display LABEL strings
+            # Streamlit reads session_state[key] as the widget's current value,
+            # so we must write in the format the widget expects.
+
+            SELECT_FIELDS = {
+                'growth_stage':     GROWTH_STAGE_LABELS,
+                'symptom_origin':   ORIGIN_LABELS,
+                'farmer_confidence':CONFIDENCE_LABELS,
+                'fertilizer_amount':FERTILIZER_AMOUNT_LABELS,
+                'fertilizer_type':  FERTILIZER_TYPE_LABELS,
+                'fertilizer_timing':FERTILIZER_TIMING_LABELS,
+                'weather':          WEATHER_LABELS,
+                'water_condition':  WATER_LABELS,
+                'spread_pattern':   SPREAD_LABELS,
+                'symptom_timing':   TIMING_LABELS,
+                'onset_speed':      ONSET_LABELS,
+                'previous_disease': PREV_DISEASE_LABELS,
+                'previous_crop':    PREV_CROP_LABELS,
+                'soil_type':        SOIL_TYPE_LABELS,
+                'soil_cracking':    SOIL_CRACKING_LABELS,
+            }
+
+            MULTI_FIELDS = {
+                'symptoms':             SYMPTOM_LABELS,
+                'symptom_location':     LOCATION_LABELS,
+                'additional_symptoms':  ADDITIONAL_LABELS,
+            }
+
+            for field, label_map in SELECT_FIELDS.items():
+                raw_val = preset.get(field)
+                if raw_val in label_map:
+                    st.session_state[field] = label_map[raw_val]
+                elif field in st.session_state:
+                    del st.session_state[field]
+
+            for field, label_map in MULTI_FIELDS.items():
+                raw_list = preset.get(field, [])
+                if isinstance(raw_list, list):
+                    st.session_state[field] = [
+                        label_map[k] for k in raw_list if k in label_map
+                    ]
+                elif field in st.session_state:
+                    del st.session_state[field]
+
+            # fertilizer_applied is a radio (bool) — write the bool directly
+            if 'fertilizer_applied' in preset:
+                st.session_state['fertilizer_applied'] = preset['fertilizer_applied']
+            elif 'fertilizer_applied' in st.session_state:
+                del st.session_state['fertilizer_applied']
+
+            st.success("✅ Test case loaded — scroll down and click **Run Diagnosis**.")
+            st.rerun()
         else:
             st.warning("Select a test case first.")
 
