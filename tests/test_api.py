@@ -321,3 +321,42 @@ async def test_logs_runs_endpoint(client):
     data = response.json()
     assert 'runs' in data
     assert 'total' in data
+
+
+# =============================================================================
+# /predict-image and /hybrid-image ENDPOINT TESTS
+# =============================================================================
+
+@pytest.mark.asyncio
+async def test_predict_image_no_model(client):
+    """
+    /predict-image should return 503 when no trained model is available.
+    """
+    # Create a minimal valid JPEG-like file
+    fake_image = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    response = await client.post(
+        '/predict-image',
+        files={'image': ('test.jpg', fake_image, 'image/jpeg')}
+    )
+    # 503 if no model exists, or other error — either way not 200
+    assert response.status_code in (503, 422, 500)
+
+
+@pytest.mark.asyncio
+async def test_hybrid_image_no_model(client):
+    """
+    /hybrid-image should return 503 when no trained model is available.
+    """
+    import json
+    fake_image = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    questionnaire = json.dumps({
+        'symptoms': ['dark_spots'],
+        'farmer_confidence': 'somewhat_sure',
+        'additional_symptoms': ['none'],
+    })
+    response = await client.post(
+        '/hybrid-image',
+        files={'image': ('test.jpg', fake_image, 'image/jpeg')},
+        data={'questionnaire': questionnaire}
+    )
+    assert response.status_code in (503, 422, 500)

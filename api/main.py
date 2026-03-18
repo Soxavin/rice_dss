@@ -23,10 +23,15 @@
 #   http://localhost:8000/redoc  ← ReDoc
 # =============================================================================
 
-from fastapi import FastAPI, HTTPException
+import json
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.schemas import QuestionnaireRequest, DSSResponse, ExplainResponse
+from api.schemas import (
+    QuestionnaireRequest, DSSResponse, ExplainResponse, ImagePredictionResponse
+)
 from dss.mode_layer import run_dss
 from dss.validation import validate_answers
 from dss.explainer import explain_scores
@@ -212,6 +217,111 @@ async def logs_summary():
 async def logs_runs(limit: int = 20):
     runs = dss_logger.get_runs()
     return {"total": len(runs), "runs": runs[-limit:][::-1]}
+
+
+# =============================================================================
+# IMAGE UPLOAD ENDPOINTS
+# =============================================================================
+
+# Lazy-loaded ML model singleton — avoids loading TensorFlow on import
+_inference_model = None
+
+
+def get_inference_model():
+    """Returns the ML inference model, loading it on first call."""
+    global _inference_model
+    if _inference_model is None:
+        model_path = Path("models/rice_disease_model.keras")
+        if not model_path.exists():
+            return None
+        try:
+            from ml.inference import RiceDSSInference
+            _inference_model = RiceDSSInference(str(model_path))
+        except ImportError:
+            return None
+    return _inference_model
+
+
+@app.post(
+    "/predict-image",
+    response_model=ImagePredictionResponse,
+    summary="Image-Only Prediction",
+    description=(
+        "Upload a leaf image for ML-only diagnosis. "
+        "Returns ML probabilities and an ML-only DSS output. "
+        "**Cannot detect non-biotic stresses** — use /hybrid-image for full diagnosis."
+    ),
+    tags=["Image Endpoints"]
+)
+async def predict_image(image: UploadFile = File(...)):
+    """
+    ML-only prediction from an uploaded leaf image.
+    Returns HTTP 503 if no trained model is available.
+    """
+    model = get_inference_model()
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="ML model not available. Train first with: python -m ml.train --data_dir data/"
+        )
+
+    contents = await image.read()
+    probs = model.predict_from_bytes(contents)
+    if probs is None:
+        raise HTTPException(status_code=422, detail="Could not process image.")
+
+    # Run ML-only DSS with the predicted probabilities
+    raw = {'ml_probabilities': probs}
+    try:
+        output = run_dss(raw, mode="ml")
+        output['ml_probabilities'] = probs
+        return output
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
+
+
+@app.post(
+    "/hybrid-image",
+    response_model=DSSResponse,
+    summary="Hybrid Diagnosis with Image Upload",
+    description=(
+        "Upload a leaf image alongside questionnaire answers (as a JSON string) "
+        "for full hybrid diagnosis. The ML probabilities are automatically "
+        "injected from the image. Non-biotic stresses override ML output."
+    ),
+    tags=["Image Endpoints"]
+)
+async def hybrid_image(
+    image: UploadFile = File(...),
+    questionnaire: str = Form(
+        ...,
+        description="JSON string of questionnaire answers (same fields as QuestionnaireRequest)"
+    )
+):
+    """
+    Full hybrid diagnosis: uploaded image + questionnaire JSON.
+    Returns HTTP 503 if no trained model is available.
+    """
+    model = get_inference_model()
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="ML model not available. Train first with: python -m ml.train --data_dir data/"
+        )
+
+    contents = await image.read()
+    probs = model.predict_from_bytes(contents)
+
+    try:
+        raw = json.loads(questionnaire)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="Invalid JSON in questionnaire field.")
+
+    raw['ml_probabilities'] = probs  # inject ML predictions
+    try:
+        return run_dss(raw, mode="hybrid")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 
 # =============================================================================

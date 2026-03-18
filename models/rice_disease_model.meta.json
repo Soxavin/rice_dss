@@ -1,0 +1,14 @@
+{
+  "class_names": [
+    "bacterial_blight",
+    "blast",
+    "brown_spot",
+    "healthy"
+  ],
+  "img_size": 224,
+  "dss_class_names": [
+    "bacterial_blight",
+    "blast",
+    "brown_spot"
+  ]
+}

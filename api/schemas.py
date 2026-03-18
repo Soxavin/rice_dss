@@ -223,6 +223,20 @@ class DSSResponse(BaseModel):
 
 
 # =============================================================================
+# IMAGE PREDICTION RESPONSE SCHEMA
+# =============================================================================
+
+class ImagePredictionResponse(DSSResponse):
+    """
+    Response from /predict-image endpoint.
+    Extends DSSResponse with the raw ML probabilities.
+    """
+    ml_probabilities: Optional[Dict[str, float]] = Field(
+        None, description="The 3-class probabilities produced by the ML model"
+    )
+
+
+# =============================================================================
 # EXPLANATION RESPONSE SCHEMA
 # =============================================================================
 

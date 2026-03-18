@@ -41,9 +41,13 @@ except ImportError:
     TF_AVAILABLE = False
 
 
-# The three biotic disease classes supported by the ML pipeline.
+# The three biotic disease classes supported by the DSS.
 # These MUST match the keys in BIOTIC_CONDITIONS in dss/output_builder.py.
 CLASS_NAMES: List[str] = ['bacterial_blight', 'blast', 'brown_spot']
+
+# All four classes used for model training (includes 'healthy').
+# The inference layer (ml/inference.py) bridges 4-class output → 3-key DSS dict.
+ALL_CLASS_NAMES: List[str] = ['bacterial_blight', 'blast', 'brown_spot', 'healthy']
 
 # Default image dimensions for model input
 DEFAULT_IMG_SIZE: int = 224
@@ -128,6 +132,31 @@ def load_dataset(
     val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
     return train_ds, val_ds, class_names
+
+
+def build_augmentation_layer():
+    """
+    Returns a Sequential data augmentation layer for training.
+
+    Applied inside the model graph so it is automatically disabled
+    during model.predict() and model.evaluate().
+
+    Augmentations chosen for field photography of rice leaves:
+    - Flips: leaf orientation is arbitrary
+    - Rotation: farmers photograph at various angles
+    - Zoom: varying distances from the leaf
+    - Brightness/Contrast: outdoor lighting varies
+    """
+    if not TF_AVAILABLE:
+        raise ImportError("TensorFlow is required for augmentation layers.")
+
+    return tf.keras.Sequential([
+        tf.keras.layers.RandomFlip("horizontal_and_vertical"),
+        tf.keras.layers.RandomRotation(0.2),
+        tf.keras.layers.RandomZoom(0.15),
+        tf.keras.layers.RandomBrightness(0.1),
+        tf.keras.layers.RandomContrast(0.1),
+    ], name="data_augmentation")
 
 
 def get_class_index_map(class_names: List[str]) -> dict:

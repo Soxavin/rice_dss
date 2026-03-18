@@ -27,8 +27,11 @@ from pathlib import Path
 # Ensure project root is on path when running directly
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from ml.dataset import CLASS_NAMES, get_class_index_map
-from ml.inference import RiceDSSInference, get_placeholder_probabilities
+from ml.dataset import CLASS_NAMES, ALL_CLASS_NAMES, get_class_index_map
+from ml.inference import (
+    RiceDSSInference, get_placeholder_probabilities,
+    HEALTHY_DOMINANT_THRESHOLD, HEALTHY_CLASS_NAME
+)
 from dss.output_builder import BIOTIC_CONDITIONS
 
 
@@ -293,3 +296,123 @@ class TestMLDSSIntegration:
             f"got {output['condition_key']} (score={output['score']:.3f}). "
             f"Check NON_BIOTIC_CONDITIONS override in generate_output()."
         )
+
+
+# =============================================================================
+# TRAINING CLASS NAMES (4-class model)
+# =============================================================================
+
+class TestTrainingClassNames:
+    """
+    Tests for the 4-class training configuration (ALL_CLASS_NAMES).
+    Ensures the training scope includes 'healthy' while the DSS contract
+    (CLASS_NAMES) remains unchanged at 3 biotic classes.
+    """
+
+    def test_all_class_names_has_four_classes(self):
+        """Training must use 4 classes: 3 diseases + healthy."""
+        assert len(ALL_CLASS_NAMES) == 4
+
+    def test_all_class_names_includes_healthy(self):
+        """The 'healthy' class must be present for training."""
+        assert HEALTHY_CLASS_NAME in ALL_CLASS_NAMES
+
+    def test_all_biotic_classes_in_all_class_names(self):
+        """Every DSS biotic condition must also appear in the training classes."""
+        for cond in BIOTIC_CONDITIONS:
+            assert cond in ALL_CLASS_NAMES, (
+                f"BIOTIC_CONDITIONS has '{cond}' but ALL_CLASS_NAMES does not."
+            )
+
+    def test_dss_class_names_unchanged(self):
+        """CLASS_NAMES (DSS contract) must remain at 3 biotic-only classes."""
+        assert len(CLASS_NAMES) == 3
+        assert HEALTHY_CLASS_NAME not in CLASS_NAMES
+
+    def test_all_class_names_sorted(self):
+        """ALL_CLASS_NAMES must be sorted (matches TF directory discovery order)."""
+        assert ALL_CLASS_NAMES == sorted(ALL_CLASS_NAMES)
+
+
+# =============================================================================
+# HEALTHY CLASS BRIDGING LOGIC
+# =============================================================================
+
+class TestHealthyClassHandling:
+    """
+    Tests for the 4→3 class bridging logic in ml/inference.py.
+
+    Uses a mock RiceDSSInference instance to test _bridge_to_dss()
+    without requiring a trained model.
+    """
+
+    def _make_mock_inference(self):
+        """Creates a minimal object with the bridging method and class names."""
+        from unittest.mock import MagicMock
+        obj = MagicMock(spec=RiceDSSInference)
+        obj.all_class_names = ALL_CLASS_NAMES
+        obj.dss_class_names = CLASS_NAMES
+        # Bind the real method
+        obj._bridge_to_dss = RiceDSSInference._bridge_to_dss.__get__(obj)
+        return obj
+
+    def test_healthy_dominant_returns_uniform_probs(self):
+        """When healthy > threshold, inference should return uniform 1/3 probs."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        # bacterial_blight=0.05, blast=0.05, brown_spot=0.05, healthy=0.85
+        raw = np.array([0.05, 0.05, 0.05, 0.85])
+        result = obj._bridge_to_dss(raw)
+        assert abs(result['blast'] - 0.333) < 0.01
+        assert abs(result['brown_spot'] - 0.333) < 0.01
+        assert abs(result['bacterial_blight'] - 0.334) < 0.01
+
+    def test_disease_detected_renormalizes_probs(self):
+        """When healthy < threshold, disease probs are renormalized to sum to 1.0."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        # bacterial_blight=0.10, blast=0.50, brown_spot=0.30, healthy=0.10
+        raw = np.array([0.10, 0.50, 0.30, 0.10])
+        result = obj._bridge_to_dss(raw)
+        # After dropping healthy (0.10) and renormalizing 0.90 total:
+        assert abs(result['blast'] - 0.50 / 0.90) < 0.01
+        assert abs(result['brown_spot'] - 0.30 / 0.90) < 0.01
+        assert abs(result['bacterial_blight'] - 0.10 / 0.90) < 0.01
+
+    def test_renormalized_probs_sum_to_one(self):
+        """Renormalized output probs must sum to ~1.0."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        raw = np.array([0.15, 0.40, 0.25, 0.20])
+        result = obj._bridge_to_dss(raw)
+        total = sum(result.values())
+        assert abs(total - 1.0) < 0.01, f"Probs sum to {total}, expected ~1.0"
+
+    def test_renormalized_probs_have_exactly_three_keys(self):
+        """Output must have exactly {blast, brown_spot, bacterial_blight}."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        raw = np.array([0.20, 0.30, 0.40, 0.10])
+        result = obj._bridge_to_dss(raw)
+        assert set(result.keys()) == BIOTIC_CONDITIONS
+
+    def test_healthy_at_threshold_returns_uniform(self):
+        """Healthy probability exactly at threshold should return uniform."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        raw = np.array([0.10, 0.15, 0.15, HEALTHY_DOMINANT_THRESHOLD])
+        result = obj._bridge_to_dss(raw)
+        assert abs(result['blast'] - 0.333) < 0.01
+
+    def test_healthy_just_below_threshold_renormalizes(self):
+        """Healthy probability just below threshold should renormalize."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        healthy_val = HEALTHY_DOMINANT_THRESHOLD - 0.01
+        remainder = 1.0 - healthy_val
+        raw = np.array([remainder / 3, remainder / 3, remainder / 3, healthy_val])
+        result = obj._bridge_to_dss(raw)
+        # Should NOT be uniform — should be renormalized
+        total = sum(result.values())
+        assert abs(total - 1.0) < 0.01
+        assert set(result.keys()) == BIOTIC_CONDITIONS
