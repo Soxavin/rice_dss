@@ -311,6 +311,8 @@ async def hybrid_image(
 
     contents = await image.read()
     probs = model.predict_from_bytes(contents)
+    if probs is None:
+        raise HTTPException(status_code=422, detail="Could not process image.")
 
     try:
         raw = json.loads(questionnaire)

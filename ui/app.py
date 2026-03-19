@@ -4,29 +4,60 @@
 # -----------------------------------------------------------------------------
 # PURPOSE:
 #   A local testing interface for teammates and the professor to:
-#     1. Walk through the questionnaire step by step
-#     2. Submit answers and see the DSS result
-#     3. Inspect the full score breakdown (debug mode)
-#     4. Re-run with different answers quickly
+#     1. Select one of three diagnosis modes:
+#        - Questionnaire Only (rule-based, all 6 conditions)
+#        - Image Only / ML (3 biotic diseases from leaf photo)
+#        - Hybrid (questionnaire + ML, recommended)
+#     2. Walk through the questionnaire step by step
+#     3. Upload a leaf image for ML-based diagnosis
+#     4. Submit and see the DSS result
+#     5. Inspect the full score breakdown (debug mode)
+#     6. Re-run with different answers quickly
 #
-# HOW TO RUN:
-#   streamlit run ui/app.py
+# HOW TO RUN (single command, single terminal):
+#   source .venv312/bin/activate && streamlit run ui/app.py
 #
 # NOTE:
-#   This calls dss/decision.py directly (no API server needed).
-#   All questionnaire fields map exactly to dss/validation.py VALID_* sets.
+#   All logic runs in-process — no API server needed.
+#   DSS logic: dss/decision.py (direct import)
+#   ML inference: ml/inference.py (direct import, requires TensorFlow)
 # =============================================================================
 
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import json
+from pathlib import Path
 import streamlit as st
-from dss.decision import generate_output
+
+from dss.mode_layer import run_dss
 from dss.validation import validate_answers
 from dss.explainer import explain_scores
 from dss.logger import dss_logger
 from tests.test_dss import TEST_CASES
+
+
+# =============================================================================
+# ML MODEL LOADING (ផ្ទុកម៉ូដែល ML)
+# =============================================================================
+
+MODEL_PATH = Path(__file__).parent.parent / "models" / "rice_disease_model.keras"
+
+
+@st.cache_resource
+def load_ml_model():
+    """
+    Loads the ML inference model once and caches it across Streamlit reruns.
+    Returns None if the model file is missing or TensorFlow is unavailable.
+    """
+    if not MODEL_PATH.exists():
+        return None
+    try:
+        from ml.inference import RiceDSSInference
+        return RiceDSSInference(str(MODEL_PATH))
+    except ImportError:
+        return None
 
 # =============================================================================
 # PAGE CONFIG
@@ -179,8 +210,6 @@ ADDITIONAL_LABELS = {
 # =============================================================================
 
 # Maps used to translate between raw DSS keys and display labels.
-# Populated at form-render time so the loader can convert presets.
-ALL_OPTION_DICTS = {}   # filled by labeled_select / labeled_multiselect
 
 
 def labeled_select(label, options_dict, key, help_text=None):
@@ -188,7 +217,6 @@ def labeled_select(label, options_dict, key, help_text=None):
     Renders a selectbox with no default selection (index=None).
     Returns the raw DSS key, or None if nothing has been picked yet.
     """
-    ALL_OPTION_DICTS[key] = options_dict
     labels = list(options_dict.values())
     keys   = list(options_dict.keys())
 
@@ -206,7 +234,6 @@ def labeled_multiselect(label, options_dict, key, help_text=None):
     Renders a multiselect — defaults to nothing selected.
     Returns list of raw DSS keys.
     """
-    ALL_OPTION_DICTS[key] = options_dict
     labels = list(options_dict.values())
     keys   = list(options_dict.keys())
 
@@ -389,11 +416,73 @@ def render_result(output: dict):
 
 
 # =============================================================================
+# ML PROBABILITY BAR RENDERER
+# =============================================================================
+
+def render_ml_bars(ml_probs: dict):
+    """Renders ML prediction probability bars for the 3 biotic diseases."""
+    st.markdown("#### 🤖 ML Model Prediction")
+    st.caption("Probabilities from the image classification model (3 biotic diseases).")
+    ml_sorted = sorted(ml_probs.items(), key=lambda x: x[1], reverse=True)
+    for cond, prob in ml_sorted:
+        pct = int(prob * 100)
+        color = CONDITION_COLORS.get(cond, '#95a5a6')
+        label = cond.replace('_', ' ').title()
+        st.markdown(
+            f"""
+            <div style="margin-bottom:6px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.85em;">
+                    <span>{label}</span><span>{pct}%</span>
+                </div>
+                <div style="background:#eee; border-radius:4px; height:12px;">
+                    <div style="width:{pct}%; background:{color};
+                                border-radius:4px; height:12px;"></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+# =============================================================================
 # MAIN APP
 # =============================================================================
 
 st.title("🌾 Rice Paddy Disease DSS")
-st.markdown("**Testing Interface** — Fill in the questionnaire below and submit to see the diagnosis.")
+st.markdown("**Testing Interface** — Select a diagnosis mode and provide the required inputs.")
+
+# =============================================================================
+# MODE SELECTOR
+# =============================================================================
+
+selected_mode = st.radio(
+    "Diagnosis Mode",
+    options=["Questionnaire Only", "Image Only (ML)", "Hybrid (Recommended)"],
+    index=0,
+    horizontal=True,
+    help=(
+        "Questionnaire = rule-based only | "
+        "Image Only = ML model only (3 biotic diseases) | "
+        "Hybrid = both combined (most accurate)"
+    )
+)
+
+MODE_CAPTIONS = {
+    "Questionnaire Only": (
+        "Rule-based diagnosis from farmer-reported symptoms and field conditions. "
+        "Detects all 6 conditions including non-biotic stresses."
+    ),
+    "Image Only (ML)": (
+        "ML diagnosis from a leaf image only. Detects 3 biotic diseases "
+        "(blast, brown spot, bacterial blight). "
+        "**Cannot** detect non-biotic stresses (iron toxicity, N deficiency, salt toxicity)."
+    ),
+    "Hybrid (Recommended)": (
+        "Combines questionnaire answers with ML image analysis for the most accurate diagnosis. "
+        "Detects all 6 conditions. Falls back to questionnaire-only if no image is provided."
+    ),
+}
+st.caption(MODE_CAPTIONS[selected_mode])
 st.markdown("---")
 
 # =============================================================================
@@ -414,254 +503,350 @@ EXPECTED_BADGE = {
 
 with st.sidebar:
     st.header("🧪 Load Test Case")
-    st.caption("Pre-fills the form with a known validated scenario.")
 
-    # Build display names for the dropdown
-    case_options = {
-        f"Case {i+1:02d} — {name}  [{EXPECTED_BADGE.get(exp, exp)}]": answers
-        for i, (answers, exp, name) in enumerate(TEST_CASES)
-    }
+    if selected_mode == "Image Only (ML)":
+        st.caption(
+            "Test cases contain questionnaire answers — switch to "
+            "Questionnaire or Hybrid mode to use them."
+        )
+    else:
+        st.caption("Pre-fills the form with a known validated scenario.")
 
-    selected_case_label = st.selectbox(
-        "Choose a test case",
-        options=["— none —"] + list(case_options.keys()),
-        index=0,
-        key="case_selector"
-    )
+        # Build display names for the dropdown
+        case_options = {
+            f"Case {i+1:02d} — {name}  [{EXPECTED_BADGE.get(exp, exp)}]": answers
+            for i, (answers, exp, name) in enumerate(TEST_CASES)
+        }
 
-    if st.button("▶ Load", use_container_width=True, type="primary"):
-        if selected_case_label != "— none —":
-            preset = case_options[selected_case_label]
+        selected_case_label = st.selectbox(
+            "Choose a test case",
+            options=["— none —"] + list(case_options.keys()),
+            index=0,
+            key="case_selector"
+        )
 
-            # --- Map from raw DSS keys → display labels for each widget ---
-            # selectbox widgets: store the display LABEL string
-            # multiselect widgets: store a LIST of display LABEL strings
-            # Streamlit reads session_state[key] as the widget's current value,
-            # so we must write in the format the widget expects.
+        if st.button("▶ Load", use_container_width=True, type="primary"):
+            if selected_case_label != "— none —":
+                preset = case_options[selected_case_label]
 
-            SELECT_FIELDS = {
-                'growth_stage':     GROWTH_STAGE_LABELS,
-                'symptom_origin':   ORIGIN_LABELS,
-                'farmer_confidence':CONFIDENCE_LABELS,
-                'fertilizer_amount':FERTILIZER_AMOUNT_LABELS,
-                'fertilizer_type':  FERTILIZER_TYPE_LABELS,
-                'fertilizer_timing':FERTILIZER_TIMING_LABELS,
-                'weather':          WEATHER_LABELS,
-                'water_condition':  WATER_LABELS,
-                'spread_pattern':   SPREAD_LABELS,
-                'symptom_timing':   TIMING_LABELS,
-                'onset_speed':      ONSET_LABELS,
-                'previous_disease': PREV_DISEASE_LABELS,
-                'previous_crop':    PREV_CROP_LABELS,
-                'soil_type':        SOIL_TYPE_LABELS,
-                'soil_cracking':    SOIL_CRACKING_LABELS,
-            }
+                # --- Map from raw DSS keys → display labels for each widget ---
+                # selectbox widgets: store the display LABEL string
+                # multiselect widgets: store a LIST of display LABEL strings
+                # Streamlit reads session_state[key] as the widget's current value,
+                # so we must write in the format the widget expects.
 
-            MULTI_FIELDS = {
-                'symptoms':             SYMPTOM_LABELS,
-                'symptom_location':     LOCATION_LABELS,
-                'additional_symptoms':  ADDITIONAL_LABELS,
-            }
+                SELECT_FIELDS = {
+                    'growth_stage':     GROWTH_STAGE_LABELS,
+                    'symptom_origin':   ORIGIN_LABELS,
+                    'farmer_confidence':CONFIDENCE_LABELS,
+                    'fertilizer_amount':FERTILIZER_AMOUNT_LABELS,
+                    'fertilizer_type':  FERTILIZER_TYPE_LABELS,
+                    'fertilizer_timing':FERTILIZER_TIMING_LABELS,
+                    'weather':          WEATHER_LABELS,
+                    'water_condition':  WATER_LABELS,
+                    'spread_pattern':   SPREAD_LABELS,
+                    'symptom_timing':   TIMING_LABELS,
+                    'onset_speed':      ONSET_LABELS,
+                    'previous_disease': PREV_DISEASE_LABELS,
+                    'previous_crop':    PREV_CROP_LABELS,
+                    'soil_type':        SOIL_TYPE_LABELS,
+                    'soil_cracking':    SOIL_CRACKING_LABELS,
+                }
 
-            for field, label_map in SELECT_FIELDS.items():
-                raw_val = preset.get(field)
-                if raw_val in label_map:
-                    st.session_state[field] = label_map[raw_val]
-                elif field in st.session_state:
-                    del st.session_state[field]
+                MULTI_FIELDS = {
+                    'symptoms':             SYMPTOM_LABELS,
+                    'symptom_location':     LOCATION_LABELS,
+                    'additional_symptoms':  ADDITIONAL_LABELS,
+                }
 
-            for field, label_map in MULTI_FIELDS.items():
-                raw_list = preset.get(field, [])
-                if isinstance(raw_list, list):
-                    st.session_state[field] = [
-                        label_map[k] for k in raw_list if k in label_map
-                    ]
-                elif field in st.session_state:
-                    del st.session_state[field]
+                for field, label_map in SELECT_FIELDS.items():
+                    raw_val = preset.get(field)
+                    if raw_val in label_map:
+                        st.session_state[field] = label_map[raw_val]
+                    elif field in st.session_state:
+                        del st.session_state[field]
 
-            # fertilizer_applied is a radio (bool) — write the bool directly
-            if 'fertilizer_applied' in preset:
-                st.session_state['fertilizer_applied'] = preset['fertilizer_applied']
-            elif 'fertilizer_applied' in st.session_state:
-                del st.session_state['fertilizer_applied']
+                for field, label_map in MULTI_FIELDS.items():
+                    raw_list = preset.get(field, [])
+                    if isinstance(raw_list, list):
+                        st.session_state[field] = [
+                            label_map[k] for k in raw_list if k in label_map
+                        ]
+                    elif field in st.session_state:
+                        del st.session_state[field]
 
-            st.success("✅ Test case loaded — scroll down and click **Run Diagnosis**.")
-            st.rerun()
-        else:
-            st.warning("Select a test case first.")
+                # fertilizer_applied is a radio (bool) — write the bool directly
+                if 'fertilizer_applied' in preset:
+                    st.session_state['fertilizer_applied'] = preset['fertilizer_applied']
+                elif 'fertilizer_applied' in st.session_state:
+                    del st.session_state['fertilizer_applied']
 
-    st.divider()
-    st.caption("All 20 cases are from the validated specification. "
-               "Each one is guaranteed to produce the expected result.")
+                st.success("✅ Test case loaded — scroll down and click **Run Diagnosis**.")
+                st.rerun()
+            else:
+                st.warning("Select a test case first.")
+
+        st.divider()
+        st.caption("All 20 cases are from the validated specification. "
+                   "Each one is guaranteed to produce the expected result.")
 
 # =============================================================================
-# QUESTIONNAIRE FORM
+# IMAGE UPLOAD (Image Only and Hybrid modes)
 # =============================================================================
 
-with st.form("questionnaire_form"):
-
-    # -------------------------------------------------------------------------
-    # SECTION 1 — Growth Stage
-    # -------------------------------------------------------------------------
-    st.subheader("1. Crop Growth Stage")
-    growth_stage = labeled_select(
-        "What stage is the rice crop currently at?",
-        GROWTH_STAGE_LABELS, key="growth_stage"
-    )
-
-    # -------------------------------------------------------------------------
-    # SECTION 2 — Symptoms
-    # -------------------------------------------------------------------------
-    st.subheader("2. Symptoms Observed")
-
-    symptoms = labeled_multiselect(
-        "What symptoms do you see? (select all that apply)",
-        SYMPTOM_LABELS, key="symptoms",
-        help_text="Select every symptom you can clearly observe on the plants."
-    )
-
-    symptom_location = labeled_multiselect(
-        "Where on the plant are the symptoms?",
-        LOCATION_LABELS, key="symptom_location"
-    )
-
-    symptom_origin = labeled_select(
-        "Which leaves are showing symptoms first?",
-        ORIGIN_LABELS, key="symptom_origin"
-    )
-
-    farmer_confidence = labeled_select(
-        "How sure are you about what you're seeing?",
-        CONFIDENCE_LABELS, key="farmer_confidence"
-    )
-
-    # -------------------------------------------------------------------------
-    # SECTION 3 — Fertilizer
-    # -------------------------------------------------------------------------
-    st.subheader("3. Fertilizer")
-
-    _fert_preset = st.session_state.get('fertilizer_applied', None)
-    _fert_index  = None if _fert_preset is None else ([True, False].index(_fert_preset) if _fert_preset in [True, False] else None)
-    fertilizer_applied = st.radio(
-        "Has fertilizer been applied this season?",
-        options=[True, False],
-        format_func=lambda x: "Yes" if x else "No",
-        index=_fert_index,
-        key="fertilizer_applied"
-    )
-
-    fertilizer_amount    = None
-    fertilizer_type      = None
-    fertilizer_timing    = None
-
-    if fertilizer_applied:
-        fertilizer_amount = labeled_select(
-            "How much fertilizer was applied?",
-            FERTILIZER_AMOUNT_LABELS, key="fertilizer_amount"
-        )
-        fertilizer_type = labeled_select(
-            "What type of fertilizer?",
-            FERTILIZER_TYPE_LABELS, key="fertilizer_type"
-        )
-        fertilizer_timing = labeled_select(
-            "When was fertilizer last applied?",
-            FERTILIZER_TIMING_LABELS, key="fertilizer_timing"
+uploaded_image = None
+if selected_mode in ("Image Only (ML)", "Hybrid (Recommended)"):
+    if selected_mode == "Image Only (ML)":
+        st.subheader("📷 Leaf Image")
+        st.caption("Upload a clear, close-up photo of the affected rice leaf.")
+    else:
+        st.subheader("0. Leaf Image (Optional)")
+        st.caption(
+            "Upload a photo of the affected leaf for ML-assisted diagnosis. "
+            "If no image is provided, the system uses questionnaire answers only."
         )
 
-    # -------------------------------------------------------------------------
-    # SECTION 4 — Weather
-    # -------------------------------------------------------------------------
-    st.subheader("4. Recent Weather")
-
-    weather = labeled_select(
-        "What has the weather been like recently?",
-        WEATHER_LABELS, key="weather"
+    uploaded_image = st.file_uploader(
+        "Upload a leaf image (រូបភាពស្លឹក)",
+        type=["jpg", "jpeg", "png"],
+        help="A clear, close-up photo of a diseased rice leaf works best."
     )
+    if uploaded_image is not None:
+        st.image(uploaded_image, caption="Uploaded leaf image", width=300)
 
-    # -------------------------------------------------------------------------
-    # SECTION 5 — Water
-    # -------------------------------------------------------------------------
-    st.subheader("5. Water / Field Conditions")
-
-    water_condition = labeled_select(
-        "What is the current water condition in the field?",
-        WATER_LABELS, key="water_condition"
-    )
-
-    # -------------------------------------------------------------------------
-    # SECTION 6 — Spread
-    # -------------------------------------------------------------------------
-    st.subheader("6. Spread Pattern")
-
-    spread_pattern = labeled_select(
-        "How widespread are the symptoms?",
-        SPREAD_LABELS, key="spread_pattern"
-    )
-
-    # -------------------------------------------------------------------------
-    # SECTION 7 — Timing
-    # -------------------------------------------------------------------------
-    st.subheader("7. Symptom Timing")
-
-    symptom_timing = labeled_select(
-        "When did symptoms first appear?",
-        TIMING_LABELS, key="symptom_timing"
-    )
-
-    onset_speed = labeled_select(
-        "How quickly did the symptoms spread?",
-        ONSET_LABELS, key="onset_speed"
-    )
-
-    # -------------------------------------------------------------------------
-    # SECTION 8 — History & Soil
-    # -------------------------------------------------------------------------
-    st.subheader("8. Field History & Soil")
-
-    previous_disease = labeled_select(
-        "Has this field had disease problems before?",
-        PREV_DISEASE_LABELS, key="previous_disease"
-    )
-
-    previous_crop = labeled_select(
-        "What was grown in this field last season?",
-        PREV_CROP_LABELS, key="previous_crop"
-    )
-
-    soil_type = labeled_select(
-        "What type of soil does this field have?",
-        SOIL_TYPE_LABELS, key="soil_type"
-    )
-
-    soil_cracking = labeled_select(
-        "Does the soil crack when dry?",
-        SOIL_CRACKING_LABELS, key="soil_cracking"
-    )
-
-    # -------------------------------------------------------------------------
-    # SECTION 9 — Additional Symptoms
-    # -------------------------------------------------------------------------
-    st.subheader("9. Additional Observations")
-
-    additional_symptoms = labeled_multiselect(
-        "Any additional symptoms? (select all that apply)",
-        ADDITIONAL_LABELS, key="additional_symptoms",
-        help_text="Morning ooze is a strong indicator of Bacterial Blight."
-    )
-
-    # -------------------------------------------------------------------------
-    # SUBMIT
-    # -------------------------------------------------------------------------
     st.markdown("---")
-    submitted = st.form_submit_button("🔍 Run Diagnosis", use_container_width=True)
+
+# =============================================================================
+# QUESTIONNAIRE FORM / ML-ONLY SUBMIT
+# =============================================================================
+
+ml_submitted = False
+form_submitted = False
+
+if selected_mode == "Image Only (ML)":
+    # --- ML Only: no questionnaire needed ---
+    st.info("📋 In Image Only mode, the questionnaire is not needed. Upload a leaf image above.")
+    ml_submitted = st.button("🔍 Run ML Diagnosis", use_container_width=True, type="primary")
+
+else:
+    # --- Questionnaire Only / Hybrid: full questionnaire form ---
+    with st.form("questionnaire_form"):
+
+        # ---------------------------------------------------------------------
+        # SECTION 1 — Growth Stage
+        # ---------------------------------------------------------------------
+        st.subheader("1. Crop Growth Stage")
+        growth_stage = labeled_select(
+            "What stage is the rice crop currently at?",
+            GROWTH_STAGE_LABELS, key="growth_stage"
+        )
+
+        # ---------------------------------------------------------------------
+        # SECTION 2 — Symptoms
+        # ---------------------------------------------------------------------
+        st.subheader("2. Symptoms Observed")
+
+        symptoms = labeled_multiselect(
+            "What symptoms do you see? (select all that apply)",
+            SYMPTOM_LABELS, key="symptoms",
+            help_text="Select every symptom you can clearly observe on the plants."
+        )
+
+        symptom_location = labeled_multiselect(
+            "Where on the plant are the symptoms?",
+            LOCATION_LABELS, key="symptom_location"
+        )
+
+        symptom_origin = labeled_select(
+            "Which leaves are showing symptoms first?",
+            ORIGIN_LABELS, key="symptom_origin"
+        )
+
+        farmer_confidence = labeled_select(
+            "How sure are you about what you're seeing?",
+            CONFIDENCE_LABELS, key="farmer_confidence"
+        )
+
+        # ---------------------------------------------------------------------
+        # SECTION 3 — Fertilizer
+        # ---------------------------------------------------------------------
+        st.subheader("3. Fertilizer")
+
+        _fert_preset = st.session_state.get('fertilizer_applied', None)
+        _fert_index  = None if _fert_preset is None else ([True, False].index(_fert_preset) if _fert_preset in [True, False] else None)
+        fertilizer_applied = st.radio(
+            "Has fertilizer been applied this season?",
+            options=[True, False],
+            format_func=lambda x: "Yes" if x else "No",
+            index=_fert_index,
+            key="fertilizer_applied"
+        )
+
+        fertilizer_amount    = None
+        fertilizer_type      = None
+        fertilizer_timing    = None
+
+        if fertilizer_applied:
+            fertilizer_amount = labeled_select(
+                "How much fertilizer was applied?",
+                FERTILIZER_AMOUNT_LABELS, key="fertilizer_amount"
+            )
+            fertilizer_type = labeled_select(
+                "What type of fertilizer?",
+                FERTILIZER_TYPE_LABELS, key="fertilizer_type"
+            )
+            fertilizer_timing = labeled_select(
+                "When was fertilizer last applied?",
+                FERTILIZER_TIMING_LABELS, key="fertilizer_timing"
+            )
+
+        # ---------------------------------------------------------------------
+        # SECTION 4 — Weather
+        # ---------------------------------------------------------------------
+        st.subheader("4. Recent Weather")
+
+        weather = labeled_select(
+            "What has the weather been like recently?",
+            WEATHER_LABELS, key="weather"
+        )
+
+        # ---------------------------------------------------------------------
+        # SECTION 5 — Water
+        # ---------------------------------------------------------------------
+        st.subheader("5. Water / Field Conditions")
+
+        water_condition = labeled_select(
+            "What is the current water condition in the field?",
+            WATER_LABELS, key="water_condition"
+        )
+
+        # ---------------------------------------------------------------------
+        # SECTION 6 — Spread
+        # ---------------------------------------------------------------------
+        st.subheader("6. Spread Pattern")
+
+        spread_pattern = labeled_select(
+            "How widespread are the symptoms?",
+            SPREAD_LABELS, key="spread_pattern"
+        )
+
+        # ---------------------------------------------------------------------
+        # SECTION 7 — Timing
+        # ---------------------------------------------------------------------
+        st.subheader("7. Symptom Timing")
+
+        symptom_timing = labeled_select(
+            "When did symptoms first appear?",
+            TIMING_LABELS, key="symptom_timing"
+        )
+
+        onset_speed = labeled_select(
+            "How quickly did the symptoms spread?",
+            ONSET_LABELS, key="onset_speed"
+        )
+
+        # ---------------------------------------------------------------------
+        # SECTION 8 — History & Soil
+        # ---------------------------------------------------------------------
+        st.subheader("8. Field History & Soil")
+
+        previous_disease = labeled_select(
+            "Has this field had disease problems before?",
+            PREV_DISEASE_LABELS, key="previous_disease"
+        )
+
+        previous_crop = labeled_select(
+            "What was grown in this field last season?",
+            PREV_CROP_LABELS, key="previous_crop"
+        )
+
+        soil_type = labeled_select(
+            "What type of soil does this field have?",
+            SOIL_TYPE_LABELS, key="soil_type"
+        )
+
+        soil_cracking = labeled_select(
+            "Does the soil crack when dry?",
+            SOIL_CRACKING_LABELS, key="soil_cracking"
+        )
+
+        # ---------------------------------------------------------------------
+        # SECTION 9 — Additional Symptoms
+        # ---------------------------------------------------------------------
+        st.subheader("9. Additional Observations")
+
+        additional_symptoms = labeled_multiselect(
+            "Any additional symptoms? (select all that apply)",
+            ADDITIONAL_LABELS, key="additional_symptoms",
+            help_text="Morning ooze is a strong indicator of Bacterial Blight."
+        )
+
+        # ---------------------------------------------------------------------
+        # SUBMIT
+        # ---------------------------------------------------------------------
+        st.markdown("---")
+        form_submitted = st.form_submit_button("🔍 Run Diagnosis", use_container_width=True)
 
 
 # =============================================================================
 # RESULT SECTION
 # =============================================================================
 
-if submitted:
-    # --- Minimal validation: only block if there's truly nothing to work with ---
+# --- PATH A: Image Only (ML) ---
+if selected_mode == "Image Only (ML)" and ml_submitted:
+    if uploaded_image is None:
+        st.error("⚠️ Please upload a leaf image for ML-only diagnosis.")
+        st.stop()
+
+    model = load_ml_model()
+    if model is None:
+        st.error(
+            "ML model not available — train first with:\n\n"
+            "`python -m ml.train --data_dir data/`"
+        )
+        st.stop()
+
+    with st.spinner("Running ML prediction..."):
+        uploaded_image.seek(0)
+        ml_probs = model.predict_from_bytes(uploaded_image.read())
+
+    if ml_probs is None:
+        st.error("Could not process image — please try a different photo.")
+        st.stop()
+
+    with st.spinner("Running DSS..."):
+        output = run_dss({'ml_probabilities': ml_probs}, mode="ml")
+
+    st.markdown("## 🩺 Diagnosis Result")
+    st.info("**Mode:** Image Only (ML)")
+    render_result(output)
+
+    # ML probability bars
+    render_ml_bars(ml_probs)
+    st.divider()
+
+    # Debug expanders
+    with st.expander("🔧 Raw Output (Debug / JSON)"):
+        st.code(json.dumps(output, indent=2, ensure_ascii=False), language="json")
+
+    with st.expander("📥 ML Probabilities"):
+        st.code(json.dumps(ml_probs, indent=2, ensure_ascii=False), language="json")
+
+    # Session log
+    with st.sidebar:
+        st.divider()
+        st.header("📋 Session Log")
+        summary = dss_logger.get_summary()
+        st.metric("Total Runs", summary.get('total_runs', 0))
+        dist = summary.get('condition_distribution', {})
+        if dist:
+            st.markdown("**Condition distribution:**")
+            for cond, count in sorted(dist.items(), key=lambda x: x[1], reverse=True):
+                st.markdown(f"- {cond}: {count}")
+
+# --- PATH B: Questionnaire Only / Hybrid ---
+elif selected_mode != "Image Only (ML)" and form_submitted:
+    # Validate: need at least one symptom
     missing = []
     if not symptoms and not additional_symptoms:
         missing.append("At least one symptom (Section 2 or Section 9)")
@@ -696,13 +881,41 @@ if submitted:
         'ml_probabilities':     None,
     }
 
+    # --- ML image prediction (Hybrid mode with image) ---
+    ml_probs = None
+    if selected_mode == "Hybrid (Recommended)" and uploaded_image is not None:
+        model = load_ml_model()
+        if model is None:
+            st.warning(
+                "ML model not available — falling back to questionnaire only.\n\n"
+                "Train first with: `python -m ml.train --data_dir data/`"
+            )
+        else:
+            with st.spinner("Running ML prediction..."):
+                uploaded_image.seek(0)
+                ml_probs = model.predict_from_bytes(uploaded_image.read())
+            if ml_probs is None:
+                st.warning("Could not process image — falling back to questionnaire only.")
+            else:
+                raw_answers['ml_probabilities'] = ml_probs
+
+    # Determine effective DSS mode
+    effective_mode = "hybrid" if ml_probs else "questionnaire"
+    mode_label = "Hybrid (Questionnaire + ML)" if ml_probs else "Questionnaire Only"
+
     with st.spinner("Running DSS..."):
-        output = generate_output(raw_answers)
+        output = run_dss(raw_answers, mode=effective_mode)
         # Also generate explanation for the validated answers
         validated = validate_answers(raw_answers)
         breakdown = explain_scores(validated)
 
+    # --- Mode badge ---
     st.markdown("## 🩺 Diagnosis Result")
+    if ml_probs:
+        st.info(f"**Mode:** {mode_label}")
+    else:
+        st.caption(f"**Mode:** {mode_label}")
+
     render_result(output)
 
     # --- Explanation panel ---
@@ -713,17 +926,19 @@ if submitted:
     )
     render_explanation(breakdown, top_condition=output.get('condition_key'))
 
+    # --- ML probabilities panel (Hybrid mode with image) ---
+    if ml_probs:
+        render_ml_bars(ml_probs)
+        st.divider()
+
     # --- Raw JSON expander (debug mode for teammates) ---
     with st.expander("🔧 Raw Output (Debug / JSON)"):
-        import json
         st.code(json.dumps(output, indent=2, ensure_ascii=False), language="json")
 
     with st.expander("📥 Raw Answers Sent to DSS"):
-        import json
         st.code(json.dumps(raw_answers, indent=2, ensure_ascii=False), language="json")
 
     with st.expander("📊 Full Explanation JSON"):
-        import json
         st.code(json.dumps(breakdown, indent=2, ensure_ascii=False), language="json")
 
     # --- Logger summary in sidebar ---
