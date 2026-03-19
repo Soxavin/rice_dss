@@ -11,5 +11,5 @@
     "blast",
     "brown_spot"
   ],
-  "backbone": "efficientnetv2b0"
+  "backbone": "mobilenetv2"
 }

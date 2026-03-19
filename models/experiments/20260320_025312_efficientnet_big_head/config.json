@@ -1,0 +1,15 @@
+{
+  "backbone": "efficientnetv2b0",
+  "epochs": 30,
+  "fine_tune_epochs": 0,
+  "fine_tune_layers": 30,
+  "img_size": 224,
+  "batch_size": 32,
+  "head_units": 256,
+  "dropout": 0.3,
+  "label_smoothing": 0.0,
+  "augment": true,
+  "best_val_accuracy": 0.91847825050354,
+  "experiment_name": "efficientnet_big_head",
+  "timestamp": "20260320_025312"
+}

@@ -35,6 +35,7 @@ env/
 models/*.keras
 models/*.h5
 models/*.pt
+models/experiments/**/*.keras
 
 # Training data (large — do not commit)
 data/

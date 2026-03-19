@@ -1,0 +1,15 @@
+{
+  "backbone": "mobilenetv2",
+  "epochs": 20,
+  "fine_tune_epochs": 15,
+  "fine_tune_layers": 50,
+  "img_size": 224,
+  "batch_size": 32,
+  "head_units": 128,
+  "dropout": 0.3,
+  "label_smoothing": 0.1,
+  "augment": true,
+  "best_val_accuracy": 0.8586956262588501,
+  "experiment_name": "extended_finetune",
+  "timestamp": "20260320_022604"
+}

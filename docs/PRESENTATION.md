@@ -15,9 +15,7 @@
 Student: Vin (Soxavin)
 Date: March 2026
 
-> A rule-based + machine learning hybrid system to help
-> Cambodian rice farmers identify paddy diseases from
-> field symptoms and leaf photos.
+> A rule-based + machine learning hybrid system to help Cambodian rice farmers identify paddy diseases from field symptoms and leaf photos.
 
 ---
 
@@ -76,7 +74,7 @@ A **Decision Support System (DSS)** that:
                              │
                              ▼
                     ┌─────────────────┐
-                    │  MobileNetV2    │
+                    │ EfficientNetV2B0│
                     │  Classifier     │──── 4 classes (incl. healthy)
                     └────────┬────────┘
                              │
@@ -189,20 +187,34 @@ Farmer Input                 │
 
 ## Image Classifier — Trained & Integrated
 
-- **Architecture**: MobileNetV2 (pretrained on ImageNet, fine-tuned)
+- **Architecture**: EfficientNetV2B0 (pretrained on ImageNet)
 - **Dataset**: 9,200 images — 4 balanced classes (2,300 each)
   - Bacterial Blight, Blast, Brown Spot, Healthy
-- **Training**: 2-phase (frozen backbone → fine-tune top 30 layers)
-- **Validation accuracy: 88.3%**
+- **Training**: Frozen backbone + Dense(256) classification head, 30 epochs
+- **Validation accuracy: 91.85%**
 
 ## Per-Class Performance
 
 | Condition | Precision | Recall | F1-Score |
 |-----------|-----------|--------|----------|
-| Bacterial Blight | 81.7% | 94.1% | 87.4% |
-| Blast | 87.1% | 72.7% | 79.3% |
-| Brown Spot | 93.5% | 87.3% | 90.3% |
-| Healthy | 92.1% | 98.9% | 95.4% |
+| Bacterial Blight | 92.7% | 93.7% | 93.2% |
+| Blast | 89.3% | 84.1% | 86.6% |
+| Brown Spot | 91.6% | 91.6% | 91.6% |
+| Healthy | 93.6% | 98.0% | 95.8% |
+
+## Model Selection (6 Experiments)
+
+| Experiment | Backbone | Val Accuracy |
+|-----------|----------|--------------|
+| Baseline | MobileNetV2 | 86.96% |
+| + Label smoothing | MobileNetV2 | 86.41% |
+| + Extended fine-tune | MobileNetV2 | 85.87% |
+| EfficientNetV2B0 | EfficientNetV2B0 | 90.82% |
+| + No smoothing | EfficientNetV2B0 | 90.92% |
+| **+ Big head (256)** | **EfficientNetV2B0** | **91.85%** |
+
+Key findings: EfficientNetV2B0 gives +4% over MobileNetV2. Fine-tuning hurts on this dataset size. Bigger head (+0.9%) and more epochs help.
+See full report: `models/experiments/EXPERIMENT_REPORT.md`
 
 ## 4→3 Class Bridge
 - Model trains on 4 classes (including healthy) for better feature learning
@@ -271,7 +283,7 @@ uvicorn api.main:app --reload --port 8000
 
 # SLIDE 11 — Test Results
 
-## 109 / 109 Tests Passing
+## 128 / 128 Tests Passing
 
 | Test Suite | Tests | Coverage |
 |------------|-------|----------|
@@ -279,7 +291,8 @@ uvicorn api.main:app --reload --port 8000
 | Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
 | Robustness (adversarial inputs) | 14 | Noise simulation, contradictory inputs |
 | API endpoints | 14 | All 9 endpoints + image upload |
-| ML pipeline | 26 | Dataset, inference, 4→3 bridge, healthy class |
+| ML pipeline | 35 | Dataset, inference, 4→3 bridge, multi-arch, experiments |
+| Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
 
 ## Key test cases verified
 - Classic Blast (Flowering Stage)
@@ -315,8 +328,10 @@ rice_dss/
 │   └── main.py                  FastAPI (9 endpoints, CORS, image upload)
 ├── ml/
 │   ├── dataset.py               TF dataset loader + augmentation
-│   ├── train.py                 MobileNetV2 training pipeline
-│   ├── inference.py             4→3 class bridging
+│   ├── train.py                 Multi-architecture training pipeline
+│   ├── inference.py             4→3 class bridging + TTA
+│   ├── gradcam.py               Grad-CAM heatmap generation
+│   ├── experiment.py            Experiment tracking + comparison
 │   └── evaluate.py              Classification report + confusion matrix
 ├── ui/
 │   └── app.py                   Streamlit demo UI (3-mode support)
@@ -327,8 +342,9 @@ rice_dss/
 │   ├── test_api.py              API endpoint tests
 │   └── test_ml.py               ML pipeline tests
 ├── models/
-│   ├── rice_disease_model.keras  Trained model (88.3% accuracy)
-│   └── evaluation/              Confusion matrix + classification report
+│   ├── rice_disease_model.keras  Trained model (91.85% accuracy)
+│   ├── evaluation/              Confusion matrix + classification report
+│   └── experiments/             Experiment snapshots for comparison
 ├── Dockerfile                   Container deployment
 ├── docker-compose.yml           API + UI services
 ├── docs/                        Project documentation
@@ -364,11 +380,11 @@ rice_dss/
 - Full rule-based DSS logic — 6 conditions, 8-step decision hierarchy
 - Scientifically validated scoring weights (referenced to agricultural literature)
 - Personalised recommendations (soil type, growth stage, fertilizer history)
-- ML image classifier trained — 88.3% accuracy on 9,200 images
+- ML image classifier trained — 91.85% accuracy on 9,200 images
 - 4→3 class bridging for safe ML→DSS integration
 - REST API with 9 endpoints (3 modes + image upload + explainability)
 - Streamlit demo UI with 3-mode support
-- 109/109 automated tests passing
+- 128/128 automated tests passing
 - Docker deployment ready
 - Bilingual output (English + Khmer)
 - Version controlled on GitHub

@@ -10,7 +10,7 @@ Cambodian rice farmers often misidentify crop diseases due to limited access to 
 
 1. **Structured Questionnaire** — A rule-based scoring engine that evaluates farmer-reported symptoms, field conditions, soil type, fertilizer history, and weather patterns against scientifically validated disease profiles.
 
-2. **ML Image Classifier** — A MobileNetV2-based CNN trained on 9,200 leaf images that classifies photos into one of 4 classes (Bacterial Blight, Blast, Brown Spot, Healthy).
+2. **ML Image Classifier** — An EfficientNetV2B0-based CNN trained on 9,200 leaf images that classifies photos into one of 4 classes (Bacterial Blight, Blast, Brown Spot, Healthy).
 
 The system fuses both sources using a weighted hybrid model (60% questionnaire, 40% ML) and produces a diagnosis with actionable recommendations in English and Khmer.
 
@@ -59,28 +59,32 @@ rice_dss/
 │   ├── main.py                  9 endpoints + CORS + image upload
 │   └── schemas.py               Pydantic v2 request/response models
 │
-├── ml/                          ML Pipeline (MobileNetV2)
+├── ml/                          ML Pipeline (EfficientNetV2B0)
 │   ├── __init__.py
 │   ├── dataset.py               TF dataset loader + augmentation
-│   ├── train.py                 2-phase training pipeline
-│   ├── inference.py             4→3 class bridging for DSS integration
+│   ├── train.py                 Multi-architecture training pipeline
+│   ├── inference.py             4→3 class bridging + TTA for DSS integration
+│   ├── gradcam.py               Grad-CAM heatmap generation + overlay
+│   ├── experiment.py            Experiment tracking + comparison
 │   └── evaluate.py              Classification report + confusion matrix
 │
 ├── ui/                          Demo Interface (Streamlit)
 │   └── app.py                   3-mode testing UI with test case loader
 │
-├── tests/                       Test Suite (109 tests)
+├── tests/                       Test Suite (128 tests)
 │   ├── __init__.py
 │   ├── test_dss.py              20 core disease cases (30 tests)
 │   ├── test_hybrid.py           Hybrid ML fusion tests (25 tests)
 │   ├── test_robustness.py       Adversarial input tests (14 tests)
 │   ├── test_api.py              API endpoint tests (14 tests)
-│   └── test_ml.py               ML pipeline tests (26 tests)
+│   ├── test_ml.py               ML pipeline tests (35 tests)
+│   └── test_gradcam.py          Grad-CAM explainability tests (10 tests)
 │
 ├── models/                      ML Model Artifacts
-│   ├── rice_disease_model.keras Trained model (88.3% val accuracy)
-│   ├── rice_disease_model.meta.json  Class names + config
-│   └── evaluation/              Confusion matrix + classification report
+│   ├── rice_disease_model.keras Trained model (91.85% val accuracy)
+│   ├── rice_disease_model.meta.json  Class names + config + backbone
+│   ├── evaluation/              Confusion matrix + classification report
+│   └── experiments/             Experiment snapshots for comparison
 │
 ├── data/                        Training images (gitignored, 9,200 images)
 ├── logs/                        Runtime audit logs (gitignored)
@@ -109,6 +113,7 @@ rice_dss/
 | [API Guide](docs/API_GUIDE.md) | Full frontend integration guide — curl examples, JS/TS code, request/response reference, error codes |
 | [Project Guide](docs/PROJECT_GUIDE.md) | Detailed file-by-file documentation — what each file does, how they relate, data flow walkthroughs |
 | [Presentation](docs/PRESENTATION.md) | FYP progress presentation — 14 slides covering architecture, ML results, and system design |
+| [Experiment Report](models/experiments/EXPERIMENT_REPORT.md) | ML model selection — 6 experiments, comparison table, key findings, per-class metrics |
 
 ---
 
@@ -190,20 +195,24 @@ See [API_GUIDE.md](docs/API_GUIDE.md) for full integration documentation with cu
 
 | Detail | Value |
 |--------|-------|
-| Architecture | MobileNetV2 (pretrained ImageNet, fine-tuned) |
+| Architecture | EfficientNetV2B0 (pretrained ImageNet) |
 | Dataset | 9,200 images, 4 balanced classes (2,300 each) |
-| Training | 2-phase: frozen backbone + fine-tune top 30 layers |
-| Validation Accuracy | **88.3%** |
+| Training | Frozen backbone + Dense(256) head, 30 epochs |
+| Validation Accuracy | **91.85%** |
 | Input Size | 224 x 224 px |
 
 ### Per-Class Performance
 
 | Condition | Precision | Recall | F1-Score |
 |-----------|-----------|--------|----------|
-| Bacterial Blight | 81.7% | 94.1% | 87.4% |
-| Blast | 87.1% | 72.7% | 79.3% |
-| Brown Spot | 93.5% | 87.3% | 90.3% |
-| Healthy | 92.1% | 98.9% | 95.4% |
+| Bacterial Blight | 92.7% | 93.7% | 93.2% |
+| Blast | 89.3% | 84.1% | 86.6% |
+| Brown Spot | 91.6% | 91.6% | 91.6% |
+| Healthy | 93.6% | 98.0% | 95.8% |
+
+### Model Selection
+
+6 experiments were conducted comparing MobileNetV2 vs EfficientNetV2B0 across different hyperparameters (label smoothing, fine-tuning depth, head size). See [Experiment Report](models/experiments/EXPERIMENT_REPORT.md) for full methodology, comparison table, and key findings.
 
 ### 4-to-3 Class Bridging
 
@@ -241,7 +250,7 @@ The model trains on 4 classes (including healthy) for better feature learning. A
 
 ## Tests
 
-109 tests across 5 suites, all passing:
+128 tests across 6 suites, all passing:
 
 ```bash
 pytest tests/ -v --tb=short
@@ -253,7 +262,8 @@ pytest tests/ -v --tb=short
 | Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
 | Robustness (adversarial) | 14 | Noise simulation, contradictory inputs |
 | API endpoints | 14 | All 9 endpoints + image upload |
-| ML pipeline | 26 | Dataset, inference, 4-to-3 bridge, healthy class |
+| ML pipeline | 35 | Dataset, inference, 4-to-3 bridge, multi-arch, experiments |
+| Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
 
 ---
 

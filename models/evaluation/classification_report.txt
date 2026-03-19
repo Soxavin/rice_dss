@@ -4,15 +4,15 @@ RICE DSS — Model Evaluation Report
 Model: models/rice_disease_model.keras
 Dataset: data/
 Validation samples: 1840
-Overall accuracy: 0.8826
+Overall accuracy: 0.9185
 
                   precision    recall  f1-score   support
 
-bacterial_blight     0.8165    0.9408    0.8743       473
-           blast     0.8711    0.7269    0.7925       465
-      brown_spot     0.9346    0.8733    0.9029       442
-         healthy     0.9211    0.9891    0.9539       460
+bacterial_blight     0.9268    0.9366    0.9317       473
+           blast     0.8927    0.8409    0.8660       465
+      brown_spot     0.9163    0.9163    0.9163       442
+         healthy     0.9357    0.9804    0.9575       460
 
-        accuracy                         0.8826      1840
-       macro avg     0.8858    0.8825    0.8809      1840
-    weighted avg     0.8848    0.8826    0.8804      1840
+        accuracy                         0.9185      1840
+       macro avg     0.9179    0.9185    0.9179      1840
+    weighted avg     0.9179    0.9185    0.9178      1840
