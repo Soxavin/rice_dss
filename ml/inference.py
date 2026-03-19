@@ -206,12 +206,52 @@ class RiceDSSInference:
 
         return disease_probs
 
-    def predict_from_image(self, image_path: str) -> Optional[Dict[str, float]]:
+    def _predict_with_tta(self, image_tensor: "tf.Tensor", n_augments: int = 5) -> "np.ndarray":
+        """
+        Test-Time Augmentation: averages predictions over augmented versions.
+
+        Applies horizontal flip, vertical flip, and small rotations to the
+        input image, then averages all softmax outputs. This typically adds
+        1-3% accuracy at the cost of ~5x inference time.
+
+        Args:
+            image_tensor: Preprocessed image tensor of shape (1, H, W, 3).
+            n_augments: Number of augmented versions (default: 5).
+
+        Returns:
+            np.ndarray: Averaged softmax probabilities.
+        """
+        predictions = [self.model.predict(image_tensor, verbose=0)[0]]
+
+        # Horizontal flip
+        flipped_h = tf.image.flip_left_right(image_tensor)
+        predictions.append(self.model.predict(flipped_h, verbose=0)[0])
+
+        # Vertical flip
+        flipped_v = tf.image.flip_up_down(image_tensor)
+        predictions.append(self.model.predict(flipped_v, verbose=0)[0])
+
+        if n_augments >= 4:
+            # Small brightness adjustment
+            bright = tf.image.adjust_brightness(image_tensor, 0.05)
+            predictions.append(self.model.predict(bright, verbose=0)[0])
+
+        if n_augments >= 5:
+            # Small contrast adjustment
+            contrast = tf.image.adjust_contrast(image_tensor, 1.1)
+            predictions.append(self.model.predict(contrast, verbose=0)[0])
+
+        return np.mean(predictions, axis=0)
+
+    def predict_from_image(
+        self, image_path: str, use_tta: bool = False
+    ) -> Optional[Dict[str, float]]:
         """
         Runs inference on a leaf image and returns DSS-compatible probabilities.
 
         Args:
             image_path (str): Path to the leaf image.
+            use_tta (bool): Enable test-time augmentation for higher accuracy.
 
         Returns:
             dict or None: {blast, brown_spot, bacterial_blight} summing to ~1.0.
@@ -219,18 +259,24 @@ class RiceDSSInference:
         """
         try:
             image_tensor = self.preprocess_image(image_path)
-            predictions = self.model.predict(image_tensor, verbose=0)
-            return self._bridge_to_dss(predictions[0])
+            if use_tta:
+                raw_probs = self._predict_with_tta(image_tensor)
+            else:
+                raw_probs = self.model.predict(image_tensor, verbose=0)[0]
+            return self._bridge_to_dss(raw_probs)
         except Exception as e:
             print(f"[ML Inference] Inference failed: {e}")
             return None
 
-    def predict_from_bytes(self, image_bytes: bytes) -> Optional[Dict[str, float]]:
+    def predict_from_bytes(
+        self, image_bytes: bytes, use_tta: bool = False
+    ) -> Optional[Dict[str, float]]:
         """
         Runs inference on raw image bytes and returns DSS-compatible probabilities.
 
         Args:
             image_bytes (bytes): Raw image file bytes (JPEG/PNG).
+            use_tta (bool): Enable test-time augmentation for higher accuracy.
 
         Returns:
             dict or None: {blast, brown_spot, bacterial_blight} summing to ~1.0.
@@ -238,10 +284,38 @@ class RiceDSSInference:
         """
         try:
             image_tensor = self.preprocess_image_bytes(image_bytes)
-            predictions = self.model.predict(image_tensor, verbose=0)
-            return self._bridge_to_dss(predictions[0])
+            if use_tta:
+                raw_probs = self._predict_with_tta(image_tensor)
+            else:
+                raw_probs = self.model.predict(image_tensor, verbose=0)[0]
+            return self._bridge_to_dss(raw_probs)
         except Exception as e:
             print(f"[ML Inference] Inference from bytes failed: {e}")
+            return None
+
+    def get_gradcam(
+        self, image_source, class_index: int = None
+    ):
+        """
+        Generates a Grad-CAM heatmap overlay for a leaf image.
+
+        Shows which regions of the leaf the model focused on when making
+        its prediction — useful for visual explainability in the UI and API.
+
+        Args:
+            image_source: File path (str) or raw bytes.
+            class_index: Target class index. None = use predicted class.
+
+        Returns:
+            PIL Image with heatmap overlay, or None if generation fails.
+        """
+        try:
+            from ml.gradcam import get_gradcam_overlay
+            return get_gradcam_overlay(
+                self.model, image_source, self.img_size, class_index
+            )
+        except Exception as e:
+            print(f"[ML Inference] Grad-CAM failed: {e}")
             return None
 
     def get_raw_probabilities(self, image_path: str) -> Optional[Dict[str, float]]:

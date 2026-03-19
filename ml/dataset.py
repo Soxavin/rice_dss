@@ -154,6 +154,7 @@ def build_augmentation_layer():
         tf.keras.layers.RandomFlip("horizontal_and_vertical"),
         tf.keras.layers.RandomRotation(0.2),
         tf.keras.layers.RandomZoom(0.15),
+        tf.keras.layers.RandomTranslation(0.1, 0.1),  # ±10% shift — improves position invariance
         tf.keras.layers.RandomBrightness(0.1),
         tf.keras.layers.RandomContrast(0.1),
     ], name="data_augmentation")

@@ -20,6 +20,7 @@
 
 import os
 import sys
+import json
 import pytest
 import tempfile
 from pathlib import Path
@@ -416,3 +417,153 @@ class TestHealthyClassHandling:
         total = sum(result.values())
         assert abs(total - 1.0) < 0.01
         assert set(result.keys()) == BIOTIC_CONDITIONS
+
+
+# =============================================================================
+# MULTI-ARCHITECTURE SUPPORT
+# =============================================================================
+
+class TestMultiArchitecture:
+    """
+    Tests for the multi-backbone support in ml/train.py.
+    These tests verify the _get_backbone() helper and build_model() contracts
+    without requiring a full training run.
+    """
+
+    def test_supported_backbones_list(self):
+        """SUPPORTED_BACKBONES must contain at least mobilenetv2."""
+        from ml.train import SUPPORTED_BACKBONES
+        assert 'mobilenetv2' in SUPPORTED_BACKBONES
+        assert 'efficientnetv2b0' in SUPPORTED_BACKBONES
+
+    def test_default_backbone_is_mobilenetv2(self):
+        """Default backbone must be mobilenetv2 for backwards compatibility."""
+        from ml.train import DEFAULT_BACKBONE
+        assert DEFAULT_BACKBONE == 'mobilenetv2'
+
+    @pytest.mark.skipif(
+        not os.environ.get('RUN_TF_TESTS'),
+        reason="TF tests disabled (set RUN_TF_TESTS=1 to enable)"
+    )
+    def test_get_backbone_mobilenetv2(self):
+        """_get_backbone('mobilenetv2') returns a valid model and preprocess fn."""
+        from ml.train import _get_backbone
+        base_model, preprocess_fn = _get_backbone('mobilenetv2', 224)
+        assert base_model is not None
+        assert callable(preprocess_fn)
+
+    @pytest.mark.skipif(
+        not os.environ.get('RUN_TF_TESTS'),
+        reason="TF tests disabled (set RUN_TF_TESTS=1 to enable)"
+    )
+    def test_get_backbone_efficientnetv2b0(self):
+        """_get_backbone('efficientnetv2b0') returns a valid model and preprocess fn."""
+        from ml.train import _get_backbone
+        base_model, preprocess_fn = _get_backbone('efficientnetv2b0', 224)
+        assert base_model is not None
+        assert callable(preprocess_fn)
+
+    def test_get_backbone_invalid_raises(self):
+        """_get_backbone() with unsupported name must raise ValueError."""
+        from ml.train import _get_backbone
+        with pytest.raises(ValueError, match="Unsupported backbone"):
+            _get_backbone('resnet50', 224)
+
+    def test_label_smoothing_parameter_accepted(self):
+        """build_model() must accept label_smoothing without crashing."""
+        from ml.train import build_model
+        # Just verify the signature accepts the parameter — actual model
+        # building requires TF, tested separately with RUN_TF_TESTS=1
+        import inspect
+        sig = inspect.signature(build_model)
+        assert 'label_smoothing' in sig.parameters
+        assert 'backbone' in sig.parameters
+        assert 'head_units' in sig.parameters
+        assert 'dropout' in sig.parameters
+
+
+# =============================================================================
+# EXPERIMENT TRACKING
+# =============================================================================
+
+class TestExperimentTracking:
+    """
+    Tests for ml/experiment.py.
+    Verifies experiment snapshot saving and comparison.
+    """
+
+    def test_save_experiment_creates_directory(self):
+        """save_experiment() must create a timestamped directory with config.json."""
+        from ml.experiment import save_experiment
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create mock model and eval files
+            model_path = Path(tmpdir) / "test_model.keras"
+            model_path.write_text("mock model")
+            meta_path = model_path.with_suffix(".meta.json")
+            meta_path.write_text('{"class_names": ["a", "b"]}')
+            eval_dir = Path(tmpdir) / "evaluation"
+            eval_dir.mkdir()
+            (eval_dir / "report.txt").write_text("mock report")
+
+            # Monkey-patch EXPERIMENTS_DIR to use temp directory
+            import ml.experiment as exp_mod
+            original_dir = exp_mod.EXPERIMENTS_DIR
+            exp_mod.EXPERIMENTS_DIR = Path(tmpdir) / "experiments"
+            try:
+                result = save_experiment(
+                    experiment_name="test_run",
+                    config={"backbone": "mobilenetv2", "best_val_accuracy": 0.88},
+                    model_path=model_path,
+                    eval_dir=eval_dir,
+                )
+                assert result.exists()
+                assert (result / "config.json").exists()
+                # Verify config content
+                with open(result / "config.json") as f:
+                    config = json.load(f)
+                assert config["backbone"] == "mobilenetv2"
+                assert config["experiment_name"] == "test_run"
+                assert config["best_val_accuracy"] == 0.88
+                # Verify model and eval files copied
+                assert (result / "test_model.keras").exists()
+                assert (result / "test_model.meta.json").exists()
+                assert (result / "report.txt").exists()
+            finally:
+                exp_mod.EXPERIMENTS_DIR = original_dir
+
+    def test_save_experiment_with_missing_model(self):
+        """save_experiment() should not crash if model file doesn't exist."""
+        from ml.experiment import save_experiment
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model_path = Path(tmpdir) / "nonexistent.keras"
+            eval_dir = Path(tmpdir) / "evaluation"
+            eval_dir.mkdir()
+
+            import ml.experiment as exp_mod
+            original_dir = exp_mod.EXPERIMENTS_DIR
+            exp_mod.EXPERIMENTS_DIR = Path(tmpdir) / "experiments"
+            try:
+                result = save_experiment(
+                    experiment_name="no_model",
+                    config={"backbone": "mobilenetv2"},
+                    model_path=model_path,
+                    eval_dir=eval_dir,
+                )
+                assert result.exists()
+                assert (result / "config.json").exists()
+                # Model should NOT be copied (doesn't exist)
+                assert not (result / "nonexistent.keras").exists()
+            finally:
+                exp_mod.EXPERIMENTS_DIR = original_dir
+
+    def test_metadata_includes_backbone(self):
+        """Training metadata (.meta.json) must include the backbone field."""
+        # Verify the train() function's metadata dict includes 'backbone'
+        # by checking the train function signature
+        from ml.train import train
+        import inspect
+        sig = inspect.signature(train)
+        assert 'backbone' in sig.parameters
+        assert 'experiment_name' in sig.parameters

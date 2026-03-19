@@ -265,10 +265,13 @@ class DSSResponse(BaseModel):
 class ImagePredictionResponse(DSSResponse):
     """
     Response from /predict-image endpoint.
-    Extends DSSResponse with the raw ML probabilities.
+    Extends DSSResponse with the raw ML probabilities and Grad-CAM heatmap.
     """
     ml_probabilities: Optional[Dict[str, float]] = Field(
         None, description="The 3-class probabilities produced by the ML model"
+    )
+    gradcam_base64: Optional[str] = Field(
+        None, description="Base64-encoded PNG of the Grad-CAM heatmap overlay"
     )
 
 

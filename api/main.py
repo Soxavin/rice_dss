@@ -23,6 +23,8 @@
 #   http://localhost:8000/redoc  ← ReDoc
 # =============================================================================
 
+import base64
+import io
 import json
 import os
 from pathlib import Path
@@ -242,6 +244,22 @@ async def logs_runs(limit: int = 20):
 # Both checks happen BEFORE loading the model or reading the full file.
 
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+def _generate_gradcam_base64(model, image_bytes: bytes) -> str | None:
+    """
+    Generates a Grad-CAM overlay and returns it as a base64-encoded PNG string.
+    Returns None if generation fails (graceful degradation).
+    """
+    try:
+        overlay = model.get_gradcam(image_bytes)
+        if overlay is None:
+            return None
+        buf = io.BytesIO()
+        overlay.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
+    except Exception:
+        return None
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 # LAZY-LOADED ML MODEL SINGLETON
@@ -322,12 +340,16 @@ async def predict_image(image: UploadFile = File(...)):
     if probs is None:
         raise HTTPException(status_code=422, detail="Could not process image.")
 
+    # Generate Grad-CAM overlay (non-blocking — failure is OK)
+    gradcam_b64 = _generate_gradcam_base64(model, contents)
+
     # Feed ML probabilities into DSS (ml-only mode — no questionnaire scoring)
     raw = {'ml_probabilities': probs}
     try:
         output = run_dss(raw, mode="ml")
-        # Attach raw ML probs to the response so the frontend can display them
+        # Attach raw ML probs and Grad-CAM to the response
         output['ml_probabilities'] = probs
+        output['gradcam_base64'] = gradcam_b64
         return output
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
@@ -335,7 +357,7 @@ async def predict_image(image: UploadFile = File(...)):
 
 @app.post(
     "/hybrid-image",
-    response_model=DSSResponse,
+    response_model=ImagePredictionResponse,
     summary="Hybrid Diagnosis with Image Upload",
     description=(
         "Upload a leaf image alongside questionnaire answers (as a JSON string) "
@@ -391,11 +413,17 @@ async def hybrid_image(
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="Invalid JSON in questionnaire field.")
 
+    # Generate Grad-CAM overlay (non-blocking — failure is OK)
+    gradcam_b64 = _generate_gradcam_base64(model, contents)
+
     # Inject ML predictions into the answers dict — generate_output() will
     # pick these up in STEP 6 (Safe ML Fusion) of the decision hierarchy
     raw['ml_probabilities'] = probs
     try:
-        return run_dss(raw, mode="hybrid")
+        output = run_dss(raw, mode="hybrid")
+        output['ml_probabilities'] = probs
+        output['gradcam_base64'] = gradcam_b64
+        return output
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 

@@ -34,6 +34,12 @@ import json
 from pathlib import Path
 import streamlit as st
 
+try:
+    import plotly.graph_objects as go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+
 # DIRECT IMPORTS — no API server needed.
 # The UI runs the DSS logic in-process by importing the same functions
 # that the API endpoints use. This makes testing faster and simpler.
@@ -72,8 +78,16 @@ def load_ml_model():
 st.set_page_config(
     page_title="Rice DSS — Tester",
     page_icon="🌾",
-    layout="centered"
+    layout="wide"
 )
+
+# --- Custom CSS: constrain max width + polish ---
+st.markdown("""
+<style>
+    .block-container { max-width: 1100px; padding-top: 1.5rem; }
+    .stAlert > div { border-radius: 10px; }
+</style>
+""", unsafe_allow_html=True)
 
 # =============================================================================
 # LABEL MAPS
@@ -296,6 +310,66 @@ def render_score_bars(all_scores: dict):
 
 
 # =============================================================================
+# CONFIDENCE GAUGE (Plotly)
+# =============================================================================
+
+def render_gauge(score: float, condition_key: str, confidence_label: str):
+    """Renders a Plotly gauge chart showing the DSS confidence score."""
+    if not PLOTLY_AVAILABLE:
+        return False  # caller falls back to st.metric
+
+    color = CONDITION_COLORS.get(condition_key, '#95a5a6')
+    pct = score * 100
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=pct,
+        number={'suffix': '%', 'font': {'size': 40}},
+        gauge={
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'dtick': 20},
+            'bar': {'color': color, 'thickness': 0.7},
+            'bgcolor': 'white',
+            'steps': [
+                {'range': [0, 40], 'color': '#f5f5f5'},
+                {'range': [40, 65], 'color': '#fff9e6'},
+                {'range': [65, 100], 'color': '#e8f5e9'},
+            ],
+        }
+    ))
+    fig.update_layout(
+        height=220,
+        margin=dict(l=30, r=30, t=40, b=10),
+        annotations=[
+            dict(text="Possible", x=0.22, y=0.0, showarrow=False,
+                 font=dict(size=10, color='#999')),
+            dict(text="Probable", x=0.78, y=0.0, showarrow=False,
+                 font=dict(size=10, color='#999')),
+        ]
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption(f"**Confidence:** {confidence_label}")
+    return True
+
+
+# =============================================================================
+# IMAGE + GRAD-CAM COMPARISON
+# =============================================================================
+
+def render_image_comparison(image_bytes, gradcam_image):
+    """Shows original image and Grad-CAM overlay side by side."""
+    if gradcam_image is None:
+        st.image(image_bytes, caption="Uploaded leaf image", width=300)
+        return
+
+    col_img, col_cam = st.columns(2)
+    with col_img:
+        st.image(image_bytes, caption="Original", use_container_width=True)
+    with col_cam:
+        st.image(gradcam_image, caption="Grad-CAM — Model Focus Areas",
+                 use_container_width=True)
+
+
+# =============================================================================
 # EXPLANATION RENDERER
 # =============================================================================
 
@@ -379,10 +453,13 @@ def render_result(output: dict):
     elif status in ('uncertain', 'out_of_scope'):
         st.info(f"### ℹ️ {condition}")
 
-    # --- Score + confidence ---
-    col1, col2 = st.columns(2)
-    col1.metric("Score", f"{score:.0%}")
-    col2.metric("Confidence", conf.split('(')[-1].replace(')', '') if '(' in conf else conf)
+    # --- Score + confidence gauge ---
+    condition_key = output.get('condition_key', '')
+    if not render_gauge(score, condition_key, conf):
+        # Fallback if Plotly is not installed
+        col1, col2 = st.columns(2)
+        col1.metric("Score", f"{score:.0%}")
+        col2.metric("Confidence", conf.split('(')[-1].replace(')', '') if '(' in conf else conf)
 
     st.divider()
 
@@ -475,7 +552,7 @@ st.markdown("**Testing Interface** — Select a diagnosis mode and provide the r
 
 selected_mode = st.radio(
     "Diagnosis Mode",
-    options=["Questionnaire Only", "Image Only (ML)", "Hybrid (Recommended)"],
+    options=["Hybrid (Recommended)", "Image Only (ML)", "Questionnaire Only"],
     index=0,
     horizontal=True,
     help=(
@@ -832,34 +909,47 @@ if selected_mode == "Image Only (ML)" and ml_submitted:
         )
         st.stop()
 
-    with st.spinner("Running ML prediction..."):
-        uploaded_image.seek(0)
-        ml_probs = model.predict_from_bytes(uploaded_image.read())
+    # --- Progressive reveal ---
+    uploaded_image.seek(0)
+    image_bytes = uploaded_image.read()
+    ml_probs = None
+    gradcam_image = None
+
+    with st.status("Analyzing leaf image...", expanded=True) as status:
+        status.update(label="Running ML prediction...")
+        ml_probs = model.predict_from_bytes(image_bytes)
+
+        if ml_probs is not None:
+            status.update(label="Generating Grad-CAM heatmap...")
+            gradcam_image = model.get_gradcam(image_bytes)
+
+        status.update(label="Running decision engine...")
+        output = run_dss({'ml_probabilities': ml_probs}, mode="ml")
+
+        status.update(label="Diagnosis complete!", state="complete", expanded=False)
 
     if ml_probs is None:
         st.error("Could not process image — please try a different photo.")
         st.stop()
 
-    with st.spinner("Running DSS..."):
-        output = run_dss({'ml_probabilities': ml_probs}, mode="ml")
-
     st.markdown("## 🩺 Diagnosis Result")
     st.info("**Mode:** Image Only (ML)")
+
+    # --- Side-by-side image + Grad-CAM ---
+    render_image_comparison(image_bytes, gradcam_image)
+
     render_result(output)
 
     # ML probability bars
     render_ml_bars(ml_probs)
-    st.divider()
 
-    # Debug expanders
-    with st.expander("🔧 Raw Output (Debug / JSON)"):
-        st.code(json.dumps(output, indent=2, ensure_ascii=False), language="json")
-
-    with st.expander("📥 ML Probabilities"):
-        st.code(json.dumps(ml_probs, indent=2, ensure_ascii=False), language="json")
-
-    # Session log
+    # Debug + session log in sidebar
     with st.sidebar:
+        st.divider()
+        with st.expander("🔧 Raw Output (JSON)"):
+            st.code(json.dumps(output, indent=2, ensure_ascii=False), language="json")
+        with st.expander("📥 ML Probabilities"):
+            st.code(json.dumps(ml_probs, indent=2, ensure_ascii=False), language="json")
         st.divider()
         st.header("📋 Session Log")
         summary = dss_logger.get_summary()
@@ -912,38 +1002,43 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
         'ml_probabilities':     None,
     }
 
-    # --- ML image prediction (Hybrid mode with image) ---
-    # In Hybrid mode, if the user uploaded a leaf image, we run ML inference
-    # and inject the probabilities into raw_answers. If ML fails or model is
-    # unavailable, we gracefully fall back to questionnaire-only (no crash).
+    # --- Progressive reveal: ML + Grad-CAM + DSS ---
     ml_probs = None
-    if selected_mode == "Hybrid (Recommended)" and uploaded_image is not None:
-        model = load_ml_model()
-        if model is None:
-            st.warning(
-                "ML model not available — falling back to questionnaire only.\n\n"
-                "Train first with: `python -m ml.train --data_dir data/`"
-            )
-        else:
-            with st.spinner("Running ML prediction..."):
+    gradcam_image = None
+    image_bytes = None
+
+    with st.status("Running diagnosis...", expanded=True) as status:
+        # Step 1: ML prediction (Hybrid mode with image)
+        if selected_mode == "Hybrid (Recommended)" and uploaded_image is not None:
+            model = load_ml_model()
+            if model is not None:
+                status.update(label="Analyzing leaf image with ML model...")
                 uploaded_image.seek(0)
-                ml_probs = model.predict_from_bytes(uploaded_image.read())
-            if ml_probs is None:
-                st.warning("Could not process image — falling back to questionnaire only.")
-            else:
-                raw_answers['ml_probabilities'] = ml_probs
+                image_bytes = uploaded_image.read()
+                ml_probs = model.predict_from_bytes(image_bytes)
+                if ml_probs is not None:
+                    raw_answers['ml_probabilities'] = ml_probs
+                    status.update(label="Generating Grad-CAM heatmap...")
+                    gradcam_image = model.get_gradcam(image_bytes)
 
-    # Determine effective DSS mode based on whether ML probs are available.
-    # Even if the user selected "Hybrid", we run as "questionnaire" if no
-    # image was uploaded or ML inference failed — this is a graceful fallback.
-    effective_mode = "hybrid" if ml_probs else "questionnaire"
-    mode_label = "Hybrid (Questionnaire + ML)" if ml_probs else "Questionnaire Only"
+        # Step 2: DSS
+        effective_mode = "hybrid" if ml_probs else "questionnaire"
+        mode_label = "Hybrid (Questionnaire + ML)" if ml_probs else "Questionnaire Only"
 
-    with st.spinner("Running DSS..."):
+        status.update(label="Running decision engine...")
         output = run_dss(raw_answers, mode=effective_mode)
-        # Also generate explanation for the validated answers
         validated = validate_answers(raw_answers)
         breakdown = explain_scores(validated)
+
+        status.update(label="Diagnosis complete!", state="complete", expanded=False)
+
+    # Show warnings outside status block so they remain visible
+    if selected_mode == "Hybrid (Recommended)" and uploaded_image is not None:
+        if ml_probs is None:
+            st.warning(
+                "ML model not available or could not process image — "
+                "fell back to questionnaire only."
+            )
 
     # --- Mode badge ---
     st.markdown("## 🩺 Diagnosis Result")
@@ -951,6 +1046,10 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
         st.info(f"**Mode:** {mode_label}")
     else:
         st.caption(f"**Mode:** {mode_label}")
+
+    # --- Side-by-side image + Grad-CAM ---
+    if image_bytes is not None:
+        render_image_comparison(image_bytes, gradcam_image)
 
     render_result(output)
 
@@ -962,23 +1061,19 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
     )
     render_explanation(breakdown, top_condition=output.get('condition_key'))
 
-    # --- ML probabilities panel (Hybrid mode with image) ---
+    # --- ML probabilities (if available) ---
     if ml_probs:
         render_ml_bars(ml_probs)
-        st.divider()
 
-    # --- Raw JSON expander (debug mode for teammates) ---
-    with st.expander("🔧 Raw Output (Debug / JSON)"):
-        st.code(json.dumps(output, indent=2, ensure_ascii=False), language="json")
-
-    with st.expander("📥 Raw Answers Sent to DSS"):
-        st.code(json.dumps(raw_answers, indent=2, ensure_ascii=False), language="json")
-
-    with st.expander("📊 Full Explanation JSON"):
-        st.code(json.dumps(breakdown, indent=2, ensure_ascii=False), language="json")
-
-    # --- Logger summary in sidebar ---
+    # --- Debug + session log in sidebar ---
     with st.sidebar:
+        st.divider()
+        with st.expander("🔧 Raw Output (JSON)"):
+            st.code(json.dumps(output, indent=2, ensure_ascii=False), language="json")
+        with st.expander("📥 Raw Answers"):
+            st.code(json.dumps(raw_answers, indent=2, ensure_ascii=False), language="json")
+        with st.expander("📊 Full Explanation JSON"):
+            st.code(json.dumps(breakdown, indent=2, ensure_ascii=False), language="json")
         st.divider()
         st.header("📋 Session Log")
         summary = dss_logger.get_summary()

@@ -33,7 +33,8 @@ def evaluate(
     model_path: str,
     data_dir: str,
     img_size: int = DEFAULT_IMG_SIZE,
-    batch_size: int = DEFAULT_BATCH_SIZE
+    batch_size: int = DEFAULT_BATCH_SIZE,
+    output_dir: str = ""
 ) -> None:
     """
     Evaluates the trained model on the validation split.
@@ -48,6 +49,8 @@ def evaluate(
         data_dir (str): Path to dataset root directory.
         img_size (int): Image size used during training.
         batch_size (int): Batch size for evaluation.
+        output_dir (str): Optional output directory for results. If empty,
+                          defaults to {model_dir}/evaluation/.
     """
     if not TF_AVAILABLE:
         raise ImportError("TensorFlow is required. Install with: pip install tensorflow")
@@ -107,11 +110,14 @@ def evaluate(
     print(f"Overall accuracy: {accuracy:.4f} ({np.sum(y_true == y_pred)}/{len(y_true)})")
 
     # Save results
-    output_dir = model_path.parent / "evaluation"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if output_dir:
+        out_path = Path(output_dir)
+    else:
+        out_path = model_path.parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
 
     # Save classification report
-    report_path = output_dir / "classification_report.txt"
+    report_path = out_path / "classification_report.txt"
     with open(report_path, 'w') as f:
         f.write("RICE DSS — Model Evaluation Report\n")
         f.write("=" * 50 + "\n\n")
@@ -146,7 +152,7 @@ def evaluate(
                     color='white' if cm[i, j] > thresh else 'black')
 
     fig.tight_layout()
-    cm_path = output_dir / "confusion_matrix.png"
+    cm_path = out_path / "confusion_matrix.png"
     fig.savefig(str(cm_path), dpi=150)
     plt.close(fig)
     print(f"Confusion matrix saved to: {cm_path}")
@@ -181,11 +187,16 @@ if __name__ == "__main__":
         '--batch_size', type=int, default=DEFAULT_BATCH_SIZE,
         help=f'Batch size (default: {DEFAULT_BATCH_SIZE})'
     )
+    parser.add_argument(
+        '--output_dir', type=str, default='',
+        help='Output directory for results (default: {model_dir}/evaluation/)'
+    )
 
     args = parser.parse_args()
     evaluate(
         model_path=args.model_path,
         data_dir=args.data_dir,
         img_size=args.img_size,
-        batch_size=args.batch_size
+        batch_size=args.batch_size,
+        output_dir=args.output_dir,
     )
