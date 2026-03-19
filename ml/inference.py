@@ -27,6 +27,12 @@ import json
 from pathlib import Path
 from typing import Dict, Optional
 
+# CONDITIONAL TENSORFLOW IMPORT
+# TensorFlow is a heavy dependency (~500MB). We make it optional so that:
+#   - The DSS can run in questionnaire-only mode without TF installed
+#   - Tests that don't need ML can run without TF
+#   - The API server can start and serve /questionnaire without TF
+# If TF is not available, RiceDSSInference.__init__() will raise ImportError.
 try:
     import numpy as np
     import tensorflow as tf
@@ -34,6 +40,9 @@ try:
 except ImportError:
     TF_AVAILABLE = False
 
+# CLASS_NAMES = ['bacterial_blight', 'blast', 'brown_spot'] — the 3 DSS keys
+# ALL_CLASS_NAMES = ['bacterial_blight', 'blast', 'brown_spot', 'healthy'] — 4 training classes
+# DEFAULT_IMG_SIZE = 224 — MobileNetV2's expected input dimensions
 from ml.dataset import CLASS_NAMES, ALL_CLASS_NAMES, DEFAULT_IMG_SIZE
 
 
@@ -84,7 +93,12 @@ class RiceDSSInference:
         self.model = tf.keras.models.load_model(str(model_path))
         self.img_size = img_size
 
-        # Load class names from metadata sidecar if available
+        # METADATA SIDECAR PATTERN
+        # The training script saves a .meta.json file alongside the .keras model.
+        # This file records: class_names (in the order the model was trained on),
+        # img_size, and dss_class_names. We use this to correctly map the model's
+        # output neurons to condition keys, avoiding hard-coded index assumptions.
+        # Falls back to ALL_CLASS_NAMES from dataset.py if no metadata exists.
         meta_path = model_path.with_suffix('.meta.json')
         if meta_path.exists():
             with open(meta_path) as f:
@@ -94,7 +108,7 @@ class RiceDSSInference:
         else:
             self.all_class_names = ALL_CLASS_NAMES
 
-        # 3-class DSS contract
+        # 3-class DSS contract — only these keys are accepted by the DSS
         self.dss_class_names = CLASS_NAMES
 
         print(f"[ML Inference] Model loaded from: {model_path}")
@@ -112,9 +126,15 @@ class RiceDSSInference:
             tf.Tensor: Preprocessed image tensor of shape (1, H, W, 3).
         """
         raw = tf.io.read_file(image_path)
+        # decode_image handles JPEG, PNG, BMP, GIF automatically
+        # channels=3 forces RGB (drops alpha channel if present)
+        # expand_animations=False prevents GIF frames from adding a dimension
         image = tf.image.decode_image(raw, channels=3, expand_animations=False)
+        # Resize to model's expected input (224x224 for MobileNetV2)
         image = tf.image.resize(image, [self.img_size, self.img_size])
+        # Cast to uint8 — MobileNetV2's preprocess_input() expects [0, 255] integers
         image = tf.cast(image, tf.uint8)
+        # Add batch dimension: (H, W, 3) → (1, H, W, 3) for model.predict()
         image = tf.expand_dims(image, axis=0)
         return image
 
@@ -147,7 +167,8 @@ class RiceDSSInference:
         Returns:
             dict: {blast, brown_spot, bacterial_blight} summing to ~1.0.
         """
-        # Build full probability dict
+        # Map model output neurons to class names
+        # e.g., [0.05, 0.80, 0.10, 0.05] → {bacterial_blight: 0.05, blast: 0.80, ...}
         full_probs = {
             self.all_class_names[i]: float(raw_probs[i])
             for i in range(len(self.all_class_names))
@@ -155,21 +176,32 @@ class RiceDSSInference:
 
         healthy_prob = full_probs.get(HEALTHY_CLASS_NAME, 0.0)
 
-        # If model is confident the leaf is healthy, return uniform probs
-        # so the DSS relies entirely on questionnaire evidence
+        # HEALTHY CLASS BRIDGING LOGIC
+        # If the model thinks the leaf is healthy (>= 60%), we return uniform
+        # probabilities (1/3 each). This means the ML signal is "neutral" —
+        # it neither supports nor opposes any disease. The DSS will then
+        # rely entirely on questionnaire evidence for its diagnosis.
+        # Why not just return None? Because uniform probs still allow the
+        # hybrid fusion to run (STEP 6) without crashing — they just
+        # contribute no directional information.
         if healthy_prob >= HEALTHY_DOMINANT_THRESHOLD:
             return {
                 'blast': 0.333,
                 'brown_spot': 0.333,
-                'bacterial_blight': 0.334,
+                'bacterial_blight': 0.334,  # 0.334 to make sum exactly 1.0
             }
 
-        # Extract 3 disease probs and renormalize to sum to 1.0
+        # DROP HEALTHY + RENORMALIZE
+        # Extract only the 3 disease probabilities, then scale them up so they
+        # sum to 1.0. Example: if model output is {blast: 0.40, brown_spot: 0.30,
+        # bacterial_blight: 0.10, healthy: 0.20}, we get:
+        #   total = 0.80, then blast = 0.40/0.80 = 0.50, etc.
         disease_probs = {k: full_probs[k] for k in self.dss_class_names}
         total = sum(disease_probs.values())
         if total > 0:
             disease_probs = {k: v / total for k, v in disease_probs.items()}
         else:
+            # Edge case: all disease probs are 0 — fall back to uniform
             disease_probs = {k: 1.0 / 3 for k in self.dss_class_names}
 
         return disease_probs

@@ -24,6 +24,7 @@
 # =============================================================================
 
 import json
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
@@ -41,6 +42,9 @@ from dss.logger import dss_logger
 # =============================================================================
 # APP INITIALISATION
 # =============================================================================
+# FastAPI app with metadata for auto-generated Swagger docs (/docs).
+# The description, tags, and examples here are what Swagger renders —
+# they help teammates integrate without reading Python code.
 
 app = FastAPI(
     title="Rice Paddy Disease Decision Support System",
@@ -63,19 +67,28 @@ app = FastAPI(
     }
 )
 
-# Allow all origins for local development — restrict this in production
+# CORS CONFIGURATION
+# In development, defaults to ["*"] (allow all origins) so the Streamlit UI
+# and any local frontend can hit the API without CORS errors.
+# In production, set CORS_ORIGINS="https://myapp.com,https://admin.myapp.com"
+# to restrict which domains can make cross-origin requests.
+_cors_origins = os.environ.get("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],     # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],     # Allow all headers (Authorization, Content-Type, etc.)
 )
 
 
 # =============================================================================
 # HELPER
 # =============================================================================
+# All three DSS endpoints share the same conversion step:
+#   Pydantic model → plain dict → run_dss()
+# This keeps the route handlers thin — they only handle HTTP concerns
+# (status codes, error wrapping) while all logic lives in dss/.
 
 def _request_to_dict(request: QuestionnaireRequest) -> dict:
     """
@@ -222,19 +235,40 @@ async def logs_runs(limit: int = 20):
 # =============================================================================
 # IMAGE UPLOAD ENDPOINTS
 # =============================================================================
+# These endpoints handle leaf image uploads for ML-based diagnosis.
+# Two validation gates protect against bad uploads:
+#   1. MIME type check — only JPEG, PNG, WebP accepted (rejects PDFs, ZIPs, etc.)
+#   2. File size check — max 10 MB (prevents memory issues on the server)
+# Both checks happen BEFORE loading the model or reading the full file.
 
-# Lazy-loaded ML model singleton — avoids loading TensorFlow on import
+MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+# LAZY-LOADED ML MODEL SINGLETON
+# TensorFlow takes several seconds to import and the model takes memory to load.
+# We defer both until the first image endpoint is actually called, so that:
+#   - The API starts fast (useful for health checks, questionnaire-only usage)
+#   - TensorFlow is never imported if only questionnaire endpoints are used
+#   - The model is loaded exactly once and reused across all subsequent requests
 _inference_model = None
 
 
 def get_inference_model():
-    """Returns the ML inference model, loading it on first call."""
+    """
+    Returns the ML inference model, loading it on first call (lazy singleton).
+
+    Returns None (instead of raising) if:
+    - The .keras model file doesn't exist on disk (not yet trained)
+    - TensorFlow is not installed (ImportError)
+    This lets endpoints return HTTP 503 gracefully.
+    """
     global _inference_model
     if _inference_model is None:
         model_path = Path("models/rice_disease_model.keras")
         if not model_path.exists():
             return None
         try:
+            # Import is inside the function to avoid loading TensorFlow at module level
             from ml.inference import RiceDSSInference
             _inference_model = RiceDSSInference(str(model_path))
         except ImportError:
@@ -257,7 +291,20 @@ async def predict_image(image: UploadFile = File(...)):
     """
     ML-only prediction from an uploaded leaf image.
     Returns HTTP 503 if no trained model is available.
+
+    Flow:
+      1. Validate MIME type (reject non-image files)
+      2. Ensure ML model is loaded (lazy singleton)
+      3. Read image bytes and check file size
+      4. Run ML inference → 3-class probabilities
+      5. Feed probabilities into ml_only_logic() via run_dss()
+      6. Return DSS output + raw ML probabilities
     """
+    # Gate 1: MIME type validation (happens before reading the file body)
+    if image.content_type and image.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(status_code=422, detail=f"Unsupported image type: {image.content_type}. Use JPEG, PNG, or WebP.")
+
+    # Gate 2: Model availability (503 = service temporarily unavailable)
     model = get_inference_model()
     if model is None:
         raise HTTPException(
@@ -265,15 +312,21 @@ async def predict_image(image: UploadFile = File(...)):
             detail="ML model not available. Train first with: python -m ml.train --data_dir data/"
         )
 
+    # Gate 3: File size check (read bytes, then verify before processing)
     contents = await image.read()
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=422, detail="Image too large. Maximum size is 10 MB.")
+
+    # Run ML inference: image bytes → {blast, brown_spot, bacterial_blight} probs
     probs = model.predict_from_bytes(contents)
     if probs is None:
         raise HTTPException(status_code=422, detail="Could not process image.")
 
-    # Run ML-only DSS with the predicted probabilities
+    # Feed ML probabilities into DSS (ml-only mode — no questionnaire scoring)
     raw = {'ml_probabilities': probs}
     try:
         output = run_dss(raw, mode="ml")
+        # Attach raw ML probs to the response so the frontend can display them
         output['ml_probabilities'] = probs
         return output
     except Exception as e:
@@ -301,7 +354,22 @@ async def hybrid_image(
     """
     Full hybrid diagnosis: uploaded image + questionnaire JSON.
     Returns HTTP 503 if no trained model is available.
+
+    This endpoint uses multipart/form-data (not JSON body) because it
+    receives both a file upload AND form data in a single request.
+    The questionnaire answers are sent as a JSON string in a form field.
+
+    Flow:
+      1. Validate image (MIME type, model availability, file size)
+      2. Run ML inference → 3-class probabilities
+      3. Parse questionnaire JSON string
+      4. Inject ML probs into the answers dict
+      5. Run full hybrid DSS (questionnaire scoring + ML fusion)
     """
+    # Same validation gates as /predict-image
+    if image.content_type and image.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(status_code=422, detail=f"Unsupported image type: {image.content_type}. Use JPEG, PNG, or WebP.")
+
     model = get_inference_model()
     if model is None:
         raise HTTPException(
@@ -310,16 +378,22 @@ async def hybrid_image(
         )
 
     contents = await image.read()
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=422, detail="Image too large. Maximum size is 10 MB.")
+
     probs = model.predict_from_bytes(contents)
     if probs is None:
         raise HTTPException(status_code=422, detail="Could not process image.")
 
+    # Parse the questionnaire JSON string from the form field
     try:
         raw = json.loads(questionnaire)
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="Invalid JSON in questionnaire field.")
 
-    raw['ml_probabilities'] = probs  # inject ML predictions
+    # Inject ML predictions into the answers dict — generate_output() will
+    # pick these up in STEP 6 (Safe ML Fusion) of the decision hierarchy
+    raw['ml_probabilities'] = probs
     try:
         return run_dss(raw, mode="hybrid")
     except Exception as e:
@@ -329,6 +403,9 @@ async def hybrid_image(
 # =============================================================================
 # HEALTH CHECK
 # =============================================================================
+# Used by Docker HEALTHCHECK, load balancers, and monitoring to verify the API
+# is running. Also reports whether the ML model has been loaded — if model_loaded
+# is false, image endpoints will return 503 but questionnaire endpoints still work.
 
 @app.get(
     "/health",
@@ -337,4 +414,10 @@ async def hybrid_image(
     tags=["Utility"]
 )
 async def health_check():
-    return {"status": "ok", "service": "Rice DSS API", "version": "1.0.0"}
+    model = get_inference_model()
+    return {
+        "status": "ok",
+        "service": "Rice DSS API",
+        "version": "1.0.0",
+        "model_loaded": model is not None,  # False if .keras file missing or TF unavailable
+    }

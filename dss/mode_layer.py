@@ -42,14 +42,30 @@ ML_THRESHOLD_POSSIBLE = 0.40
 
 def ml_only_logic(raw_answers: dict) -> dict:
     """
-    ML-only mode:
-    - Uses only ML probabilities
-    - Does NOT run questionnaire scoring
-    - Cannot detect non-biotic stresses
+    ML-only mode — diagnoses from image classifier output alone.
+
+    This mode does NOT call generate_output() or run any questionnaire scoring.
+    It directly evaluates the ML probability dict using its own thresholds:
+      - >= 0.65 (ML_THRESHOLD_STRONG) → "Probable"
+      - >= 0.40 (ML_THRESHOLD_POSSIBLE) → "Possible"
+      - < 0.40 → "Uncertain" (ML confidence too low)
+
+    IMPORTANT LIMITATION: This mode cannot detect non-biotic stresses
+    (iron toxicity, N deficiency, salt toxicity) because those conditions
+    require questionnaire data about soil, water, and fertilizer history.
+    A warning is always injected to inform the user of this limitation.
+
+    Args:
+        raw_answers (dict): Must contain 'ml_probabilities' key with
+                            {blast, brown_spot, bacterial_blight} probabilities.
+
+    Returns:
+        dict: DSS output structure matching DSSResponse schema.
     """
 
     ml_probs = raw_answers.get("ml_probabilities")
 
+    # No ML probabilities provided — cannot run ML-only mode
     if not ml_probs:
         return {
             "status": "no_image",
@@ -71,9 +87,12 @@ def ml_only_logic(raw_answers: dict) -> dict:
             )
         }
 
+    # Only accept the 3 biotic disease keys — filter out anything else
+    # (e.g., 'healthy' class from the raw 4-class model, or invalid keys)
     allowed_conditions = {"blast", "brown_spot", "bacterial_blight"}
     filtered = {k: v for k, v in ml_probs.items() if k in allowed_conditions}
 
+    # No valid disease keys found in the ML output
     if not filtered:
         return {
             "status": "invalid_ml_output",
@@ -95,9 +114,11 @@ def ml_only_logic(raw_answers: dict) -> dict:
             )
         }
 
+    # Find the disease with the highest ML probability
     top_condition = max(filtered, key=filtered.get)
     top_score = filtered[top_condition]
 
+    # Apply ML-specific confidence thresholds
     if top_score >= ML_THRESHOLD_STRONG:
         confidence = "Probable — High Confidence"
     elif top_score >= ML_THRESHOLD_POSSIBLE:
@@ -145,10 +166,21 @@ def ml_only_logic(raw_answers: dict) -> dict:
 
 def questionnaire_only_logic(raw_answers: dict) -> dict:
     """
-    Questionnaire-only mode.
-    Explicitly disables ML fusion.
-    """
+    Questionnaire-only mode — diagnoses from farmer-reported answers alone.
 
+    Explicitly sets ml_probabilities to None before calling generate_output(),
+    ensuring that STEP 6 (Safe ML Fusion) in the decision hierarchy is skipped.
+    All 6 conditions (including non-biotic stresses) can be detected in this mode.
+
+    Args:
+        raw_answers (dict): Farmer answers dict. Any ml_probabilities field
+                            will be overwritten with None.
+
+    Returns:
+        dict: DSS output from generate_output() with ML fusion disabled.
+    """
+    # Force-disable ML fusion by setting probabilities to None.
+    # This ensures generate_output() skips STEP 6 entirely.
     answers_copy = raw_answers.copy()
     answers_copy["ml_probabilities"] = None
 
@@ -157,8 +189,22 @@ def questionnaire_only_logic(raw_answers: dict) -> dict:
 
 def hybrid_logic(raw_answers: dict) -> dict:
     """
-    Hybrid mode (recommended).
-    Uses full questionnaire + ML fusion logic.
+    Hybrid mode (recommended) — combines questionnaire answers with ML image analysis.
+
+    Passes the raw answers (including ml_probabilities if present) directly to
+    generate_output(), which handles the full 8-step decision hierarchy including
+    ML fusion in STEP 6. If ml_probabilities is None, STEP 6 is automatically
+    skipped and the result is effectively questionnaire-only.
+
+    This is the recommended mode because it uses all available evidence and
+    detects all 6 conditions including non-biotic stresses.
+
+    Args:
+        raw_answers (dict): Farmer answers dict, optionally including
+                            ml_probabilities from the image classifier.
+
+    Returns:
+        dict: DSS output from the full decision hierarchy.
     """
     return generate_output(raw_answers)
 

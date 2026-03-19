@@ -28,6 +28,14 @@ from pydantic import BaseModel, Field, ConfigDict
 # =============================================================================
 # REQUEST SCHEMA
 # =============================================================================
+# This schema defines ALL fields the DSS can accept. It is shared across
+# all three endpoints (/questionnaire, /ml-only, /hybrid) — the mode
+# determines which fields are actually used.
+#
+# The sections below mirror the 9-section questionnaire that farmers fill out.
+# Each section maps to specific scoring functions in dss/scoring.py.
+# For example, Section 4 (weather) feeds into the blast/brown_spot scorers
+# because those diseases are strongly influenced by humidity and rainfall.
 
 class QuestionnaireRequest(BaseModel):
     """
@@ -44,12 +52,17 @@ class QuestionnaireRequest(BaseModel):
     """
 
     # Section 1 — Growth stage
+    # Different diseases are more likely at different growth stages.
+    # e.g., blast is most common during tillering and flowering.
     growth_stage: Optional[str] = Field(
         None,
         description="One of: seedling, tillering, elongation, flowering, grain_filling"
     )
 
     # Section 2 — Symptom identification
+    # These are the primary diagnostic signals. The scoring functions in
+    # dss/scoring.py assign positive weights when symptoms match a condition's
+    # known profile. Multiple symptoms can be selected (multiselect in UI).
     symptoms: Optional[List[str]] = Field(
         None,
         description="List of observed symptoms. Valid values: dark_spots, yellowing, "
@@ -69,6 +82,8 @@ class QuestionnaireRequest(BaseModel):
     )
 
     # Section 3 — Fertilizer history
+    # Critical for detecting non-biotic stresses (N deficiency, salt toxicity).
+    # Excessive nitrogen application is a key risk factor for blast disease.
     fertilizer_applied: Optional[bool] = Field(None, description="Has fertilizer been applied?")
     fertilizer_timing: Optional[str] = None
     fertilizer_type: Optional[str] = None
@@ -116,6 +131,9 @@ class QuestionnaireRequest(BaseModel):
     )
 
     # ML input — injected when image is available
+    # This field is populated automatically by /predict-image and /hybrid-image
+    # endpoints. For direct JSON requests, the frontend injects it after
+    # calling the ML model separately. The DSS uses these in STEP 6 (fusion).
     ml_probabilities: Optional[Dict[str, float]] = Field(
         None,
         description="Softmax probabilities from ML model. "
@@ -146,31 +164,46 @@ class QuestionnaireRequest(BaseModel):
 # =============================================================================
 # RECOMMENDATION SCHEMA
 # =============================================================================
+# This mirrors the structure returned by get_recommendations() in
+# dss/recommendations.py. Each condition has its own set of advice.
 
 class RecommendationResponse(BaseModel):
     """Nested recommendations block within DSSResponse."""
-    immediate: List[str]
-    preventive: List[str]
-    monitoring: str
-    consult: bool
+    immediate: List[str]     # Urgent actions farmer should take now
+    preventive: List[str]    # Long-term prevention strategies
+    monitoring: str          # What to watch for in the coming days
+    consult: bool            # Whether to advise consulting an agronomist
 
 
 # =============================================================================
 # RESPONSE SCHEMA
 # =============================================================================
+# This is the API contract — any frontend consuming the Rice DSS API should
+# parse this structure. The field names match exactly what generate_output()
+# and ml_only_logic() return in dss/. Do not rename fields without updating
+# the DSS output builders in dss/output_builder.py.
 
 class DSSResponse(BaseModel):
     """
     Standard DSS output returned by all three endpoints.
     Structure mirrors generate_output() return value from dss/decision.py.
     """
+    # Status tells the frontend how to render the result:
+    #   - "assessed": clear diagnosis was made
+    #   - "ambiguous": two conditions are equally likely (show both)
+    #   - "uncertain": evidence too weak (suggest monitoring)
+    #   - "out_of_scope": no symptoms provided
+    #   - "no_image" / "invalid_ml_output": ML-only mode failures
     status: str = Field(
         description="assessed | ambiguous | uncertain | out_of_scope | no_image | invalid_ml_output"
     )
+    # Human-readable label includes both English and Khmer translations
+    # e.g., "ជំងឺប្លាស (Rice Blast)"
     primary_condition: Optional[str] = Field(
         None,
         description="Human-readable condition name (English + Khmer)"
     )
+    # Machine-readable key for programmatic use (e.g., "blast", "brown_spot")
     condition_key: Optional[str] = Field(
         None,
         description="Machine-readable condition identifier"
@@ -225,6 +258,9 @@ class DSSResponse(BaseModel):
 # =============================================================================
 # IMAGE PREDICTION RESPONSE SCHEMA
 # =============================================================================
+# Extends DSSResponse because /predict-image returns the standard DSS output
+# PLUS the raw ML probabilities, so the frontend can show both the diagnosis
+# and the per-class confidence bars.
 
 class ImagePredictionResponse(DSSResponse):
     """
@@ -239,20 +275,26 @@ class ImagePredictionResponse(DSSResponse):
 # =============================================================================
 # EXPLANATION RESPONSE SCHEMA
 # =============================================================================
+# The /explain endpoint provides score traceability — it shows exactly which
+# questionnaire answers (signals) contributed to each condition's score,
+# with their weights and reasons. This is essential for:
+#   - FYP defence: proving the scoring logic is scientifically grounded
+#   - Debugging: understanding why a particular diagnosis was made
+#   - Farmer transparency: showing "why this condition was detected"
 
 class SignalEntry(BaseModel):
     """A single signal that contributed to a condition's score."""
-    field: str
-    value: str
-    effect: str
-    weight: float
-    reason: str
+    field: str       # Which questionnaire field triggered this signal
+    value: str       # What the farmer answered
+    effect: str      # "+" for positive contribution, "-" for penalty
+    weight: float    # How much this signal added/subtracted from the score
+    reason: str      # Scientific rationale (e.g., "High humidity essential for blast")
 
 class ConditionExplanation(BaseModel):
     """Explanation for a single condition."""
     signals: List[SignalEntry] = Field(default_factory=list)
-    confidence_modifier: float
-    raw_total: float
+    confidence_modifier: float   # Farmer confidence multiplier (1.0, 0.85, or 0.70)
+    raw_total: float             # Sum of all signal weights before capping
     note: str = ""
 
 class ExplainResponse(BaseModel):

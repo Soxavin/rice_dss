@@ -23,6 +23,9 @@
 #   ML inference: ml/inference.py (direct import, requires TensorFlow)
 # =============================================================================
 
+# PATH SETUP: Add the project root to sys.path so we can import dss/, ml/, tests/
+# directly. This is needed because Streamlit runs this file from ui/ directory,
+# but our packages (dss, ml, tests) live one level up in rice_dss/.
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -31,11 +34,14 @@ import json
 from pathlib import Path
 import streamlit as st
 
-from dss.mode_layer import run_dss
-from dss.validation import validate_answers
-from dss.explainer import explain_scores
-from dss.logger import dss_logger
-from tests.test_dss import TEST_CASES
+# DIRECT IMPORTS — no API server needed.
+# The UI runs the DSS logic in-process by importing the same functions
+# that the API endpoints use. This makes testing faster and simpler.
+from dss.mode_layer import run_dss             # Main DSS entry point (3-mode routing)
+from dss.validation import validate_answers     # Input cleaning for explain_scores()
+from dss.explainer import explain_scores        # Score traceability / signal breakdown
+from dss.logger import dss_logger               # Session audit trail
+from tests.test_dss import TEST_CASES           # 20 validated test scenarios for sidebar loader
 
 
 # =============================================================================
@@ -71,7 +77,14 @@ st.set_page_config(
 
 # =============================================================================
 # LABEL MAPS
-# Human-readable labels for every valid value in validation.py
+# Human-readable labels for every valid value in validation.py.
+# Each map translates DSS keys (e.g., 'seedling') to bilingual display labels
+# (e.g., 'Seedling (ពន្លក)'). The Khmer translations help Cambodian users
+# understand the options in their native language.
+#
+# IMPORTANT: The keys in these maps MUST match the valid values accepted by
+# validate_answers() in dss/validation.py. If a new valid value is added there,
+# it must also be added here for the UI to display it.
 # =============================================================================
 
 GROWTH_STAGE_LABELS = {
@@ -208,8 +221,12 @@ ADDITIONAL_LABELS = {
 # =============================================================================
 # HELPER: selectbox with human-readable options
 # =============================================================================
-
-# Maps used to translate between raw DSS keys and display labels.
+# These helpers solve a common Streamlit pattern: we want to display
+# human-readable labels (with Khmer translations) in the UI, but the DSS
+# expects raw keys (like 'seedling', 'heavy_rain'). The helpers:
+#   1. Show the display labels in the widget
+#   2. Reverse-map the selected label back to the DSS key
+#   3. Return None if nothing is selected (DSS handles None safely)
 
 
 def labeled_select(label, options_dict, key, help_text=None):
@@ -217,8 +234,8 @@ def labeled_select(label, options_dict, key, help_text=None):
     Renders a selectbox with no default selection (index=None).
     Returns the raw DSS key, or None if nothing has been picked yet.
     """
-    labels = list(options_dict.values())
-    keys   = list(options_dict.keys())
+    labels = list(options_dict.values())   # Human-readable display strings
+    keys   = list(options_dict.keys())     # Raw DSS keys
 
     chosen = st.selectbox(label, labels, index=None,
                           placeholder="Select an option...",
@@ -226,6 +243,7 @@ def labeled_select(label, options_dict, key, help_text=None):
 
     if chosen is None:
         return None
+    # Reverse-map: find which DSS key corresponds to the chosen display label
     return keys[labels.index(chosen)]
 
 
@@ -501,6 +519,11 @@ EXPECTED_BADGE = {
     'uncertain':        'ℹ️ Uncertain',
 }
 
+# SIDEBAR: TEST CASE LOADER
+# This lets teammates quickly test the DSS with known validated scenarios.
+# Each test case comes from tests/test_dss.py (the same data used in pytest).
+# Loading a case pre-fills the questionnaire form with the case's answers,
+# so you can click "Run Diagnosis" and verify the expected result.
 with st.sidebar:
     st.header("🧪 Load Test Case")
 
@@ -512,7 +535,7 @@ with st.sidebar:
     else:
         st.caption("Pre-fills the form with a known validated scenario.")
 
-        # Build display names for the dropdown
+        # Build display names for the dropdown, showing case number + expected condition
         case_options = {
             f"Case {i+1:02d} — {name}  [{EXPECTED_BADGE.get(exp, exp)}]": answers
             for i, (answers, exp, name) in enumerate(TEST_CASES)
@@ -530,10 +553,11 @@ with st.sidebar:
                 preset = case_options[selected_case_label]
 
                 # --- Map from raw DSS keys → display labels for each widget ---
-                # selectbox widgets: store the display LABEL string
-                # multiselect widgets: store a LIST of display LABEL strings
-                # Streamlit reads session_state[key] as the widget's current value,
-                # so we must write in the format the widget expects.
+                # Streamlit widgets read their current value from session_state[key].
+                # For selectboxes, session_state stores the DISPLAY LABEL (string).
+                # For multiselects, it stores a LIST of display labels.
+                # So we must convert raw DSS keys (e.g., 'seedling') to their
+                # display labels (e.g., 'Seedling (ពន្លក)') before writing to state.
 
                 SELECT_FIELDS = {
                     'growth_stage':     GROWTH_STAGE_LABELS,
@@ -793,6 +817,8 @@ else:
 # =============================================================================
 
 # --- PATH A: Image Only (ML) ---
+# This path handles the simplest flow: upload image → ML prediction → display.
+# No questionnaire form is shown — the user only provides a leaf photo.
 if selected_mode == "Image Only (ML)" and ml_submitted:
     if uploaded_image is None:
         st.error("⚠️ Please upload a leaf image for ML-only diagnosis.")
@@ -845,8 +871,11 @@ if selected_mode == "Image Only (ML)" and ml_submitted:
                 st.markdown(f"- {cond}: {count}")
 
 # --- PATH B: Questionnaire Only / Hybrid ---
+# This path handles both modes that use the questionnaire form.
+# The difference is whether ML probabilities are injected (Hybrid) or not.
 elif selected_mode != "Image Only (ML)" and form_submitted:
-    # Validate: need at least one symptom
+    # Minimum input validation: at least one symptom must be reported.
+    # Without symptoms, the DSS would flag "out_of_scope" which isn't useful.
     missing = []
     if not symptoms and not additional_symptoms:
         missing.append("At least one symptom (Section 2 or Section 9)")
@@ -857,7 +886,9 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
             st.markdown(f"- {m}")
         st.stop()
 
-    # Build raw answers dict exactly as decision.py expects
+    # Build raw answers dict exactly as decision.py expects.
+    # Every key here maps to a field that validate_answers() recognizes.
+    # None values are fine — they produce neutral scoring (no positive or negative signal).
     raw_answers = {
         'growth_stage':         growth_stage,
         'symptoms':             symptoms,
@@ -882,6 +913,9 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
     }
 
     # --- ML image prediction (Hybrid mode with image) ---
+    # In Hybrid mode, if the user uploaded a leaf image, we run ML inference
+    # and inject the probabilities into raw_answers. If ML fails or model is
+    # unavailable, we gracefully fall back to questionnaire-only (no crash).
     ml_probs = None
     if selected_mode == "Hybrid (Recommended)" and uploaded_image is not None:
         model = load_ml_model()
@@ -899,7 +933,9 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
             else:
                 raw_answers['ml_probabilities'] = ml_probs
 
-    # Determine effective DSS mode
+    # Determine effective DSS mode based on whether ML probs are available.
+    # Even if the user selected "Hybrid", we run as "questionnaire" if no
+    # image was uploaded or ML inference failed — this is a graceful fallback.
     effective_mode = "hybrid" if ml_probs else "questionnaire"
     mode_label = "Hybrid (Questionnaire + ML)" if ml_probs else "Questionnaire Only"
 

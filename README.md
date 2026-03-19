@@ -1,21 +1,41 @@
 # Rice Paddy Disease Decision Support System (Rice DSS)
 
-> **Final Year Project** — Rule-based + ML hybrid decision support system for rice paddy disease identification in Cambodia.
+> **Final Year Project** — A hybrid rule-based + ML decision support system for identifying rice paddy diseases in Cambodia.
 
 ---
 
 ## Overview
 
-This system helps farmers identify rice paddy diseases from observable field symptoms using a structured questionnaire. A Machine Learning (ML) image classifier can optionally be combined with the questionnaire output using a weighted fusion model.
+Cambodian rice farmers often misidentify crop diseases due to limited access to agricultural specialists. This system helps farmers diagnose rice paddy diseases by combining two complementary approaches:
 
-**Supported conditions:**
+1. **Structured Questionnaire** — A rule-based scoring engine that evaluates farmer-reported symptoms, field conditions, soil type, fertilizer history, and weather patterns against scientifically validated disease profiles.
 
-| Type | Condition |
-|------|-----------|
-| Non-biotic | Iron Toxicity, Nitrogen Deficiency, Salt Toxicity |
-| Biotic | Bacterial Blight, Brown Spot, Blast |
-| Flagged | Sheath Blight (advisory only) |
-| Unresolved | Out of Scope, Uncertain |
+2. **ML Image Classifier** — A MobileNetV2-based CNN trained on 9,200 leaf images that classifies photos into one of 4 classes (Bacterial Blight, Blast, Brown Spot, Healthy).
+
+The system fuses both sources using a weighted hybrid model (60% questionnaire, 40% ML) and produces a diagnosis with actionable recommendations in English and Khmer.
+
+### Supported Conditions
+
+| Type | Condition | Detection Method |
+|------|-----------|-----------------|
+| Biotic (bacterial) | Bacterial Blight | Questionnaire + ML |
+| Biotic (fungal) | Blast | Questionnaire + ML |
+| Biotic (fungal) | Brown Spot | Questionnaire + ML |
+| Non-biotic | Iron Toxicity | Questionnaire only |
+| Non-biotic | Nitrogen Deficiency | Questionnaire only |
+| Non-biotic | Salt Toxicity | Questionnaire only |
+| Advisory | Sheath Blight Warning | Questionnaire flag |
+| Unresolved | Uncertain / Out of Scope | Insufficient evidence |
+
+---
+
+## Three Diagnosis Modes
+
+| Mode | Input Required | Use Case |
+|------|---------------|----------|
+| **Questionnaire Only** | Farmer answers | No camera / no leaf image available |
+| **Image Only (ML)** | Leaf photo | Quick field screening (3 biotic diseases only) |
+| **Hybrid (Recommended)** | Photo + answers | Most accurate — full scoring + ML fusion |
 
 ---
 
@@ -23,235 +43,217 @@ This system helps farmers identify rice paddy diseases from observable field sym
 
 ```
 rice_dss/
-├── dss/                    # Core DSS logic (extracted from FYP.ipynb)
-│   ├── __init__.py         # Public API exports
-│   ├── validation.py       # Input validation + confidence modifier
-│   ├── scoring.py          # All 6 scoring functions + compute_all_scores()
-│   ├── recommendations.py  # Farmer-facing action recommendations
-│   ├── output_builder.py   # Threshold constants + output formatters
-│   ├── decision.py         # generate_output() — the immutable core logic
-│   └── mode_layer.py       # run_dss() entry point (questionnaire/ml/hybrid)
+├── dss/                         Core DSS engine (FROZEN LOGIC)
+│   ├── __init__.py              Public API exports
+│   ├── validation.py            Input validation + confidence modifier
+│   ├── scoring.py               6 scoring functions (scientifically validated)
+│   ├── decision.py              8-step decision hierarchy (immutable)
+│   ├── output_builder.py        Threshold constants + output formatters
+│   ├── recommendations.py       Condition-specific treatment advice
+│   ├── mode_layer.py            run_dss() — 3-mode routing entry point
+│   ├── explainer.py             Score traceability / signal breakdown
+│   └── logger.py                JSONL audit trail for every DSS run
 │
-├── api/                    # FastAPI REST interface
+├── api/                         REST API (FastAPI)
 │   ├── __init__.py
-│   ├── schemas.py          # Pydantic request/response models
-│   └── main.py             # 3 endpoints: /questionnaire, /ml-only, /hybrid
+│   ├── main.py                  9 endpoints + CORS + image upload
+│   └── schemas.py               Pydantic v2 request/response models
 │
-├── ml/                     # ML pipeline scaffold (Phase 3)
+├── ml/                          ML Pipeline (MobileNetV2)
 │   ├── __init__.py
-│   ├── dataset.py          # TensorFlow dataset loader
-│   ├── train.py            # MobileNetV2 transfer learning trainer
-│   └── inference.py        # Inference wrapper → DSS-compatible probabilities
+│   ├── dataset.py               TF dataset loader + augmentation
+│   ├── train.py                 2-phase training pipeline
+│   ├── inference.py             4→3 class bridging for DSS integration
+│   └── evaluate.py              Classification report + confusion matrix
 │
-├── tests/                  # Test suite
+├── ui/                          Demo Interface (Streamlit)
+│   └── app.py                   3-mode testing UI with test case loader
+│
+├── tests/                       Test Suite (109 tests)
 │   ├── __init__.py
-│   ├── test_dss.py         # 20-case DSS unit tests
-│   ├── test_robustness.py  # Noise simulation + farmer input testing
-│   ├── test_api.py         # FastAPI endpoint tests
-│   └── test_ml.py          # ML pipeline tests (Phase 3)
+│   ├── test_dss.py              20 core disease cases (30 tests)
+│   ├── test_hybrid.py           Hybrid ML fusion tests (25 tests)
+│   ├── test_robustness.py       Adversarial input tests (14 tests)
+│   ├── test_api.py              API endpoint tests (14 tests)
+│   └── test_ml.py               ML pipeline tests (26 tests)
 │
-├── models/                 # Saved ML model weights (.keras files)
-├── data/                   # Training images (gitignored)
-├── run_local.py            # Local runner + sanity check script
-├── requirements.txt        # Python dependencies
-└── README.md               # This file
+├── models/                      ML Model Artifacts
+│   ├── rice_disease_model.keras Trained model (88.3% val accuracy)
+│   ├── rice_disease_model.meta.json  Class names + config
+│   └── evaluation/              Confusion matrix + classification report
+│
+├── data/                        Training images (gitignored, 9,200 images)
+├── logs/                        Runtime audit logs (gitignored)
+│
+├── docs/                        Project Documentation
+│   ├── API_GUIDE.md             Frontend integration guide (for teammates)
+│   ├── PROJECT_GUIDE.md         Detailed file-by-file documentation
+│   └── PRESENTATION.md          FYP progress presentation (14 slides)
+│
+├── Dockerfile                   Container image (python:3.12-slim + TF CPU)
+├── docker-compose.yml           API + UI services
+├── .dockerignore                Docker build exclusions
+├── .github/workflows/ci.yml    GitHub Actions CI (pytest on push/PR)
+│
+├── requirements.txt             Python dependencies
+├── run_local.py                 Local sanity check + demo script
+└── .gitignore                   Git exclusions
 ```
 
 ---
 
-## Setup
+## Documentation
 
-### 1. Create a virtual environment
+| Document | Description |
+|----------|-------------|
+| [API Guide](docs/API_GUIDE.md) | Full frontend integration guide — curl examples, JS/TS code, request/response reference, error codes |
+| [Project Guide](docs/PROJECT_GUIDE.md) | Detailed file-by-file documentation — what each file does, how they relate, data flow walkthroughs |
+| [Presentation](docs/PRESENTATION.md) | FYP progress presentation — 14 slides covering architecture, ML results, and system design |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.12
+- (Optional) TensorFlow 2.16+ for ML features
+
+### 1. Set up the environment
 
 ```bash
-cd "/Users/vin/Final Year Project/rice_dss"
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 2. Install dependencies
-
-```bash
+cd rice_dss
+python3.12 -m venv .venv312
+source .venv312/bin/activate
 pip install -r requirements.txt
+pip install tensorflow    # Required for ML features
 ```
 
-> **TensorFlow** is not included by default. Install it separately when you're ready for ML training (Phase 3):
-> ```bash
-> pip install tensorflow
-> ```
-
-### 3. Verify DSS logic
+### 2. Verify the system
 
 ```bash
+# Run the full test suite (109 tests)
+pytest tests/ -v --tb=short
+
+# Run the local sanity check
 python run_local.py
 ```
 
-This runs:
-- **Sanity check** — Case 03: Bacterial Blight (morning ooze signal)
-- **All 20 test cases** — reports PASS/FAIL
-- **Score distribution analysis** — checks for overweighted conditions
-- **Mode demonstration** — questionnaire / ml-only / hybrid
-
-Expected output: `20/20 passed` with all sanity checks green.
-
----
-
-## Running the API Server
+### 3. Start the API server
 
 ```bash
 uvicorn api.main:app --reload --port 8000
 ```
 
-Or via the local runner:
+- Swagger docs: http://localhost:8000/docs
+- Health check: http://localhost:8000/health
+
+### 4. Start the Streamlit UI
 
 ```bash
-python -c "import uvicorn; uvicorn.run('api.main:app', host='0.0.0.0', port=8000, reload=True)"
+streamlit run ui/app.py
 ```
 
-The API will be available at: [http://localhost:8000](http://localhost:8000)
+Opens at http://localhost:8501
 
-Interactive docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+### 5. Docker (alternative)
+
+```bash
+# API only
+docker compose up
+
+# API + Streamlit UI
+docker compose --profile demo up
+```
 
 ---
 
 ## API Endpoints
 
-### `POST /questionnaire`
-Runs the questionnaire-only DSS. No ML image required.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/questionnaire` | POST | Rule-based diagnosis only |
+| `/ml-only` | POST | ML probabilities only |
+| `/hybrid` | POST | Full hybrid mode (recommended) |
+| `/predict-image` | POST | Upload leaf photo for ML diagnosis |
+| `/hybrid-image` | POST | Photo + questionnaire combined |
+| `/explain` | POST | Signal-level score breakdown |
+| `/logs/summary` | GET | Aggregated run statistics |
+| `/logs/runs` | GET | Recent run history |
+| `/health` | GET | System status + model availability |
 
-**Request body:** `QuestionnaireRequest` (all symptom fields)
-
-**Response:** `DSSResponse`
-
-```json
-{
-  "condition_key": "bacterial_blight",
-  "condition_label": "Bacterial Blight",
-  "condition_label_kh": "ជំងឺ​ក្អែក​ស",
-  "score": 0.74,
-  "confidence_label": "Probable",
-  "source": "questionnaire",
-  "recommendations": { ... },
-  "warnings": []
-}
-```
+See [API_GUIDE.md](docs/API_GUIDE.md) for full integration documentation with curl examples and JS/TS code.
 
 ---
 
-### `POST /ml-only`
-Runs the ML-only mode. Returns a result based purely on image classifier probabilities.
+## ML Model
 
-**Request body:** `QuestionnaireRequest` with `ml_probabilities` populated.
+| Detail | Value |
+|--------|-------|
+| Architecture | MobileNetV2 (pretrained ImageNet, fine-tuned) |
+| Dataset | 9,200 images, 4 balanced classes (2,300 each) |
+| Training | 2-phase: frozen backbone + fine-tune top 30 layers |
+| Validation Accuracy | **88.3%** |
+| Input Size | 224 x 224 px |
 
-**Note:** Non-biotic conditions cannot be detected by ML alone. The system will return a warning if the questionnaire signals a non-biotic condition.
+### Per-Class Performance
 
----
+| Condition | Precision | Recall | F1-Score |
+|-----------|-----------|--------|----------|
+| Bacterial Blight | 81.7% | 94.1% | 87.4% |
+| Blast | 87.1% | 72.7% | 79.3% |
+| Brown Spot | 93.5% | 87.3% | 90.3% |
+| Healthy | 92.1% | 98.9% | 95.4% |
 
-### `POST /hybrid`
-Fuses questionnaire + ML probabilities using a **60/40 weighted blend**.
+### 4-to-3 Class Bridging
 
-- Questionnaire weight: **0.60** (dominant)
-- ML weight: **0.40** (supporting)
-
-Non-biotic conditions bypass the fusion and are returned directly from questionnaire logic (immutable override).
-
----
-
-## Running Tests
-
-```bash
-# DSS core logic only (fastest, no API required)
-pytest tests/test_dss.py -v
-
-# Robustness simulation (farmer input noise)
-pytest tests/test_robustness.py -v
-
-# API endpoint tests (requires FastAPI + httpx)
-pytest tests/test_api.py -v
-
-# All tests
-pytest tests/ -v
-```
-
----
-
-## ML Training (Phase 3)
-
-### Dataset structure
-
-Organise your training images in `data/` as follows:
-
-```
-data/
-├── bacterial_blight/
-│   ├── img_001.jpg
-│   └── ...
-├── brown_spot/
-│   └── ...
-└── blast/
-    └── ...
-```
-
-### Train the model
-
-```bash
-python ml/train.py --data_dir data/ --epochs 20 --batch_size 32
-```
-
-The trained model will be saved to `models/rice_disease_model.keras`.
-
-### Hyperparameters (defaults)
-
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| Architecture | MobileNetV2 | Pretrained on ImageNet |
-| Image size | 224×224 | Standard MobileNetV2 input |
-| Phase 1 epochs | 10 | Head only (base frozen) |
-| Phase 2 epochs | remaining | Fine-tune last 20 layers |
-| Batch size | 32 | Reduce if OOM on device |
-| Learning rate | 1e-4 → 1e-5 | Reduced on plateau |
-
-### Using a trained model with the API
-
-Set the `MODEL_PATH` environment variable before starting the server:
-
-```bash
-MODEL_PATH=models/rice_disease_model.keras uvicorn api.main:app --reload
-```
+The model trains on 4 classes (including healthy) for better feature learning. At inference time:
+- If healthy probability >= 60%: return uniform probabilities (DSS relies on questionnaire)
+- Otherwise: drop healthy class, renormalize 3 disease probabilities to sum to 1.0
 
 ---
 
 ## Key Design Decisions
 
-### Frozen constants (do not modify)
-| Constant | Value | Purpose |
-|----------|-------|---------|
-| `THRESHOLD_PROBABLE` | 0.65 | Minimum score to report "Probable" |
-| `THRESHOLD_POSSIBLE` | 0.40 | Minimum score to report "Possible" |
-| `QUESTIONNAIRE_WEIGHT` | 0.60 | Questionnaire share in hybrid fusion |
-| `ML_WEIGHT` | 0.40 | ML share in hybrid fusion |
+1. **Questionnaire always takes priority** — Biological reasoning from the scoring engine is the primary diagnostic signal. ML supports but never overrides.
 
-### Decision hierarchy (in priority order)
-1. Input validation
-2. Questionnaire scoring
-3. Out-of-scope / uncertain check
-4. **Non-biotic dominance** — iron toxicity, N deficiency, salt toxicity override ML
-5. **Pathognomonic lock** — morning ooze ≥ 0.60 locks to bacterial blight
-6. Strong questionnaire dominance (score ≥ 0.80) bypasses ML fusion
-7. Safe ML fusion (60/40 blend)
-8. Final biotic evaluation
+2. **Non-biotic conditions override ML** — Iron toxicity, nitrogen deficiency, and salt toxicity are undetectable from leaf images. If the questionnaire scores them highly, they take precedence regardless of ML output.
 
-### Non-biotic conditions
-Non-biotic conditions (Iron Toxicity, Nitrogen Deficiency, Salt Toxicity) are questionnaire-only. They cannot be detected by the image classifier and will always override ML output when the questionnaire signals them strongly.
+3. **Pathognomonic lock** — Morning ooze (milky bacterial exudate at leaf tips) is a near-unique marker for Bacterial Blight. If detected with a score >= 0.60, the diagnosis locks to Bacterial Blight.
+
+4. **Safe ML fusion** — Only applies when questionnaire evidence is moderate (< 0.80). Formula: `fused = 0.60 * Q + 0.40 * ML` for biotic conditions only.
+
+5. **Strong disagreement = ambiguity** — If questionnaire and ML both score >= 0.80 for *different* conditions, the system reports ambiguity rather than silently overriding either source.
 
 ---
 
-## Development Notes
+## Frozen Constants (Do Not Modify)
 
-- All PDF source references (PDF1 = CARDI rice disease handbook, PDF2 = fertilizer management guide) are preserved as inline comments in the scoring functions.
-- Khmer language annotations are preserved throughout the codebase as they appear in the original notebook.
-- The `generate_output()` function in `dss/decision.py` is treated as immutable — do not modify its decision hierarchy.
-- All scoring weights in `dss/scoring.py` are frozen. Changing them without re-running all 20 test cases risks breaking the calibration.
+| Constant | Value | Location |
+|----------|-------|----------|
+| `THRESHOLD_PROBABLE` | 0.65 | `dss/output_builder.py` |
+| `THRESHOLD_POSSIBLE` | 0.40 | `dss/output_builder.py` |
+| `THRESHOLD_AMBIGUOUS_GAP` | 0.20 | `dss/output_builder.py` |
+| `QUESTIONNAIRE_WEIGHT` | 0.60 | `dss/output_builder.py` |
+| `ML_WEIGHT` | 0.40 | `dss/output_builder.py` |
+
+---
+
+## Tests
+
+109 tests across 5 suites, all passing:
+
+```bash
+pytest tests/ -v --tb=short
+```
+
+| Suite | Count | Coverage |
+|-------|-------|----------|
+| Core DSS (20 disease cases) | 30 | All 6 conditions + edge cases |
+| Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
+| Robustness (adversarial) | 14 | Noise simulation, contradictory inputs |
+| API endpoints | 14 | All 9 endpoints + image upload |
+| ML pipeline | 26 | Dataset, inference, 4-to-3 bridge, healthy class |
 
 ---
 
