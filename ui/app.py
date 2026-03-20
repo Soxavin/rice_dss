@@ -48,6 +48,9 @@ from dss.validation import validate_answers     # Input cleaning for explain_sco
 from dss.explainer import explain_scores        # Score traceability / signal breakdown
 from dss.logger import dss_logger               # Session audit trail
 from tests.test_dss import TEST_CASES           # 20 validated test scenarios for sidebar loader
+from translations import translate_output, get_ui_labels
+from translations.core import get_label_map
+from translations.en import UI_LABELS_EN
 
 
 # =============================================================================
@@ -88,6 +91,18 @@ st.markdown("""
     .stAlert > div { border-radius: 10px; }
 </style>
 """, unsafe_allow_html=True)
+
+# =============================================================================
+# LANGUAGE TOGGLE
+# =============================================================================
+_lang_choice = st.radio(
+    "Language / ភាសា",
+    ["English", "ខ្មែរ"],
+    index=0, horizontal=True,
+    key="ui_lang"
+)
+LANG = "km" if _lang_choice == "ខ្មែរ" else "en"
+L = get_ui_labels(LANG)
 
 # =============================================================================
 # LABEL MAPS
@@ -232,6 +247,33 @@ ADDITIONAL_LABELS = {
     'none':            'None of the above (គ្មាន)',
 }
 
+# --- Build monolingual label maps based on selected language ---
+# When English is selected, shows "Seedling" instead of "Seedling (ពន្លក)".
+# When Khmer is selected, shows "ពន្លក" instead of "Seedling (ពន្លក)".
+_ALL_LABEL_MAPS = {
+    'GROWTH_STAGE':     GROWTH_STAGE_LABELS,
+    'SYMPTOM':          SYMPTOM_LABELS,
+    'LOCATION':         LOCATION_LABELS,
+    'ORIGIN':           ORIGIN_LABELS,
+    'CONFIDENCE':       CONFIDENCE_LABELS,
+    'WEATHER':          WEATHER_LABELS,
+    'WATER':            WATER_LABELS,
+    'SPREAD':           SPREAD_LABELS,
+    'TIMING':           TIMING_LABELS,
+    'ONSET':            ONSET_LABELS,
+    'PREV_DISEASE':     PREV_DISEASE_LABELS,
+    'PREV_CROP':        PREV_CROP_LABELS,
+    'SOIL_TYPE':        SOIL_TYPE_LABELS,
+    'SOIL_CRACKING':    SOIL_CRACKING_LABELS,
+    'FERTILIZER_AMOUNT':FERTILIZER_AMOUNT_LABELS,
+    'FERTILIZER_TYPE':  FERTILIZER_TYPE_LABELS,
+    'FERTILIZER_TIMING':FERTILIZER_TIMING_LABELS,
+    'ADDITIONAL':       ADDITIONAL_LABELS,
+}
+
+# Create display-ready maps (monolingual based on LANG)
+DL = {name: get_label_map(m, LANG) for name, m in _ALL_LABEL_MAPS.items()}
+
 # =============================================================================
 # HELPER: selectbox with human-readable options
 # =============================================================================
@@ -252,7 +294,7 @@ def labeled_select(label, options_dict, key, help_text=None):
     keys   = list(options_dict.keys())     # Raw DSS keys
 
     chosen = st.selectbox(label, labels, index=None,
-                          placeholder="Select an option...",
+                          placeholder=L.get('select_placeholder', 'Select an option...'),
                           key=key, help=help_text)
 
     if chosen is None:
@@ -435,8 +477,10 @@ def render_explanation(breakdown: dict, top_condition: str | None = None):
 # RESULT RENDERER
 # =============================================================================
 
-def render_result(output: dict):
+def render_result(output: dict, labels: dict = None):
     """Renders the DSS output in a clear structured format."""
+    if labels is None:
+        labels = UI_LABELS_EN
     status    = output.get('status', '')
     condition = output.get('primary_condition', '—')
     conf      = output.get('confidence_label', '')
@@ -459,32 +503,32 @@ def render_result(output: dict):
         # Fallback if Plotly is not installed
         col1, col2 = st.columns(2)
         col1.metric("Score", f"{score:.0%}")
-        col2.metric("Confidence", conf.split('(')[-1].replace(')', '') if '(' in conf else conf)
+        col2.metric("Confidence", conf)
 
     st.divider()
 
     # --- Recommendations ---
     if recs:
-        st.markdown("#### 📋 Recommendations")
+        st.markdown(f"#### 📋 {labels['result_recommendations']}")
 
         immediate = recs.get('immediate', [])
         if immediate:
-            st.markdown("**Immediate actions:**")
+            st.markdown(f"**{labels['result_immediate']}**")
             for item in immediate:
                 st.markdown(f"- {item}")
 
         preventive = recs.get('preventive', [])
         if preventive:
-            st.markdown("**Preventive measures:**")
+            st.markdown(f"**{labels['result_preventive']}**")
             for item in preventive:
                 st.markdown(f"- {item}")
 
         monitoring = recs.get('monitoring', '')
         if monitoring:
-            st.markdown(f"**Monitoring:** {monitoring}")
+            st.markdown(f"**{labels['result_monitoring']}** {monitoring}")
 
         if recs.get('consult'):
-            st.warning("🩺 Consult an agronomist or local extension officer to confirm.")
+            st.warning(f"🩺 {labels['result_consult']}")
 
     # --- Sheath blight warning ---
     if warnings:
@@ -495,7 +539,7 @@ def render_result(output: dict):
     if status == 'ambiguous':
         amb = output.get('ambiguous_between', [])
         if amb:
-            st.markdown("**Conflicting conditions:**")
+            st.markdown(f"**{labels['result_conflicting']}**")
             for a in amb:
                 st.markdown(f"- {a['condition']} — {a['score']:.0%}")
 
@@ -503,7 +547,7 @@ def render_result(output: dict):
 
     # --- Score breakdown ---
     if all_scores:
-        st.markdown("#### 📊 Score Breakdown")
+        st.markdown(f"#### 📊 {labels['result_score_breakdown']}")
         render_score_bars(all_scores)
 
     # --- Disclaimer ---
@@ -543,16 +587,17 @@ def render_ml_bars(ml_probs: dict):
 # MAIN APP
 # =============================================================================
 
-st.title("🌾 Rice Paddy Disease DSS")
-st.markdown("**Testing Interface** — Select a diagnosis mode and provide the required inputs.")
+st.title(f"🌾 {L['page_title']}")
+st.markdown(f"**{L['page_subtitle']}**")
 
 # =============================================================================
 # MODE SELECTOR
 # =============================================================================
 
+_mode_options = [L['mode_hybrid'], L['mode_image'], L['mode_questionnaire']]
 selected_mode = st.radio(
-    "Diagnosis Mode",
-    options=["Hybrid (Recommended)", "Image Only (ML)", "Questionnaire Only"],
+    L['mode_label'],
+    options=_mode_options,
     index=0,
     horizontal=True,
     help=(
@@ -561,6 +606,14 @@ selected_mode = st.radio(
         "Hybrid = both combined (most accurate)"
     )
 )
+
+# Normalise to internal keys for logic branching
+_MODE_KEY = {
+    L['mode_hybrid']:        "Hybrid (Recommended)",
+    L['mode_image']:         "Image Only (ML)",
+    L['mode_questionnaire']: "Questionnaire Only",
+}
+_internal_mode = _MODE_KEY.get(selected_mode, "Hybrid (Recommended)")
 
 MODE_CAPTIONS = {
     "Questionnaire Only": (
@@ -577,7 +630,7 @@ MODE_CAPTIONS = {
         "Detects all 6 conditions. Falls back to questionnaire-only if no image is provided."
     ),
 }
-st.caption(MODE_CAPTIONS[selected_mode])
+st.caption(MODE_CAPTIONS[_internal_mode])
 st.markdown("---")
 
 # =============================================================================
@@ -604,7 +657,7 @@ EXPECTED_BADGE = {
 with st.sidebar:
     st.header("🧪 Load Test Case")
 
-    if selected_mode == "Image Only (ML)":
+    if _internal_mode == "Image Only (ML)":
         st.caption(
             "Test cases contain questionnaire answers — switch to "
             "Questionnaire or Hybrid mode to use them."
@@ -682,6 +735,8 @@ with st.sidebar:
                 elif 'fertilizer_applied' in st.session_state:
                     del st.session_state['fertilizer_applied']
 
+                # Test cases fill all fields — switch to Detailed mode
+                st.session_state['q_depth'] = L['depth_detailed']
                 st.success("✅ Test case loaded — scroll down and click **Run Diagnosis**.")
                 st.rerun()
             else:
@@ -696,16 +751,13 @@ with st.sidebar:
 # =============================================================================
 
 uploaded_image = None
-if selected_mode in ("Image Only (ML)", "Hybrid (Recommended)"):
-    if selected_mode == "Image Only (ML)":
-        st.subheader("📷 Leaf Image")
-        st.caption("Upload a clear, close-up photo of the affected rice leaf.")
+if _internal_mode in ("Image Only (ML)", "Hybrid (Recommended)"):
+    if _internal_mode == "Image Only (ML)":
+        st.subheader(f"📷 {L['image_title']}")
+        st.caption(L['image_caption'])
     else:
-        st.subheader("0. Leaf Image (Optional)")
-        st.caption(
-            "Upload a photo of the affected leaf for ML-assisted diagnosis. "
-            "If no image is provided, the system uses questionnaire answers only."
-        )
+        st.subheader(f"0. {L['image_title']}")
+        st.caption(L['image_optional'])
 
     uploaded_image = st.file_uploader(
         "Upload a leaf image (រូបភាពស្លឹក)",
@@ -724,61 +776,97 @@ if selected_mode in ("Image Only (ML)", "Hybrid (Recommended)"):
 ml_submitted = False
 form_submitted = False
 
-if selected_mode == "Image Only (ML)":
+if _internal_mode == "Image Only (ML)":
     # --- ML Only: no questionnaire needed ---
     st.info("📋 In Image Only mode, the questionnaire is not needed. Upload a leaf image above.")
-    ml_submitted = st.button("🔍 Run ML Diagnosis", use_container_width=True, type="primary")
+    ml_submitted = st.button(f"🔍 {L['btn_run_ml']}", use_container_width=True, type="primary")
 
 else:
-    # --- Questionnaire Only / Hybrid: full questionnaire form ---
+    # --- Questionnaire depth toggle (outside form so it triggers rerun) ---
+    _depth_options = [L['depth_quick'], L['depth_detailed']]
+    q_depth = st.radio(
+        L['depth_label'],
+        _depth_options,
+        index=0, horizontal=True,
+        help="Quick mode asks ~6 essential questions. "
+             "Detailed mode includes all questions for more accurate diagnosis.",
+        key="q_depth"
+    )
+    is_detailed = q_depth == L['depth_detailed']
+
+    if not is_detailed:
+        st.caption(L['depth_quick_caption'])
+
+    # Default values for all questionnaire fields.
+    # Quick mode skips some widgets, so these ensure the variables are defined.
+    # None/[] values are safe — the DSS treats them as neutral (no signal).
+    growth_stage = None
+    symptoms = []
+    symptom_location = []
+    symptom_origin = None
+    farmer_confidence = None
+    fertilizer_applied = None
+    fertilizer_amount = None
+    fertilizer_type = None
+    fertilizer_timing = None
+    weather = None
+    water_condition = None
+    spread_pattern = None
+    symptom_timing = None
+    onset_speed = None
+    previous_disease = None
+    previous_crop = None
+    soil_type = None
+    soil_cracking = None
+    additional_symptoms = []
+
+    # --- Questionnaire form ---
     with st.form("questionnaire_form"):
 
-        # ---------------------------------------------------------------------
-        # SECTION 1 — Growth Stage
-        # ---------------------------------------------------------------------
-        st.subheader("1. Crop Growth Stage")
+        # --- ESSENTIAL QUESTIONS (always shown) ---
+        st.subheader(f"1. {L['section_growth']}")
         growth_stage = labeled_select(
-            "What stage is the rice crop currently at?",
-            GROWTH_STAGE_LABELS, key="growth_stage"
+            L['q_growth_stage'],
+            DL['GROWTH_STAGE'], key="growth_stage"
         )
 
         # ---------------------------------------------------------------------
         # SECTION 2 — Symptoms
         # ---------------------------------------------------------------------
-        st.subheader("2. Symptoms Observed")
+        st.subheader(f"2. {L['section_symptoms']}")
 
         symptoms = labeled_multiselect(
-            "What symptoms do you see? (select all that apply)",
-            SYMPTOM_LABELS, key="symptoms",
-            help_text="Select every symptom you can clearly observe on the plants."
+            L['q_symptoms'],
+            DL['SYMPTOM'], key="symptoms",
         )
 
         symptom_location = labeled_multiselect(
-            "Where on the plant are the symptoms?",
-            LOCATION_LABELS, key="symptom_location"
+            L['q_symptom_location'],
+            DL['LOCATION'], key="symptom_location"
         )
 
-        symptom_origin = labeled_select(
-            "Which leaves are showing symptoms first?",
-            ORIGIN_LABELS, key="symptom_origin"
-        )
+        if is_detailed:
+            symptom_origin = labeled_select(
+                L['q_symptom_origin'],
+                DL['ORIGIN'], key="symptom_origin"
+            )
 
         farmer_confidence = labeled_select(
-            "How sure are you about what you're seeing?",
-            CONFIDENCE_LABELS, key="farmer_confidence"
+            L['q_confidence'],
+            DL['CONFIDENCE'], key="farmer_confidence"
         )
 
         # ---------------------------------------------------------------------
         # SECTION 3 — Fertilizer
         # ---------------------------------------------------------------------
-        st.subheader("3. Fertilizer")
+        st.subheader(f"3. {L['section_fertilizer']}")
 
         _fert_preset = st.session_state.get('fertilizer_applied', None)
         _fert_index  = None if _fert_preset is None else ([True, False].index(_fert_preset) if _fert_preset in [True, False] else None)
         fertilizer_applied = st.radio(
-            "Has fertilizer been applied this season?",
+            L['q_fertilizer_applied'],
             options=[True, False],
-            format_func=lambda x: "Yes" if x else "No",
+            format_func=lambda x: L['yes'] if x else L['no'],
             index=_fert_index,
             key="fertilizer_applied"
         )
@@ -787,106 +875,89 @@ else:
         fertilizer_type      = None
         fertilizer_timing    = None
 
-        if fertilizer_applied:
+        if fertilizer_applied and is_detailed:
             fertilizer_amount = labeled_select(
-                "How much fertilizer was applied?",
-                FERTILIZER_AMOUNT_LABELS, key="fertilizer_amount"
+                L['q_fertilizer_amount'],
+                DL['FERTILIZER_AMOUNT'], key="fertilizer_amount"
             )
             fertilizer_type = labeled_select(
-                "What type of fertilizer?",
-                FERTILIZER_TYPE_LABELS, key="fertilizer_type"
+                L['q_fertilizer_type'],
+                DL['FERTILIZER_TYPE'], key="fertilizer_type"
             )
             fertilizer_timing = labeled_select(
-                "When was fertilizer last applied?",
-                FERTILIZER_TIMING_LABELS, key="fertilizer_timing"
+                L['q_fertilizer_timing'],
+                DL['FERTILIZER_TIMING'], key="fertilizer_timing"
             )
 
-        # ---------------------------------------------------------------------
-        # SECTION 4 — Weather
-        # ---------------------------------------------------------------------
-        st.subheader("4. Recent Weather")
+        # --- CONTEXT + OPTIONAL QUESTIONS (Detailed mode only) ---
+        if is_detailed:
+            st.subheader(f"4. {L['section_weather']}")
 
-        weather = labeled_select(
-            "What has the weather been like recently?",
-            WEATHER_LABELS, key="weather"
-        )
+            weather = labeled_select(
+                L['q_weather'],
+                DL['WEATHER'], key="weather"
+            )
 
-        # ---------------------------------------------------------------------
-        # SECTION 5 — Water
-        # ---------------------------------------------------------------------
-        st.subheader("5. Water / Field Conditions")
+            water_condition = labeled_select(
+                L['q_water'],
+                DL['WATER'], key="water_condition"
+            )
 
-        water_condition = labeled_select(
-            "What is the current water condition in the field?",
-            WATER_LABELS, key="water_condition"
-        )
+            spread_pattern = labeled_select(
+                L['q_spread'],
+                DL['SPREAD'], key="spread_pattern"
+            )
 
-        # ---------------------------------------------------------------------
-        # SECTION 6 — Spread
-        # ---------------------------------------------------------------------
-        st.subheader("6. Spread Pattern")
+            st.subheader(f"5. {L['section_timing']}")
 
-        spread_pattern = labeled_select(
-            "How widespread are the symptoms?",
-            SPREAD_LABELS, key="spread_pattern"
-        )
+            symptom_timing = labeled_select(
+                L['q_timing'],
+                DL['TIMING'], key="symptom_timing"
+            )
 
-        # ---------------------------------------------------------------------
-        # SECTION 7 — Timing
-        # ---------------------------------------------------------------------
-        st.subheader("7. Symptom Timing")
+            onset_speed = labeled_select(
+                L['q_onset'],
+                DL['ONSET'], key="onset_speed"
+            )
 
-        symptom_timing = labeled_select(
-            "When did symptoms first appear?",
-            TIMING_LABELS, key="symptom_timing"
-        )
+            # --- OPTIONAL: Field History & Soil (collapsible) ---
+            with st.expander(f"6. {L['section_history']}"):
+                previous_disease = labeled_select(
+                    L['q_prev_disease'],
+                    DL['PREV_DISEASE'], key="previous_disease"
+                )
 
-        onset_speed = labeled_select(
-            "How quickly did the symptoms spread?",
-            ONSET_LABELS, key="onset_speed"
-        )
+                previous_crop = labeled_select(
+                    L['q_prev_crop'],
+                    DL['PREV_CROP'], key="previous_crop"
+                )
 
-        # ---------------------------------------------------------------------
-        # SECTION 8 — History & Soil
-        # ---------------------------------------------------------------------
-        st.subheader("8. Field History & Soil")
+                soil_type = labeled_select(
+                    L['q_soil_type'],
+                    DL['SOIL_TYPE'], key="soil_type"
+                )
 
-        previous_disease = labeled_select(
-            "Has this field had disease problems before?",
-            PREV_DISEASE_LABELS, key="previous_disease"
-        )
+                soil_cracking = labeled_select(
+                    L['q_soil_cracking'],
+                    DL['SOIL_CRACKING'], key="soil_cracking"
+                )
 
-        previous_crop = labeled_select(
-            "What was grown in this field last season?",
-            PREV_CROP_LABELS, key="previous_crop"
-        )
-
-        soil_type = labeled_select(
-            "What type of soil does this field have?",
-            SOIL_TYPE_LABELS, key="soil_type"
-        )
-
-        soil_cracking = labeled_select(
-            "Does the soil crack when dry?",
-            SOIL_CRACKING_LABELS, key="soil_cracking"
-        )
-
-        # ---------------------------------------------------------------------
-        # SECTION 9 — Additional Symptoms
-        # ---------------------------------------------------------------------
-        st.subheader("9. Additional Observations")
+        # --- ADDITIONAL OBSERVATIONS (always shown — contains pathognomonic markers) ---
+        _section_num = "7" if is_detailed else "4"
+        st.subheader(f"{_section_num}. {L['section_additional']}")
 
         additional_symptoms = labeled_multiselect(
-            "Any additional symptoms? (select all that apply)",
-            ADDITIONAL_LABELS, key="additional_symptoms",
-            help_text="Morning ooze is a strong indicator of Bacterial Blight."
+            L['q_additional'],
+            DL['ADDITIONAL'], key="additional_symptoms",
+            help_text=L.get('morning_ooze_help', '')
         )
 
         # ---------------------------------------------------------------------
         # SUBMIT
         # ---------------------------------------------------------------------
         st.markdown("---")
-        form_submitted = st.form_submit_button("🔍 Run Diagnosis", use_container_width=True)
+        _btn_label = f"🔍 {L['btn_run_diagnosis']}" if is_detailed else f"🔍 {L['btn_quick_diagnosis']}"
+        form_submitted = st.form_submit_button(_btn_label, use_container_width=True)
 
 
 # =============================================================================
@@ -896,7 +967,7 @@ else:
 # --- PATH A: Image Only (ML) ---
 # This path handles the simplest flow: upload image → ML prediction → display.
 # No questionnaire form is shown — the user only provides a leaf photo.
-if selected_mode == "Image Only (ML)" and ml_submitted:
+if _internal_mode == "Image Only (ML)" and ml_submitted:
     if uploaded_image is None:
         st.error("⚠️ Please upload a leaf image for ML-only diagnosis.")
         st.stop()
@@ -925,6 +996,7 @@ if selected_mode == "Image Only (ML)" and ml_submitted:
 
         status.update(label="Running decision engine...")
         output = run_dss({'ml_probabilities': ml_probs}, mode="ml")
+        output = translate_output(output, LANG)
 
         status.update(label="Diagnosis complete!", state="complete", expanded=False)
 
@@ -932,13 +1004,13 @@ if selected_mode == "Image Only (ML)" and ml_submitted:
         st.error("Could not process image — please try a different photo.")
         st.stop()
 
-    st.markdown("## 🩺 Diagnosis Result")
-    st.info("**Mode:** Image Only (ML)")
+    st.markdown(f"## 🩺 {L['result_title']}")
+    st.info(f"**{L['result_mode']}:** {L['mode_image']}")
 
     # --- Side-by-side image + Grad-CAM ---
     render_image_comparison(image_bytes, gradcam_image)
 
-    render_result(output)
+    render_result(output, L)
 
     # ML probability bars
     render_ml_bars(ml_probs)
@@ -963,7 +1035,7 @@ if selected_mode == "Image Only (ML)" and ml_submitted:
 # --- PATH B: Questionnaire Only / Hybrid ---
 # This path handles both modes that use the questionnaire form.
 # The difference is whether ML probabilities are injected (Hybrid) or not.
-elif selected_mode != "Image Only (ML)" and form_submitted:
+elif _internal_mode != "Image Only (ML)" and form_submitted:
     # Minimum input validation: at least one symptom must be reported.
     # Without symptoms, the DSS would flag "out_of_scope" which isn't useful.
     missing = []
@@ -1009,7 +1081,7 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
 
     with st.status("Running diagnosis...", expanded=True) as status:
         # Step 1: ML prediction (Hybrid mode with image)
-        if selected_mode == "Hybrid (Recommended)" and uploaded_image is not None:
+        if _internal_mode == "Hybrid (Recommended)" and uploaded_image is not None:
             model = load_ml_model()
             if model is not None:
                 status.update(label="Analyzing leaf image with ML model...")
@@ -1027,6 +1099,7 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
 
         status.update(label="Running decision engine...")
         output = run_dss(raw_answers, mode=effective_mode)
+        output = translate_output(output, LANG)
         validated = validate_answers(raw_answers)
         breakdown = explain_scores(validated)
 
@@ -1040,21 +1113,40 @@ elif selected_mode != "Image Only (ML)" and form_submitted:
                 "fell back to questionnaire only."
             )
 
-    # --- Mode badge ---
-    st.markdown("## 🩺 Diagnosis Result")
+    # --- Mode badge + diagnostic strength ---
+    st.markdown(f"## 🩺 {L['result_title']}")
     if ml_probs:
-        st.info(f"**Mode:** {mode_label}")
+        st.info(f"**{L['result_mode']}:** {mode_label}")
     else:
-        st.caption(f"**Mode:** {mode_label}")
+        st.caption(f"**{L['result_mode']}:** {mode_label}")
+
+    # Diagnostic strength indicator — count how many fields the farmer filled
+    _field_vals = [
+        growth_stage, symptoms, symptom_location, symptom_origin,
+        farmer_confidence, fertilizer_applied, fertilizer_amount,
+        fertilizer_type, fertilizer_timing, weather, water_condition,
+        spread_pattern, symptom_timing, onset_speed, previous_disease,
+        previous_crop, soil_type, soil_cracking, additional_symptoms,
+    ]
+    _filled = sum(
+        1 for v in _field_vals
+        if v is not None and v != [] and v != ['none']
+    )
+    if _filled <= 4:
+        st.caption(f"📊 {L['strength_limited']}")
+    elif _filled <= 8:
+        st.caption(f"📊 {L['strength_moderate']}")
+    else:
+        st.caption(f"📊 {L['strength_strong']}")
 
     # --- Side-by-side image + Grad-CAM ---
     if image_bytes is not None:
         render_image_comparison(image_bytes, gradcam_image)
 
-    render_result(output)
+    render_result(output, L)
 
     # --- Explanation panel ---
-    st.markdown("#### 🔍 Why This Diagnosis?")
+    st.markdown(f"#### 🔍 {L['result_why']}")
     st.caption(
         "Shows every signal (positive and penalty) that contributed to each "
         "condition's score. The winning condition is expanded by default."

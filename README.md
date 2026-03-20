@@ -68,8 +68,14 @@ rice_dss/
 │   ├── experiment.py            Experiment tracking + comparison
 │   └── evaluate.py              Classification report + confusion matrix
 │
+├── translations/                Language Layer (post-processing)
+│   ├── __init__.py              Exports: translate_output, get_ui_labels
+│   ├── core.py                  Bilingual string parsing + translation logic
+│   ├── km.py                    Khmer translations (recommendations, warnings, UI)
+│   └── en.py                    English UI label strings
+│
 ├── ui/                          Demo Interface (Streamlit)
-│   └── app.py                   3-mode testing UI with test case loader
+│   └── app.py                   3-mode testing UI with language toggle
 │
 ├── tests/                       Test Suite (128 tests)
 │   ├── __init__.py
@@ -183,6 +189,8 @@ docker compose --profile demo up
 | `/predict-image` | POST | Upload leaf photo for ML diagnosis |
 | `/hybrid-image` | POST | Photo + questionnaire combined |
 | `/explain` | POST | Signal-level score breakdown |
+
+All DSS endpoints accept an optional `?lang=km` query parameter to return Khmer output (default: `en`).
 | `/logs/summary` | GET | Aggregated run statistics |
 | `/logs/runs` | GET | Recent run history |
 | `/health` | GET | System status + model availability |
@@ -264,6 +272,58 @@ pytest tests/ -v --tb=short
 | API endpoints | 14 | All 9 endpoints + image upload |
 | ML pipeline | 35 | Dataset, inference, 4-to-3 bridge, multi-arch, experiments |
 | Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
+
+---
+
+## Language Support
+
+The system supports **English** (default) and **Khmer (ភាសាខ្មែរ)**.
+
+- **UI**: Language toggle at the top of the Streamlit interface switches all labels, questions, and results
+- **API**: Add `?lang=km` to any DSS endpoint to get Khmer output
+- **Architecture**: Translations are a post-processing layer (`translations/`) that sits between the frozen DSS output and the response — no DSS core files are modified
+
+---
+
+## Deployment (Google Cloud Run)
+
+### Prerequisites
+
+- Google Cloud account with billing enabled (free tier covers this)
+- [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) installed
+
+### Setup
+
+```bash
+# Authenticate and set project
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+```
+
+### Deploy
+
+```bash
+cd rice_dss
+gcloud run deploy rice-dss \
+  --source . \
+  --platform managed \
+  --region asia-southeast1 \
+  --memory 1Gi \
+  --allow-unauthenticated \
+  --set-env-vars "CORS_ORIGINS=*"
+```
+
+After deployment:
+- **API URL**: `https://rice-dss-xxxxx.asia-southeast1.run.app`
+- **Swagger docs**: `https://rice-dss-xxxxx.asia-southeast1.run.app/docs`
+- **Health check**: `GET /health`
+
+### Notes
+
+- **Region**: `asia-southeast1` (Singapore) — closest to Cambodia
+- **Memory**: 1Gi — enough for TensorFlow CPU + model
+- **Cold starts**: First request after idle takes ~15-20s (TensorFlow loading). Subsequent requests are fast.
+- **CORS**: Set `CORS_ORIGINS` to your frontend domain in production (e.g., `CORS_ORIGINS=https://myapp.com`)
 
 ---
 

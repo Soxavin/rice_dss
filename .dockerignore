@@ -13,9 +13,8 @@ __pycache__/
 # Training data (large — not needed at runtime)
 data/
 
-# Model weights are volume-mounted, not baked into image
-# Uncomment below if you want to EXCLUDE them from the image:
-# models/*.keras
+# Experiment models (large, not needed at runtime)
+models/experiments/
 
 # Dev/docs files
 CONTEXT_PROMPT.md

@@ -29,7 +29,7 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.schemas import (
@@ -39,6 +39,7 @@ from dss.mode_layer import run_dss
 from dss.validation import validate_answers
 from dss.explainer import explain_scores
 from dss.logger import dss_logger
+from translations import translate_output
 
 
 # =============================================================================
@@ -116,14 +117,18 @@ def _request_to_dict(request: QuestionnaireRequest) -> dict:
     ),
     tags=["DSS Endpoints"]
 )
-async def questionnaire_endpoint(request: QuestionnaireRequest) -> dict:
+async def questionnaire_endpoint(
+    request: QuestionnaireRequest,
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
+) -> dict:
     """
     Questionnaire-only mode.
     Explicitly disables ML fusion — ml_probabilities field is ignored.
     """
     raw = _request_to_dict(request)
     try:
-        return run_dss(raw, mode="questionnaire")
+        output = run_dss(raw, mode="questionnaire")
+        return translate_output(output, lang)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -140,7 +145,10 @@ async def questionnaire_endpoint(request: QuestionnaireRequest) -> dict:
     ),
     tags=["DSS Endpoints"]
 )
-async def ml_only_endpoint(request: QuestionnaireRequest) -> dict:
+async def ml_only_endpoint(
+    request: QuestionnaireRequest,
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
+) -> dict:
     """
     ML-only mode.
     Uses ml_probabilities field exclusively.
@@ -148,7 +156,8 @@ async def ml_only_endpoint(request: QuestionnaireRequest) -> dict:
     """
     raw = _request_to_dict(request)
     try:
-        return run_dss(raw, mode="ml")
+        output = run_dss(raw, mode="ml")
+        return translate_output(output, lang)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -165,7 +174,10 @@ async def ml_only_endpoint(request: QuestionnaireRequest) -> dict:
     ),
     tags=["DSS Endpoints"]
 )
-async def hybrid_endpoint(request: QuestionnaireRequest) -> dict:
+async def hybrid_endpoint(
+    request: QuestionnaireRequest,
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
+) -> dict:
     """
     Hybrid mode (recommended).
     Runs full questionnaire scoring + ML fusion via generate_output().
@@ -173,7 +185,8 @@ async def hybrid_endpoint(request: QuestionnaireRequest) -> dict:
     """
     raw = _request_to_dict(request)
     try:
-        return run_dss(raw, mode="hybrid")
+        output = run_dss(raw, mode="hybrid")
+        return translate_output(output, lang)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -194,7 +207,10 @@ async def hybrid_endpoint(request: QuestionnaireRequest) -> dict:
     ),
     tags=["DSS Endpoints"]
 )
-async def explain_endpoint(request: QuestionnaireRequest) -> dict:
+async def explain_endpoint(
+    request: QuestionnaireRequest,
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
+) -> dict:
     """
     Explanation endpoint.
     Validates the incoming answers, then returns signal-level breakdown
@@ -204,7 +220,7 @@ async def explain_endpoint(request: QuestionnaireRequest) -> dict:
     try:
         validated = validate_answers(raw)
         breakdown = explain_scores(validated)
-        return {"explanations": breakdown}
+        return translate_output({"explanations": breakdown}, lang)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Explainer error: {str(e)}")
 
@@ -305,7 +321,10 @@ def get_inference_model():
     ),
     tags=["Image Endpoints"]
 )
-async def predict_image(image: UploadFile = File(...)):
+async def predict_image(
+    image: UploadFile = File(...),
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
+):
     """
     ML-only prediction from an uploaded leaf image.
     Returns HTTP 503 if no trained model is available.
@@ -347,6 +366,7 @@ async def predict_image(image: UploadFile = File(...)):
     raw = {'ml_probabilities': probs}
     try:
         output = run_dss(raw, mode="ml")
+        output = translate_output(output, lang)
         # Attach raw ML probs and Grad-CAM to the response
         output['ml_probabilities'] = probs
         output['gradcam_base64'] = gradcam_b64
@@ -371,7 +391,8 @@ async def hybrid_image(
     questionnaire: str = Form(
         ...,
         description="JSON string of questionnaire answers (same fields as QuestionnaireRequest)"
-    )
+    ),
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
 ):
     """
     Full hybrid diagnosis: uploaded image + questionnaire JSON.
@@ -421,6 +442,7 @@ async def hybrid_image(
     raw['ml_probabilities'] = probs
     try:
         output = run_dss(raw, mode="hybrid")
+        output = translate_output(output, lang)
         output['ml_probabilities'] = probs
         output['gradcam_base64'] = gradcam_b64
         return output

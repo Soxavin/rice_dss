@@ -20,11 +20,14 @@ COPY dss/ dss/
 COPY ml/ ml/
 COPY ui/ ui/
 COPY tests/ tests/
+COPY translations/ translations/
+COPY models/ models/
 COPY run_local.py .
 
 # Create logs directory
-RUN mkdir -p logs models
+RUN mkdir -p logs
 
-# Default: run the API server
+# Cloud Run injects PORT env var; default to 8000 for local dev
+ENV PORT=8000
 EXPOSE 8000
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]
