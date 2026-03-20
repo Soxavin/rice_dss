@@ -84,9 +84,50 @@ UI_LABELS_EN = {
     'image_caption': 'Upload a clear, close-up photo of the affected rice leaf.',
     'image_optional': 'Upload a photo of the affected leaf for ML-assisted diagnosis.',
 
+    # Tooltips (help text for ? icons)
+    'mode_help': (
+        'Hybrid = both combined (most accurate) | '
+        'Image Only = ML model only (3 biotic diseases) | '
+        'Questionnaire = rule-based only'
+    ),
+    'depth_help': (
+        'Quick mode asks ~6 essential questions. '
+        'Detailed mode includes all questions for more accurate diagnosis.'
+    ),
+    'image_upload_help': 'A clear, close-up photo of a diseased rice leaf works best.',
+
+    # Mode captions (description under mode selector)
+    'mode_caption_questionnaire': (
+        'Rule-based diagnosis from farmer-reported symptoms and field conditions. '
+        'Detects all 6 conditions including non-biotic stresses.'
+    ),
+    'mode_caption_image': (
+        'ML diagnosis from a leaf image only. Detects 3 biotic diseases '
+        '(blast, brown spot, bacterial blight). '
+        '**Cannot** detect non-biotic stresses (iron toxicity, N deficiency, salt toxicity).'
+    ),
+    'mode_caption_hybrid': (
+        'Combines questionnaire answers with ML image analysis for the most accurate diagnosis. '
+        'Detects all 6 conditions. Falls back to questionnaire-only if no image is provided.'
+    ),
+
+    # Image uploader
+    'image_upload_label': 'Upload a leaf image',
+    'image_uploaded_caption': 'Uploaded leaf image',
+
+    # ML-only mode
+    'ml_only_info': 'In Image Only mode, the questionnaire is not needed. Upload a leaf image above.',
+
+    # Explain section
+    'explain_caption': (
+        'Shows every signal (positive and penalty) that contributed to each '
+        "condition's score. The winning condition is expanded by default."
+    ),
+
     # Misc
     'yes': 'Yes',
     'no': 'No',
     'select_placeholder': 'Select an option...',
+    'multiselect_placeholder': 'Choose options',
     'morning_ooze_help': 'Morning ooze is a strong indicator of Bacterial Blight.',
 }

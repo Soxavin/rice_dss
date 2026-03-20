@@ -206,26 +206,29 @@ def get_ui_labels(lang: str = 'en') -> dict:
 
 def get_label_map(base_map: dict, lang: str = 'en') -> dict:
     """
-    Extracts monolingual values from a bilingual label map.
+    Returns bilingual labels with the selected language first.
 
-    The UI label maps use "English (ខ្មែរ)" format. This function returns
-    a new dict with the same keys but monolingual display values.
+    The UI label maps use "English (ខ្មែរ)" format. This function returns:
+      - English mode: original "English (ខ្មែរ)" format (unchanged)
+      - Khmer mode:   flipped  "ខ្មែរ (English)" format
 
     Args:
         base_map: Dict like {'seedling': 'Seedling (ពន្លក)', ...}
         lang: "en" or "km"
 
     Returns:
-        dict: Same keys, monolingual values
+        dict: Same keys, bilingual values with selected language first
     """
+    if lang == 'en':
+        return dict(base_map)
+
     result = {}
     for key, bilingual_label in base_map.items():
-        # UI labels use "English (ខ្មែរ)" format (opposite of DSS output)
         if ' (' in bilingual_label and bilingual_label.endswith(')'):
             idx = bilingual_label.rfind(' (')
             en_part = bilingual_label[:idx].strip()
             km_part = bilingual_label[idx + 2:-1].strip()
-            result[key] = km_part if lang == 'km' else en_part
+            result[key] = f"{km_part} ({en_part})"
         else:
             result[key] = bilingual_label
     return result

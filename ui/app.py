@@ -247,9 +247,9 @@ ADDITIONAL_LABELS = {
     'none':            'None of the above (គ្មាន)',
 }
 
-# --- Build monolingual label maps based on selected language ---
-# When English is selected, shows "Seedling" instead of "Seedling (ពន្លក)".
-# When Khmer is selected, shows "ពន្លក" instead of "Seedling (ពន្លក)".
+# --- Build bilingual label maps with selected language first ---
+# When English is selected, keeps original: "Seedling (ពន្លក)".
+# When Khmer is selected, flips to: "ពន្លក (Seedling)".
 _ALL_LABEL_MAPS = {
     'GROWTH_STAGE':     GROWTH_STAGE_LABELS,
     'SYMPTOM':          SYMPTOM_LABELS,
@@ -271,7 +271,7 @@ _ALL_LABEL_MAPS = {
     'ADDITIONAL':       ADDITIONAL_LABELS,
 }
 
-# Create display-ready maps (monolingual based on LANG)
+# Create display-ready maps (bilingual with selected language first)
 DL = {name: get_label_map(m, LANG) for name, m in _ALL_LABEL_MAPS.items()}
 
 # =============================================================================
@@ -311,7 +311,10 @@ def labeled_multiselect(label, options_dict, key, help_text=None):
     labels = list(options_dict.values())
     keys   = list(options_dict.keys())
 
-    selected_labels = st.multiselect(label, labels, key=key, help=help_text)
+    selected_labels = st.multiselect(
+        label, labels, key=key, help=help_text,
+        placeholder=L.get('multiselect_placeholder', 'Choose options')
+    )
     return [keys[labels.index(l)] for l in selected_labels]
 
 
@@ -600,11 +603,7 @@ selected_mode = st.radio(
     options=_mode_options,
     index=0,
     horizontal=True,
-    help=(
-        "Questionnaire = rule-based only | "
-        "Image Only = ML model only (3 biotic diseases) | "
-        "Hybrid = both combined (most accurate)"
-    )
+    help=L['mode_help']
 )
 
 # Normalise to internal keys for logic branching
@@ -615,22 +614,12 @@ _MODE_KEY = {
 }
 _internal_mode = _MODE_KEY.get(selected_mode, "Hybrid (Recommended)")
 
-MODE_CAPTIONS = {
-    "Questionnaire Only": (
-        "Rule-based diagnosis from farmer-reported symptoms and field conditions. "
-        "Detects all 6 conditions including non-biotic stresses."
-    ),
-    "Image Only (ML)": (
-        "ML diagnosis from a leaf image only. Detects 3 biotic diseases "
-        "(blast, brown spot, bacterial blight). "
-        "**Cannot** detect non-biotic stresses (iron toxicity, N deficiency, salt toxicity)."
-    ),
-    "Hybrid (Recommended)": (
-        "Combines questionnaire answers with ML image analysis for the most accurate diagnosis. "
-        "Detects all 6 conditions. Falls back to questionnaire-only if no image is provided."
-    ),
+_MODE_CAPTION_KEY = {
+    "Questionnaire Only": 'mode_caption_questionnaire',
+    "Image Only (ML)": 'mode_caption_image',
+    "Hybrid (Recommended)": 'mode_caption_hybrid',
 }
-st.caption(MODE_CAPTIONS[_internal_mode])
+st.caption(L[_MODE_CAPTION_KEY[_internal_mode]])
 st.markdown("---")
 
 # =============================================================================
@@ -690,27 +679,27 @@ with st.sidebar:
                 # display labels (e.g., 'Seedling (ពន្លក)') before writing to state.
 
                 SELECT_FIELDS = {
-                    'growth_stage':     GROWTH_STAGE_LABELS,
-                    'symptom_origin':   ORIGIN_LABELS,
-                    'farmer_confidence':CONFIDENCE_LABELS,
-                    'fertilizer_amount':FERTILIZER_AMOUNT_LABELS,
-                    'fertilizer_type':  FERTILIZER_TYPE_LABELS,
-                    'fertilizer_timing':FERTILIZER_TIMING_LABELS,
-                    'weather':          WEATHER_LABELS,
-                    'water_condition':  WATER_LABELS,
-                    'spread_pattern':   SPREAD_LABELS,
-                    'symptom_timing':   TIMING_LABELS,
-                    'onset_speed':      ONSET_LABELS,
-                    'previous_disease': PREV_DISEASE_LABELS,
-                    'previous_crop':    PREV_CROP_LABELS,
-                    'soil_type':        SOIL_TYPE_LABELS,
-                    'soil_cracking':    SOIL_CRACKING_LABELS,
+                    'growth_stage':     DL['GROWTH_STAGE'],
+                    'symptom_origin':   DL['ORIGIN'],
+                    'farmer_confidence':DL['CONFIDENCE'],
+                    'fertilizer_amount':DL['FERTILIZER_AMOUNT'],
+                    'fertilizer_type':  DL['FERTILIZER_TYPE'],
+                    'fertilizer_timing':DL['FERTILIZER_TIMING'],
+                    'weather':          DL['WEATHER'],
+                    'water_condition':  DL['WATER'],
+                    'spread_pattern':   DL['SPREAD'],
+                    'symptom_timing':   DL['TIMING'],
+                    'onset_speed':      DL['ONSET'],
+                    'previous_disease': DL['PREV_DISEASE'],
+                    'previous_crop':    DL['PREV_CROP'],
+                    'soil_type':        DL['SOIL_TYPE'],
+                    'soil_cracking':    DL['SOIL_CRACKING'],
                 }
 
                 MULTI_FIELDS = {
-                    'symptoms':             SYMPTOM_LABELS,
-                    'symptom_location':     LOCATION_LABELS,
-                    'additional_symptoms':  ADDITIONAL_LABELS,
+                    'symptoms':             DL['SYMPTOM'],
+                    'symptom_location':     DL['LOCATION'],
+                    'additional_symptoms':  DL['ADDITIONAL'],
                 }
 
                 for field, label_map in SELECT_FIELDS.items():
@@ -760,12 +749,12 @@ if _internal_mode in ("Image Only (ML)", "Hybrid (Recommended)"):
         st.caption(L['image_optional'])
 
     uploaded_image = st.file_uploader(
-        "Upload a leaf image (រូបភាពស្លឹក)",
+        L['image_upload_label'],
         type=["jpg", "jpeg", "png"],
-        help="A clear, close-up photo of a diseased rice leaf works best."
+        help=L['image_upload_help']
     )
     if uploaded_image is not None:
-        st.image(uploaded_image, caption="Uploaded leaf image", width=300)
+        st.image(uploaded_image, caption=L['image_uploaded_caption'], width=300)
 
     st.markdown("---")
 
@@ -778,7 +767,7 @@ form_submitted = False
 
 if _internal_mode == "Image Only (ML)":
     # --- ML Only: no questionnaire needed ---
-    st.info("📋 In Image Only mode, the questionnaire is not needed. Upload a leaf image above.")
+    st.info(f"📋 {L['ml_only_info']}")
     ml_submitted = st.button(f"🔍 {L['btn_run_ml']}", use_container_width=True, type="primary")
 
 else:
@@ -788,8 +777,7 @@ else:
         L['depth_label'],
         _depth_options,
         index=0, horizontal=True,
-        help="Quick mode asks ~6 essential questions. "
-             "Detailed mode includes all questions for more accurate diagnosis.",
+        help=L['depth_help'],
         key="q_depth"
     )
     is_detailed = q_depth == L['depth_detailed']
@@ -1106,7 +1094,7 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
         status.update(label="Diagnosis complete!", state="complete", expanded=False)
 
     # Show warnings outside status block so they remain visible
-    if selected_mode == "Hybrid (Recommended)" and uploaded_image is not None:
+    if _internal_mode == "Hybrid (Recommended)" and uploaded_image is not None:
         if ml_probs is None:
             st.warning(
                 "ML model not available or could not process image — "
@@ -1147,10 +1135,7 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
 
     # --- Explanation panel ---
     st.markdown(f"#### 🔍 {L['result_why']}")
-    st.caption(
-        "Shows every signal (positive and penalty) that contributed to each "
-        "condition's score. The winning condition is expanded by default."
-    )
+    st.caption(L['explain_caption'])
     render_explanation(breakdown, top_condition=output.get('condition_key'))
 
     # --- ML probabilities (if available) ---
