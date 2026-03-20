@@ -11,7 +11,10 @@
 
 import copy
 from translations.km import RECOMMENDATIONS_KM, WARNINGS_KM, UI_LABELS_KM
-from translations.en import UI_LABELS_EN
+from translations.en import (
+    UI_LABELS_EN, RECOMMENDATIONS_EN_REPLACEMENTS,
+    RECOMMENDATIONS_EN_MONITORING, RECOMMENDATIONS_EN_EXTRAS,
+)
 
 
 SUPPORTED_LANGS = ('en', 'km')
@@ -80,15 +83,42 @@ def _translate_disclaimer(disclaimer: str, lang: str) -> str:
 
 def _translate_recommendations(recommendations: dict, condition_key: str,
                                 lang: str) -> dict:
-    """Replaces English recommendations with Khmer when lang='km'."""
-    if lang != 'km' or not recommendations:
+    """Refines recommendation text for the selected language.
+
+    - English: applies string replacements to the frozen DSS output,
+      preserving all dynamic personalization (soil-specific rates,
+      flowering urgency, etc.).
+    - Khmer: replaces with the full static RECOMMENDATIONS_KM dict.
+    """
+    if not recommendations:
         return recommendations
 
-    km_recs = RECOMMENDATIONS_KM.get(condition_key)
-    if km_recs:
-        return km_recs
+    if lang == 'km':
+        km_recs = RECOMMENDATIONS_KM.get(condition_key)
+        if km_recs:
+            return km_recs
+        return recommendations
 
-    return recommendations
+    # English: apply wording improvements while preserving personalization
+    result = copy.deepcopy(recommendations)
+
+    for key in ('immediate', 'preventive'):
+        items = result.get(key, [])
+        result[key] = [
+            RECOMMENDATIONS_EN_REPLACEMENTS.get(item, item) for item in items
+        ]
+
+    mon = result.get('monitoring', '')
+    result['monitoring'] = RECOMMENDATIONS_EN_MONITORING.get(mon, mon)
+
+    # Append condition-specific extras (e.g., "no chemical cure" for BB)
+    extras = RECOMMENDATIONS_EN_EXTRAS.get(condition_key, {})
+    for key in ('immediate', 'preventive'):
+        extra_items = extras.get(key, [])
+        if extra_items:
+            result[key] = result.get(key, []) + extra_items
+
+    return result
 
 
 def _translate_warnings(warnings: list, lang: str) -> list:

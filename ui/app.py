@@ -519,13 +519,24 @@ def render_result(output: dict, labels: dict = None):
     elif status in ('uncertain', 'out_of_scope'):
         st.info(f"### ℹ️ {condition}")
 
-    # --- Score + confidence gauge ---
+    # --- Non-biotic condition note ---
     condition_key = output.get('condition_key', '')
+    if condition_key in ('iron_toxicity', 'n_deficiency', 'salt_toxicity'):
+        nonbiotic_msg = labels.get('nonbiotic_note', '')
+        if nonbiotic_msg:
+            st.info(f"ℹ️ {nonbiotic_msg}")
+
+    # --- Score + confidence gauge ---
     if not render_gauge(score, condition_key, conf, labels):
         # Fallback if Plotly is not installed
         col1, col2 = st.columns(2)
         col1.metric(labels.get('result_score', 'Score'), f"{score:.0%}")
         col2.metric(labels.get('result_confidence', 'Confidence'), conf)
+
+    # --- Confidence caveat ---
+    confidence_caveat = labels.get('confidence_caveat', '')
+    if confidence_caveat:
+        st.caption(confidence_caveat)
 
     st.divider()
 

@@ -72,7 +72,7 @@ rice_dss/
 │   ├── __init__.py              Exports: translate_output, get_ui_labels
 │   ├── core.py                  Bilingual string parsing + translation logic
 │   ├── km.py                    Khmer translations (recommendations, warnings, UI)
-│   └── en.py                    English UI label strings
+│   └── en.py                    English UI labels + recommendation refinements
 │
 ├── ui/                          Demo Interface (Streamlit)
 │   └── app.py                   3-mode testing UI with language toggle
@@ -282,6 +282,8 @@ The system supports **English** (default) and **Khmer (ភាសាខ្មែ�
 - **UI**: Language toggle at the top of the Streamlit interface switches all labels, questions, and results
 - **API**: Add `?lang=km` to any DSS endpoint to get Khmer output
 - **Architecture**: Translations are a post-processing layer (`translations/`) that sits between the frozen DSS output and the response — no DSS core files are modified
+- **Recommendations**: Refined for clarity, safety (label-based chemical guidance, banned chemicals removed), and real-world farmer usability. Both languages match in decision intent while using natural phrasing for each language
+- **Trust messaging**: Non-biotic conditions (iron toxicity, N deficiency, salt toxicity) display an explicit note that pesticides are not effective. Confidence scores include a caveat about evidence strength
 
 ---
 
