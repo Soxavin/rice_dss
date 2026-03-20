@@ -124,6 +124,42 @@ UI_LABELS_EN = {
         "condition's score. The winning condition is expanded by default."
     ),
 
+    # Score / Confidence (result section)
+    'result_score': 'Score',
+    'result_confidence': 'Confidence',
+    'gauge_possible': 'Possible',
+    'gauge_probable': 'Probable',
+    'gauge_confidence': 'Confidence',
+
+    # ML prediction section
+    'ml_title': 'ML Model Prediction',
+    'ml_caption': 'Probabilities from the image classification model (3 biotic diseases).',
+
+    # Condition display names (score bars, ML bars, explanation)
+    'cond_blast': 'Blast',
+    'cond_brown_spot': 'Brown Spot',
+    'cond_bacterial_blight': 'Bacterial Blight',
+    'cond_iron_toxicity': 'Iron Toxicity',
+    'cond_n_deficiency': 'Nitrogen Deficiency',
+    'cond_salt_toxicity': 'Salt Toxicity',
+    'cond_ambiguous': 'Ambiguous',
+    'cond_uncertain': 'Uncertain',
+
+    # Explanation section
+    'explain_confidence_modifier': 'Confidence modifier',
+    'explain_farmer_said': 'farmer said',
+    'explain_winner': 'winner',
+    'explain_no_signals': 'No signals activated for this condition.',
+
+    # Sidebar test cases
+    'sidebar_test_header': 'Load Test Case',
+    'sidebar_test_caption': 'Pre-fills the form with a known validated scenario.',
+    'sidebar_test_ml_caption': (
+        'Test cases contain questionnaire answers — switch to '
+        'Questionnaire or Hybrid mode to use them.'
+    ),
+    'sidebar_choose_test': 'Choose a test case',
+
     # Misc
     'yes': 'Yes',
     'no': 'No',

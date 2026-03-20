@@ -331,13 +331,20 @@ CONDITION_COLORS = {
     'salt_toxicity':    '#2980b9',
 }
 
-def render_score_bars(all_scores: dict):
+def _cond_name(key: str, labels: dict) -> str:
+    """Returns the translated condition display name."""
+    return labels.get(f'cond_{key}', key.replace('_', ' ').title())
+
+
+def render_score_bars(all_scores: dict, labels: dict = None):
     """Renders a horizontal score bar for each condition."""
+    if labels is None:
+        labels = UI_LABELS_EN
     sorted_scores = sorted(all_scores.items(), key=lambda x: x[1], reverse=True)
     for condition, score in sorted_scores:
         pct = int(score * 100)
         color = CONDITION_COLORS.get(condition, '#95a5a6')
-        label = condition.replace('_', ' ').title()
+        label = _cond_name(condition, labels)
         st.markdown(
             f"""
             <div style="margin-bottom:6px;">
@@ -358,8 +365,11 @@ def render_score_bars(all_scores: dict):
 # CONFIDENCE GAUGE (Plotly)
 # =============================================================================
 
-def render_gauge(score: float, condition_key: str, confidence_label: str):
+def render_gauge(score: float, condition_key: str, confidence_label: str,
+                 labels: dict = None):
     """Renders a Plotly gauge chart showing the DSS confidence score."""
+    if labels is None:
+        labels = UI_LABELS_EN
     if not PLOTLY_AVAILABLE:
         return False  # caller falls back to st.metric
 
@@ -385,14 +395,16 @@ def render_gauge(score: float, condition_key: str, confidence_label: str):
         height=220,
         margin=dict(l=30, r=30, t=40, b=10),
         annotations=[
-            dict(text="Possible", x=0.22, y=0.0, showarrow=False,
+            dict(text=labels.get('gauge_possible', 'Possible'),
+                 x=0.22, y=0.0, showarrow=False,
                  font=dict(size=10, color='#999')),
-            dict(text="Probable", x=0.78, y=0.0, showarrow=False,
+            dict(text=labels.get('gauge_probable', 'Probable'),
+                 x=0.78, y=0.0, showarrow=False,
                  font=dict(size=10, color='#999')),
         ]
     )
     st.plotly_chart(fig, use_container_width=True)
-    st.caption(f"**Confidence:** {confidence_label}")
+    st.caption(f"**{labels.get('gauge_confidence', 'Confidence')}:** {confidence_label}")
     return True
 
 
@@ -418,26 +430,30 @@ def render_image_comparison(image_bytes, gradcam_image):
 # EXPLANATION RENDERER
 # =============================================================================
 
-CONDITION_DISPLAY = {
-    'iron_toxicity':    '🟣 Iron Toxicity',
-    'n_deficiency':     '🟢 Nitrogen Deficiency',
-    'salt_toxicity':    '🔵 Salt Toxicity',
-    'bacterial_blight': '🔴 Bacterial Blight',
-    'brown_spot':       '🟠 Brown Spot',
-    'blast':            '🔴 Blast',
+CONDITION_EMOJI = {
+    'iron_toxicity':    '🟣',
+    'n_deficiency':     '🟢',
+    'salt_toxicity':    '🔵',
+    'bacterial_blight': '🔴',
+    'brown_spot':       '🟠',
+    'blast':            '🔴',
 }
 
 
-def render_explanation(breakdown: dict, top_condition: str | None = None):
+def render_explanation(breakdown: dict, top_condition: str | None = None,
+                       labels: dict = None):
     """
     Renders the explain_scores() breakdown as a readable panel.
     Highlights the winning condition and shows all signals.
     """
+    if labels is None:
+        labels = UI_LABELS_EN
     conf_mod = breakdown.get('confidence_modifier', '—')
     conf_src = breakdown.get('confidence_source', '—')
     st.markdown(
-        f"**Confidence modifier:** `{conf_mod}` "
-        f"(farmer said: `{conf_src}`)"
+        f"**{labels.get('explain_confidence_modifier', 'Confidence modifier')}:** "
+        f"`{conf_mod}` "
+        f"({labels.get('explain_farmer_said', 'farmer said')}: `{conf_src}`)"
     )
 
     # Show the top condition first, then the rest
@@ -449,6 +465,7 @@ def render_explanation(breakdown: dict, top_condition: str | None = None):
         conditions.remove(top_condition)
         conditions.insert(0, top_condition)
 
+    winner_text = labels.get('explain_winner', 'winner')
     for cond in conditions:
         info = breakdown.get(cond)
         if not info or not isinstance(info, dict):
@@ -456,13 +473,15 @@ def render_explanation(breakdown: dict, top_condition: str | None = None):
 
         signals = info.get('signals', [])
         raw_total = info.get('raw_total', 0)
-        display = CONDITION_DISPLAY.get(cond, cond)
-        marker = " ← **winner**" if cond == top_condition else ""
+        emoji = CONDITION_EMOJI.get(cond, '')
+        display = f"{emoji} {_cond_name(cond, labels)}"
+        marker = f" ← **{winner_text}**" if cond == top_condition else ""
 
         with st.expander(f"{display}  (raw: {raw_total:+.2f}){marker}",
                          expanded=(cond == top_condition)):
             if not signals:
-                st.caption("No signals activated for this condition.")
+                st.caption(labels.get('explain_no_signals',
+                           "No signals activated for this condition."))
                 continue
 
             for s in signals:
@@ -502,11 +521,11 @@ def render_result(output: dict, labels: dict = None):
 
     # --- Score + confidence gauge ---
     condition_key = output.get('condition_key', '')
-    if not render_gauge(score, condition_key, conf):
+    if not render_gauge(score, condition_key, conf, labels):
         # Fallback if Plotly is not installed
         col1, col2 = st.columns(2)
-        col1.metric("Score", f"{score:.0%}")
-        col2.metric("Confidence", conf)
+        col1.metric(labels.get('result_score', 'Score'), f"{score:.0%}")
+        col2.metric(labels.get('result_confidence', 'Confidence'), conf)
 
     st.divider()
 
@@ -551,7 +570,7 @@ def render_result(output: dict, labels: dict = None):
     # --- Score breakdown ---
     if all_scores:
         st.markdown(f"#### 📊 {labels['result_score_breakdown']}")
-        render_score_bars(all_scores)
+        render_score_bars(all_scores, labels)
 
     # --- Disclaimer ---
     st.caption(output.get('disclaimer', ''))
@@ -561,15 +580,18 @@ def render_result(output: dict, labels: dict = None):
 # ML PROBABILITY BAR RENDERER
 # =============================================================================
 
-def render_ml_bars(ml_probs: dict):
+def render_ml_bars(ml_probs: dict, labels: dict = None):
     """Renders ML prediction probability bars for the 3 biotic diseases."""
-    st.markdown("#### 🤖 ML Model Prediction")
-    st.caption("Probabilities from the image classification model (3 biotic diseases).")
+    if labels is None:
+        labels = UI_LABELS_EN
+    st.markdown(f"#### 🤖 {labels.get('ml_title', 'ML Model Prediction')}")
+    st.caption(labels.get('ml_caption',
+               'Probabilities from the image classification model (3 biotic diseases).'))
     ml_sorted = sorted(ml_probs.items(), key=lambda x: x[1], reverse=True)
     for cond, prob in ml_sorted:
         pct = int(prob * 100)
         color = CONDITION_COLORS.get(cond, '#95a5a6')
-        label = cond.replace('_', ' ').title()
+        label = _cond_name(cond, labels)
         st.markdown(
             f"""
             <div style="margin-bottom:6px;">
@@ -627,16 +649,16 @@ st.markdown("---")
 # =============================================================================
 
 # Expected condition labels for the sidebar badge
-EXPECTED_BADGE = {
-    'blast':            '🔴 Blast',
-    'brown_spot':       '🟠 Brown Spot',
-    'bacterial_blight': '🔴 Bacterial Blight',
-    'iron_toxicity':    '🟣 Iron Toxicity',
-    'n_deficiency':     '🟢 N Deficiency',
-    'salt_toxicity':    '🔵 Salt Toxicity',
-    'ambiguous_fungal': '⚠️ Ambiguous',
-    'uncertain':        'ℹ️ Uncertain',
-}
+def _expected_badge(key: str) -> str:
+    """Returns emoji + translated condition name for sidebar test case badges."""
+    emoji_map = {
+        'blast': '🔴', 'brown_spot': '🟠', 'bacterial_blight': '🔴',
+        'iron_toxicity': '🟣', 'n_deficiency': '🟢', 'salt_toxicity': '🔵',
+        'ambiguous_fungal': '⚠️', 'uncertain': 'ℹ️',
+    }
+    emoji = emoji_map.get(key, '')
+    name = _cond_name(key, L)
+    return f"{emoji} {name}"
 
 # SIDEBAR: TEST CASE LOADER
 # This lets teammates quickly test the DSS with known validated scenarios.
@@ -644,24 +666,21 @@ EXPECTED_BADGE = {
 # Loading a case pre-fills the questionnaire form with the case's answers,
 # so you can click "Run Diagnosis" and verify the expected result.
 with st.sidebar:
-    st.header("🧪 Load Test Case")
+    st.header(f"🧪 {L['sidebar_test_header']}")
 
     if _internal_mode == "Image Only (ML)":
-        st.caption(
-            "Test cases contain questionnaire answers — switch to "
-            "Questionnaire or Hybrid mode to use them."
-        )
+        st.caption(L['sidebar_test_ml_caption'])
     else:
-        st.caption("Pre-fills the form with a known validated scenario.")
+        st.caption(L['sidebar_test_caption'])
 
         # Build display names for the dropdown, showing case number + expected condition
         case_options = {
-            f"Case {i+1:02d} — {name}  [{EXPECTED_BADGE.get(exp, exp)}]": answers
+            f"Case {i+1:02d} — {name}  [{_expected_badge(exp)}]": answers
             for i, (answers, exp, name) in enumerate(TEST_CASES)
         }
 
         selected_case_label = st.selectbox(
-            "Choose a test case",
+            L['sidebar_choose_test'],
             options=["— none —"] + list(case_options.keys()),
             index=0,
             key="case_selector"
@@ -1001,7 +1020,7 @@ if _internal_mode == "Image Only (ML)" and ml_submitted:
     render_result(output, L)
 
     # ML probability bars
-    render_ml_bars(ml_probs)
+    render_ml_bars(ml_probs, L)
 
     # Debug + session log in sidebar
     with st.sidebar:
@@ -1136,11 +1155,12 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
     # --- Explanation panel ---
     st.markdown(f"#### 🔍 {L['result_why']}")
     st.caption(L['explain_caption'])
-    render_explanation(breakdown, top_condition=output.get('condition_key'))
+    render_explanation(breakdown, top_condition=output.get('condition_key'),
+                       labels=L)
 
     # --- ML probabilities (if available) ---
     if ml_probs:
-        render_ml_bars(ml_probs)
+        render_ml_bars(ml_probs, L)
 
     # --- Debug + session log in sidebar ---
     with st.sidebar:

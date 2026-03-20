@@ -16,6 +16,16 @@ from translations.en import UI_LABELS_EN
 
 SUPPORTED_LANGS = ('en', 'km')
 
+# Fallback map for English-only confidence labels (from ML-only mode in mode_layer.py)
+# These don't follow the bilingual "ខ្មែរ (English)" pattern so split_bilingual() can't parse them.
+_CONFIDENCE_KM = {
+    'Probable — High Confidence': 'ប្រហែលជា — ទំនុកចិត្តខ្ពស់',
+    'Probable — Medium Confidence': 'ប្រហែលជា — ទំនុកចិត្តមធ្យម',
+    'Possible — Moderate Confidence': 'អាចជា — ទំនុកចិត្តមធ្យម',
+    'Possible — Monitor Closely': 'អាចជា',
+    'Uncertain — Further Assessment Needed': 'មិនច្បាស់ — ពិនិត្យបន្ថែម',
+}
+
 
 def split_bilingual(label: str) -> tuple:
     """
@@ -144,10 +154,14 @@ def translate_output(output: dict, lang: str = 'en') -> dict:
         km, en = split_bilingual(result['primary_condition'])
         result['primary_condition'] = km if lang == 'km' else en
 
-    # confidence_label: same bilingual pattern
+    # confidence_label: bilingual "ខ្មែរ (English)" or English-only from ML mode
     if result.get('confidence_label'):
         km, en = split_bilingual(result['confidence_label'])
-        result['confidence_label'] = km if lang == 'km' else en
+        if km == en and lang == 'km':
+            # English-only label (from ML mode) — use fallback lookup
+            result['confidence_label'] = _CONFIDENCE_KM.get(km, km)
+        else:
+            result['confidence_label'] = km if lang == 'km' else en
 
     # disclaimer
     if result.get('disclaimer'):
