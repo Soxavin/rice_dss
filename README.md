@@ -75,16 +75,17 @@ rice_dss/
 │   └── en.py                    English UI labels + recommendation refinements
 │
 ├── ui/                          Demo Interface (Streamlit)
-│   └── app.py                   3-mode testing UI with language toggle
+│   └── app.py                   3-mode testing UI with Quick/Detailed questionnaire + language toggle
 │
-├── tests/                       Test Suite (128 tests)
+├── tests/                       Test Suite (142 tests)
 │   ├── __init__.py
 │   ├── test_dss.py              20 core disease cases (30 tests)
 │   ├── test_hybrid.py           Hybrid ML fusion tests (25 tests)
 │   ├── test_robustness.py       Adversarial input tests (14 tests)
 │   ├── test_api.py              API endpoint tests (14 tests)
 │   ├── test_ml.py               ML pipeline tests (35 tests)
-│   └── test_gradcam.py          Grad-CAM explainability tests (10 tests)
+│   ├── test_gradcam.py          Grad-CAM explainability tests (10 tests)
+│   └── test_secondary.py        Secondary conditions tests (12 tests)
 │
 ├── models/                      ML Model Artifacts
 │   ├── rice_disease_model.keras Trained model (91.85% val accuracy)
@@ -92,7 +93,7 @@ rice_dss/
 │   ├── evaluation/              Confusion matrix + classification report
 │   └── experiments/             Experiment snapshots for comparison
 │
-├── data/                        Training images (gitignored, 9,200 images)
+├── data/                        Training images (gitignored, see Dataset section)
 ├── logs/                        Runtime audit logs (gitignored)
 │
 ├── docs/                        Project Documentation
@@ -143,7 +144,7 @@ pip install tensorflow    # Required for ML features
 ### 2. Verify the system
 
 ```bash
-# Run the full test suite (109 tests)
+# Run the full test suite (142 tests)
 pytest tests/ -v --tb=short
 
 # Run the local sanity check
@@ -242,6 +243,10 @@ The model trains on 4 classes (including healthy) for better feature learning. A
 
 5. **Strong disagreement = ambiguity** — If questionnaire and ML both score >= 0.80 for *different* conditions, the system reports ambiguity rather than silently overriding either source.
 
+6. **Secondary conditions** — When other conditions score above the monitoring threshold (>= 0.40), they are surfaced alongside the primary diagnosis in an "Also Consider" section. This catches clinically relevant co-occurrences (e.g., Brown Spot + Nitrogen Deficiency).
+
+7. **Smart questionnaire** — The UI offers Quick mode (~6 key questions) and Detailed mode (all fields + progressive disclosure). The backend handles missing fields gracefully, so Quick mode works without loss of safety.
+
 ---
 
 ## Frozen Constants (Do Not Modify)
@@ -258,7 +263,7 @@ The model trains on 4 classes (including healthy) for better feature learning. A
 
 ## Tests
 
-128 tests across 6 suites, all passing:
+142 tests across 7 suites, all passing (some may be skipped depending on optional TF/Plotly dependencies):
 
 ```bash
 pytest tests/ -v --tb=short
@@ -272,6 +277,7 @@ pytest tests/ -v --tb=short
 | API endpoints | 14 | All 9 endpoints + image upload |
 | ML pipeline | 35 | Dataset, inference, 4-to-3 bridge, multi-arch, experiments |
 | Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
+| Secondary conditions | 12 | Extraction, translation, special outputs, full pipeline |
 
 ---
 
@@ -284,6 +290,34 @@ The system supports **English** (default) and **Khmer (ភាសាខ្មែ�
 - **Architecture**: Translations are a post-processing layer (`translations/`) that sits between the frozen DSS output and the response — no DSS core files are modified
 - **Recommendations**: Refined for clarity, safety (label-based chemical guidance, banned chemicals removed), and real-world farmer usability. Both languages match in decision intent while using natural phrasing for each language
 - **Trust messaging**: Non-biotic conditions (iron toxicity, N deficiency, salt toxicity) display an explicit note that pesticides are not effective. Confidence scores include a caveat about evidence strength
+- **Guided specificity**: Soil-specific fertilizer rates from research are presented with "approximately" framing and a disclaimer encouraging farmers to adjust for their field conditions
+
+---
+
+## Dataset
+
+The training dataset contains **9,200 leaf images** across 4 balanced classes (2,300 each): Bacterial Blight, Blast, Brown Spot, and Healthy. It was manually curated by the team from publicly available online datasets.
+
+The dataset is **not included in the repository** (`data/` is gitignored) because it is too large for version control. The trained model (`models/rice_disease_model.keras`) is committed, so the dataset is **only needed if you want to retrain the model**.
+
+### Setting up the dataset for training
+
+1. Obtain the dataset from a team member
+2. Place the images in the `data/` directory with this structure:
+
+```
+data/
+├── bacterial_blight/   (2,300 images)
+├── blast/              (2,300 images)
+├── brown_spot/         (2,300 images)
+└── healthy/            (2,300 images)
+```
+
+3. Train the model:
+
+```bash
+python -m ml.train --data_dir data/ --backbone efficientnetv2b0 --head_units 256 --epochs 30
+```
 
 ---
 

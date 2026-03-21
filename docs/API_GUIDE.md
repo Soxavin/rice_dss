@@ -89,6 +89,13 @@ curl -X POST http://localhost:8000/questionnaire \
     "monitoring": "Check field daily for 5-7 days...",
     "consult": false
   },
+  "secondary_conditions": [
+    {
+      "condition": "Brown Spot",
+      "condition_key": "brown_spot",
+      "score": 0.421
+    }
+  ],
   "secondary_note": null,
   "warnings": [],
   "disclaimer": "This is a decision support tool...",
@@ -247,6 +254,7 @@ Every DSS endpoint returns this structure:
 | `score` | float | Primary condition score (0.0–1.0) |
 | `all_scores` | object | All 6 condition scores |
 | `recommendations` | object | `{immediate, preventive, monitoring, consult}` |
+| `secondary_conditions` | array | Other conditions scoring >= 0.40 (empty `[]` if none). Each entry: `{condition, condition_key, score}` |
 | `secondary_note` | string\|null | Note about close runner-up condition |
 | `warnings` | string[] | System warnings (e.g., "non-biotic not detected in ML-only mode") |
 | `disclaimer` | string | Standard disclaimer text |
