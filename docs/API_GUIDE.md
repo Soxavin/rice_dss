@@ -162,7 +162,7 @@ curl -X POST http://localhost:8000/predict-image \
   -F "image=@leaf_photo.jpg"
 ```
 
-**Response** (extends standard DSS response with `ml_probabilities`):
+**Response** (extends standard DSS response with `ml_probabilities` and `gradcam_base64`):
 ```json
 {
   "status": "assessed",
@@ -173,6 +173,7 @@ curl -X POST http://localhost:8000/predict-image \
     "brown_spot": 0.11,
     "bacterial_blight": 0.07
   },
+  "gradcam_base64": "iVBORw0KGgo...",
   "mode_used": "ML Only",
   "warnings": ["ML-only mode: non-biotic nutrient stresses cannot be detected..."],
   "..."
@@ -265,6 +266,13 @@ Every DSS endpoint returns this structure:
 | `warnings` | string[] | System warnings (e.g., "non-biotic not detected in ML-only mode") |
 | `disclaimer` | string | Standard disclaimer text |
 | `mode_used` | string | `Questionnaire Only`, `ML Only`, `Hybrid (Recommended)` |
+
+**Image endpoint responses** (`/predict-image`, `/hybrid-image`) also include:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ml_probabilities` | object | Raw 3-class ML model probabilities |
+| `gradcam_base64` | string\|null | Base64-encoded PNG of the Grad-CAM heatmap overlay (null if generation failed) |
 
 ---
 

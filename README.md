@@ -56,7 +56,7 @@ rice_dss/
 │
 ├── api/                         REST API (FastAPI)
 │   ├── __init__.py
-│   ├── main.py                  9 endpoints + CORS + image upload
+│   ├── main.py                  10 endpoints + CORS + image upload
 │   └── schemas.py               Pydantic v2 request/response models
 │
 ├── ml/                          ML Pipeline (EfficientNetV2B0)
@@ -85,7 +85,7 @@ rice_dss/
 │   ├── test_api.py              API endpoint tests (14 tests)
 │   ├── test_ml.py               ML pipeline tests (35 tests)
 │   ├── test_gradcam.py          Grad-CAM explainability tests (10 tests)
-│   └── test_secondary.py        Secondary conditions tests (12 tests)
+│   └── test_secondary.py        Secondary conditions tests (14 tests)
 │
 ├── models/                      ML Model Artifacts
 │   ├── rice_disease_model.keras Trained model (91.85% val accuracy)
@@ -191,11 +191,11 @@ docker compose --profile demo up
 | `/predict-image` | POST | Upload leaf photo for ML diagnosis |
 | `/hybrid-image` | POST | Photo + questionnaire combined |
 | `/explain` | POST | Signal-level score breakdown |
-
-All DSS endpoints accept an optional `?lang=km` query parameter to return Khmer output (default: `en`).
 | `/logs/summary` | GET | Aggregated run statistics |
 | `/logs/runs` | GET | Recent run history |
 | `/health` | GET | System status + model availability |
+
+All DSS endpoints accept an optional `?lang=km` query parameter to return Khmer output (default: `en`).
 
 See [API_GUIDE.md](docs/API_GUIDE.md) for full integration documentation with curl examples and JS/TS code.
 
@@ -275,10 +275,10 @@ pytest tests/ -v --tb=short
 | Core DSS (20 disease cases) | 30 | All 6 conditions + edge cases |
 | Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
 | Robustness (adversarial) | 14 | Noise simulation, contradictory inputs |
-| API endpoints | 14 | All 9 endpoints + image upload |
+| API endpoints | 14 | All 10 endpoints + image upload |
 | ML pipeline | 35 | Dataset, inference, 4-to-3 bridge, multi-arch, experiments |
 | Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
-| Secondary conditions | 12 | Extraction, translation, special outputs, full pipeline |
+| Secondary conditions | 14 | Extraction, translation, special outputs, full pipeline |
 
 ---
 

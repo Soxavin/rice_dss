@@ -571,7 +571,7 @@ Also tests validation behaviour, output structure, and confidence labelling.
 
 ### `tests/test_api.py` — API Endpoints (14 tests)
 
-**What it does:** Tests all 9 API endpoints using FastAPI's `TestClient`:
+**What it does:** Tests all 10 API endpoints using FastAPI's `TestClient`:
 - Valid requests return correct structure
 - Invalid ML probabilities are handled gracefully
 - Image upload endpoints work (with mock model)
@@ -598,7 +598,7 @@ Also tests validation behaviour, output structure, and confidence labelling.
 - Graceful fallback when model has no conv layers
 - API schema validation (gradcam_base64 field)
 
-### `tests/test_secondary.py` — Secondary Conditions (12 tests)
+### `tests/test_secondary.py` — Secondary Conditions (14 tests)
 
 **What it does:** Tests the secondary conditions extraction and translation:
 - Brown Spot + N Deficiency co-occurrence (Case 8 pattern)
@@ -617,9 +617,9 @@ Also tests validation behaviour, output structure, and confidence labelling.
 
 | File | Description |
 |------|-------------|
-| `rice_disease_model.keras` | Trained EfficientNetV2B0 model (91.85% val accuracy). Gitignored — too large for version control. |
+| `rice_disease_model.keras` | Trained EfficientNetV2B0 model (91.85% val accuracy). Committed to git for Cloud Run deployment (~27MB). |
 | `rice_disease_model.meta.json` | Metadata sidecar: class names, image size, backbone, DSS class names. Loaded by `ml/inference.py` at startup. |
-| `.gitkeep` | Ensures the `models/` directory exists in git even when the model file is gitignored. |
+| `.gitkeep` | Ensures the `models/` directory exists in git. |
 | `evaluation/classification_report.txt` | Per-class precision, recall, F1 scores from validation set. |
 | `evaluation/confusion_matrix.png` | Visual confusion matrix showing where the model gets confused. |
 | `evaluation/training_history.json` | Epoch-by-epoch accuracy and loss for both training phases. |
@@ -681,7 +681,7 @@ Quick-start script for local development:
 4. Demonstrates all 3 diagnosis modes
 
 ### `.gitignore`
-Excludes: `.DS_Store`, `__pycache__/`, `.venv*/`, `.pytest_cache/`, `.env*`, `models/*.keras`, `data/`, `.vscode/`, `logs/`
+Excludes: `.DS_Store`, `__pycache__/`, `.venv*/`, `.pytest_cache/`, `.env*`, `models/*.h5`, `models/*.pt`, `models/experiments/**/*.keras`, `data/`, `.vscode/`, `logs/`. Note: the production model (`models/rice_disease_model.keras`) is NOT gitignored — it is committed for Cloud Run deployment.
 
 ---
 

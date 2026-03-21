@@ -257,10 +257,11 @@ Consult specialist: Yes
 
 # SLIDE 10 — REST API
 
-## 9 Endpoints
+## 10 Endpoints (Live on Cloud Run)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
+| `/` | GET | API root — lists all available endpoints |
 | `/questionnaire` | POST | Rule-based diagnosis only |
 | `/ml-only` | POST | ML probabilities only |
 | `/hybrid` | POST | Full hybrid mode (recommended) |
@@ -270,6 +271,10 @@ Consult specialist: Yes
 | `/logs/summary` | GET | Aggregated run statistics |
 | `/logs/runs` | GET | Recent run history |
 | `/health` | GET | System status check |
+
+All DSS endpoints accept `?lang=km` for Khmer output.
+
+**Live:** `https://rice-dss-137747818788.asia-southeast1.run.app`
 
 ## To run locally
 ```bash
@@ -283,16 +288,17 @@ uvicorn api.main:app --reload --port 8000
 
 # SLIDE 11 — Test Results
 
-## 128 / 128 Tests Passing
+## 142 / 142 Tests Passing
 
 | Test Suite | Tests | Coverage |
 |------------|-------|----------|
 | DSS Core — 20 disease cases | 30 | All 6 conditions + edge cases |
 | Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
 | Robustness (adversarial inputs) | 14 | Noise simulation, contradictory inputs |
-| API endpoints | 14 | All 9 endpoints + image upload |
+| API endpoints | 14 | All 10 endpoints + image upload |
 | ML pipeline | 35 | Dataset, inference, 4→3 bridge, multi-arch, experiments |
 | Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
+| Secondary conditions | 14 | Extraction, translation, special outputs, full pipeline |
 
 ## Key test cases verified
 - Classic Blast (Flowering Stage)
@@ -325,7 +331,7 @@ rice_dss/
 │   └── logger.py                JSONL audit trail
 ├── api/
 │   ├── schemas.py               Pydantic request/response models
-│   └── main.py                  FastAPI (9 endpoints, CORS, image upload)
+│   └── main.py                  FastAPI (10 endpoints, CORS, image upload)
 ├── ml/
 │   ├── dataset.py               TF dataset loader + augmentation
 │   ├── train.py                 Multi-architecture training pipeline
@@ -333,6 +339,10 @@ rice_dss/
 │   ├── gradcam.py               Grad-CAM heatmap generation
 │   ├── experiment.py            Experiment tracking + comparison
 │   └── evaluate.py              Classification report + confusion matrix
+├── translations/
+│   ├── core.py                  Bilingual translation logic
+│   ├── en.py                    English labels + recommendation refinements
+│   └── km.py                    Khmer translations
 ├── ui/
 │   └── app.py                   Streamlit demo UI (3-mode support)
 ├── tests/
@@ -340,7 +350,9 @@ rice_dss/
 │   ├── test_hybrid.py           Hybrid fusion tests
 │   ├── test_robustness.py       Adversarial input tests
 │   ├── test_api.py              API endpoint tests
-│   └── test_ml.py               ML pipeline tests
+│   ├── test_ml.py               ML pipeline tests
+│   ├── test_gradcam.py          Grad-CAM explainability tests
+│   └── test_secondary.py        Secondary conditions tests
 ├── models/
 │   ├── rice_disease_model.keras  Trained model (91.85% accuracy)
 │   ├── evaluation/              Confusion matrix + classification report
@@ -365,7 +377,7 @@ rice_dss/
 |---|------|--------|
 | 1 | Frontend UI (teammate — Figma design) | In Progress |
 | 2 | Connect frontend to API endpoints | Pending |
-| 3 | Deployment (Docker setup ready) | Ready |
+| 3 | Cloud Run deployment | Done |
 | 4 | FYP report writing | Pending |
 | 5 | Defence preparation | Pending |
 
@@ -382,10 +394,10 @@ rice_dss/
 - Personalised recommendations (soil type, growth stage, fertilizer history)
 - ML image classifier trained — 91.85% accuracy on 9,200 images
 - 4→3 class bridging for safe ML→DSS integration
-- REST API with 9 endpoints (3 modes + image upload + explainability)
+- REST API with 10 endpoints (3 modes + image upload + explainability)
 - Streamlit demo UI with 3-mode support
-- 128/128 automated tests passing
-- Docker deployment ready
+- 142/142 automated tests passing
+- Deployed on Google Cloud Run (live)
 - Bilingual output (English + Khmer)
 - Version controlled on GitHub
 
