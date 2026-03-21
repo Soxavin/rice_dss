@@ -184,6 +184,7 @@ docker compose --profile demo up
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
+| `/` | GET | API root — lists all available endpoints |
 | `/questionnaire` | POST | Rule-based diagnosis only |
 | `/ml-only` | POST | ML probabilities only |
 | `/hybrid` | POST | Full hybrid mode (recommended) |
@@ -350,9 +351,9 @@ gcloud run deploy rice-dss \
 ```
 
 After deployment:
-- **API URL**: `https://rice-dss-xxxxx.asia-southeast1.run.app`
-- **Swagger docs**: `https://rice-dss-xxxxx.asia-southeast1.run.app/docs`
-- **Health check**: `GET /health`
+- **API Root**: `https://rice-dss-137747818788.asia-southeast1.run.app`
+- **Swagger docs**: `https://rice-dss-137747818788.asia-southeast1.run.app/docs`
+- **Health check**: `https://rice-dss-137747818788.asia-southeast1.run.app/health`
 
 ### Notes
 
@@ -360,6 +361,7 @@ After deployment:
 - **Memory**: 1Gi — enough for TensorFlow CPU + model
 - **Cold starts**: First request after idle takes ~15-20s (TensorFlow loading). Subsequent requests are fast.
 - **CORS**: Set `CORS_ORIGINS` to your frontend domain in production (e.g., `CORS_ORIGINS=https://myapp.com`)
+- **Redeployment**: Run the same `gcloud run deploy` command to push updates. Cached layers make subsequent deploys faster.
 
 ---
 

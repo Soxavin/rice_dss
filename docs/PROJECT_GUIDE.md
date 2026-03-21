@@ -303,12 +303,15 @@ The API is a thin layer that exposes the DSS over HTTP. It contains **no diagnos
 ### `api/__init__.py` — Package Marker
 Empty file that makes `api` a Python package.
 
-### `api/main.py` — FastAPI Application (9 Endpoints)
+### `api/main.py` — FastAPI Application (10 Endpoints)
+
+**Live deployment:** `https://rice-dss-137747818788.asia-southeast1.run.app`
 
 **Endpoints:**
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
+| `/` | GET | API root — lists all available endpoints |
 | `/questionnaire` | POST | Questionnaire-only diagnosis |
 | `/ml-only` | POST | ML probabilities only |
 | `/hybrid` | POST | Full hybrid mode (recommended) |
@@ -323,6 +326,7 @@ Empty file that makes `api` a Python package.
 - **CORS** — reads `CORS_ORIGINS` environment variable (comma-separated), defaults to `*` for development
 - **Image validation** — checks MIME type (JPEG/PNG/WebP only) and file size (10 MB max) on upload endpoints
 - **Lazy model loading** — the ML model is loaded on first request via `get_inference_model()` singleton, avoiding TensorFlow import at startup. Returns `None` (HTTP 503) if no model file exists.
+- **Root endpoint** — returns a JSON overview of the service and all available endpoints for discoverability
 
 **How the three JSON endpoints work (same pattern):**
 1. Receive `QuestionnaireRequest` payload (Pydantic validates the structure)
@@ -625,7 +629,23 @@ Also tests validation behaviour, output structure, and confidence labelling.
 
 ---
 
-## 10. Infrastructure Files
+## 10. Infrastructure & Deployment
+
+### Google Cloud Run (Live Deployment)
+
+The API is deployed on Google Cloud Run at:
+- **API Root**: `https://rice-dss-137747818788.asia-southeast1.run.app`
+- **Swagger Docs**: `https://rice-dss-137747818788.asia-southeast1.run.app/docs`
+- **Health Check**: `https://rice-dss-137747818788.asia-southeast1.run.app/health`
+
+**Configuration:** Region `asia-southeast1` (Singapore — closest to Cambodia), 1Gi memory, unauthenticated access, `CORS_ORIGINS=*`.
+
+**How it works:** Cloud Run builds the Docker image from source, pushes it to Artifact Registry, and serves it as a managed container. Cold starts take ~15-20s (TensorFlow loading); subsequent requests are fast.
+
+**To redeploy after changes:**
+```bash
+gcloud run deploy rice-dss --source . --platform managed --region asia-southeast1 --memory 1Gi --allow-unauthenticated --set-env-vars "CORS_ORIGINS=*"
+```
 
 ### `Dockerfile`
 Builds a container image based on `python:3.12-slim` with TensorFlow CPU. Copies all project code (excluding data, venvs, caches via `.dockerignore`). Default command starts the API server on port 8000.

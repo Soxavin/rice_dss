@@ -4,16 +4,21 @@
 
 ## Getting Started
 
-**Base URL (local development):**
+**Live deployment (Cloud Run):**
+```
+https://rice-dss-137747818788.asia-southeast1.run.app
+```
+
+**Local development:**
 ```
 http://localhost:8000
 ```
 
 **Interactive API docs:**
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Live: https://rice-dss-137747818788.asia-southeast1.run.app/docs
+- Local: http://localhost:8000/docs
 
-**Start the API server:**
+**Start the API server locally:**
 ```bash
 source .venv312/bin/activate
 uvicorn api.main:app --reload --port 8000
@@ -30,6 +35,7 @@ CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
 
 | Endpoint | Method | Purpose | Content-Type |
 |----------|--------|---------|--------------|
+| `/` | GET | API root — lists all endpoints | — |
 | `/questionnaire` | POST | Rule-based diagnosis (no image) | `application/json` |
 | `/ml-only` | POST | ML probabilities only | `application/json` |
 | `/hybrid` | POST | Full hybrid (recommended) | `application/json` |

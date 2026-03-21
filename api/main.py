@@ -106,6 +106,28 @@ def _request_to_dict(request: QuestionnaireRequest) -> dict:
 # ENDPOINTS
 # =============================================================================
 
+@app.get(
+    "/",
+    summary="API Root",
+    tags=["General"]
+)
+async def root():
+    return {
+        "service": "Rice Paddy Disease Decision Support System (Rice DSS)",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "endpoints": {
+            "questionnaire": "POST /questionnaire",
+            "ml_only": "POST /ml-only",
+            "hybrid": "POST /hybrid",
+            "predict_image": "POST /predict-image",
+            "hybrid_image": "POST /hybrid-image",
+            "explain": "POST /explain",
+        }
+    }
+
+
 @app.post(
     "/questionnaire",
     response_model=DSSResponse,
