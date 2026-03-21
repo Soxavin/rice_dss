@@ -3,9 +3,9 @@
 
 > Systematic comparison of 6 training configurations to select the best-performing model for production use.
 
-**Date:** March 2026
-**Dataset:** 9,200 images, 4 balanced classes (2,300 each) — Bacterial Blight, Blast, Brown Spot, Healthy
-**Hardware:** Apple M4 Pro (Metal GPU), 24 GB RAM
+**Date:** March 2026<br>
+**Dataset:** 9,200 images, 4 balanced classes (2,300 each) — Bacterial Blight, Blast, Brown Spot, Healthy<br>
+**Hardware:** Apple M4 Pro (Metal GPU), 24 GB RAM<br>
 **Framework:** TensorFlow 2.18.0
 
 ---

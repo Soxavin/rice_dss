@@ -11,8 +11,8 @@
 ## Rice Paddy Disease
 ## Decision Support System
 
-**Final Year Project**
-Student: Vin (Soxavin)
+**Final Year Project**<br>
+Student: Vin (Soxavin)<br>
 Date: March 2026
 
 > A rule-based + machine learning hybrid system to help Cambodian rice farmers identify paddy diseases from field symptoms and leaf photos.
