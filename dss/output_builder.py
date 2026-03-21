@@ -69,6 +69,20 @@ CONFIDENCE_LABELS = {
 }
 
 
+def _extract_secondary_conditions(all_scores: dict, primary_key: str) -> list:
+    """Extract conditions scoring above THRESHOLD_POSSIBLE, excluding primary."""
+    secondary = []
+    for key, score in all_scores.items():
+        if key != primary_key and score >= THRESHOLD_POSSIBLE:
+            secondary.append({
+                'condition': CONDITION_LABELS.get(key, key),
+                'condition_key': key,
+                'score': round(score, 3),
+            })
+    secondary.sort(key=lambda x: x['score'], reverse=True)
+    return secondary
+
+
 def determine_confidence_label(score: float, gap: float = 1.0) -> str:
     """
     Converts a numeric score + score gap into a human-readable confidence level.
@@ -119,6 +133,7 @@ def build_standard_output(condition: str,
         'score': round(score, 3),
         'all_scores': {k: round(v, 3) for k, v in all_scores.items()},
         'recommendations': get_recommendations(condition, answers),
+        'secondary_conditions': _extract_secondary_conditions(all_scores, condition),
         'secondary_note': None,
         'warnings': [],
         'disclaimer': (
@@ -182,6 +197,7 @@ def build_ambiguous_output(condition_a: str,
             ),
             'consult': True
         },
+        'secondary_conditions': [],
         'secondary_note': None,
         'warnings': [],
         'disclaimer': (
@@ -208,6 +224,7 @@ def build_uncertain_output(all_scores: dict) -> dict:
         'score': 0.0,
         'all_scores': {k: round(v, 3) for k, v in all_scores.items()},
         'recommendations': get_recommendations('uncertain', {}),
+        'secondary_conditions': [],
         'secondary_note': None,
         'warnings': [],
         'disclaimer': (
@@ -241,6 +258,7 @@ def build_out_of_scope_output(all_scores: dict) -> dict:
             'monitoring': 'Observe 3–5 days. If symptoms worsen, consult extension officer.',
             'consult': True
         },
+        'secondary_conditions': [],
         'secondary_note': None,
         'warnings': [],
         'disclaimer': (

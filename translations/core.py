@@ -160,6 +160,21 @@ def _translate_ambiguous_between(amb_list: list, lang: str) -> list:
     return translated
 
 
+def _translate_secondary_conditions(conditions: list, lang: str) -> list:
+    """Translates the condition names in secondary_conditions entries."""
+    if not conditions:
+        return conditions
+
+    translated = []
+    for entry in conditions:
+        new_entry = dict(entry)
+        if 'condition' in new_entry and new_entry['condition']:
+            km, en = split_bilingual(new_entry['condition'])
+            new_entry['condition'] = km if lang == 'km' else en
+        translated.append(new_entry)
+    return translated
+
+
 def translate_output(output: dict, lang: str = 'en') -> dict:
     """
     Post-processes DSS output for a specific language.
@@ -218,6 +233,12 @@ def translate_output(output: dict, lang: str = 'en') -> dict:
     if result.get('ambiguous_between'):
         result['ambiguous_between'] = _translate_ambiguous_between(
             result['ambiguous_between'], lang
+        )
+
+    # secondary_conditions
+    if result.get('secondary_conditions'):
+        result['secondary_conditions'] = _translate_secondary_conditions(
+            result['secondary_conditions'], lang
         )
 
     # mode_used

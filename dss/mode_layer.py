@@ -76,6 +76,7 @@ def ml_only_logic(raw_answers: dict) -> dict:
             "score": 0.0,
             "all_scores": {},
             "recommendations": None,
+            "secondary_conditions": [],
             "secondary_note": None,
             "warnings": [
                 "⚠️ No ML probabilities provided.",
@@ -103,6 +104,7 @@ def ml_only_logic(raw_answers: dict) -> dict:
             "score": 0.0,
             "all_scores": {},
             "recommendations": None,
+            "secondary_conditions": [],
             "secondary_note": None,
             "warnings": [
                 "⚠️ ML output missing valid disease classes.",
@@ -133,6 +135,7 @@ def ml_only_logic(raw_answers: dict) -> dict:
             "score": round(top_score, 3),
             "all_scores": {k: round(v, 3) for k, v in filtered.items()},
             "recommendations": get_recommendations('uncertain', raw_answers),
+            "secondary_conditions": [],
             "secondary_note": None,
             "warnings": [
                 "⚠️ ML confidence too low to assess.",
@@ -153,6 +156,7 @@ def ml_only_logic(raw_answers: dict) -> dict:
         "score": round(top_score, 3),
         "all_scores": {k: round(v, 3) for k, v in filtered.items()},
         "recommendations": get_recommendations(top_condition, raw_answers),
+        "secondary_conditions": [],
         "secondary_note": None,
         "warnings": [
             "⚠️ Non-biotic nutrient stresses cannot be detected in ML-only mode."

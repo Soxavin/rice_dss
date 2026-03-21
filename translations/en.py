@@ -107,17 +107,17 @@ RECOMMENDATIONS_EN_REPLACEMENTS = {
     # --- N DEFICIENCY immediate ---
     # First item is personalized (soil-specific) — each variant needs its PDF ref removed
     'Apply nitrogen fertilizer immediately — For Bakan soil: Apply Urea 134 kg/ha (PDF2 recommendation)':
-        'Apply nitrogen fertilizer immediately — For Bakan soil: Apply Urea 134 kg/ha',
+        'Apply nitrogen fertilizer immediately — For Bakan soil: apply approximately 134 kg/ha of Urea',
     'Apply nitrogen fertilizer immediately — For Prateah Lang soil: Apply Urea 88 kg/ha (PDF2 recommendation)':
-        'Apply nitrogen fertilizer immediately — For Prateah Lang soil: Apply Urea 88 kg/ha',
+        'Apply nitrogen fertilizer immediately — For Prateah Lang soil: apply approximately 88 kg/ha of Urea',
     'Apply nitrogen fertilizer immediately — For Prey Khmer soil: Apply Urea 38 kg/ha (PDF2 — sandy soil, low rate)':
-        'Apply nitrogen fertilizer immediately — For Prey Khmer soil: Apply Urea 38 kg/ha (sandy soil, low rate)',
+        'Apply nitrogen fertilizer immediately — For Prey Khmer soil: apply approximately 38 kg/ha of Urea (sandy soil — lower rate)',
     'Apply nitrogen fertilizer immediately — For Toul Samroung soil: Apply Urea 113 kg/ha (PDF2 recommendation)':
-        'Apply nitrogen fertilizer immediately — For Toul Samroung soil: Apply Urea 113 kg/ha',
+        'Apply nitrogen fertilizer immediately — For Toul Samroung soil: apply approximately 113 kg/ha of Urea',
     'Apply nitrogen fertilizer immediately — For Kbal Po soil: Apply Urea 87 kg/ha + nitrogen only (PDF2)':
-        'Apply nitrogen fertilizer immediately — For Kbal Po soil: Apply Urea 87 kg/ha',
+        'Apply nitrogen fertilizer immediately — For Kbal Po soil: apply approximately 87 kg/ha of Urea',
     'Apply nitrogen fertilizer immediately — For Krakor soil: Apply Urea 238 kg/ha — high N response (PDF2)':
-        'Apply nitrogen fertilizer immediately — For Krakor soil: Apply Urea 238 kg/ha (high N response)',
+        'Apply nitrogen fertilizer immediately — For Krakor soil: apply approximately 238 kg/ha of Urea (high N-response soil)',
     'Split application: apply now + again at panicle initiation (PDF2)':
         'Apply now and reapply at early tillering stage',
     'Incorporate fertilizer into soil if possible — reduces N loss (PDF2)':
@@ -367,6 +367,12 @@ UI_LABELS_EN = {
         'Confidence reflects the strength of available evidence, not guaranteed accuracy. '
         'Use Detailed mode for more reliable results.'
     ),
+    'fertilizer_disclaimer': (
+        'Fertilizer rates shown are research-based guidelines for Cambodian soil types. '
+        'Adjust based on your specific field conditions.'
+    ),
+    'also_consider': 'Also Consider',
+    'secondary_explanation': 'These conditions also showed indicators based on your answers.',
 
     # Misc
     'yes': 'Yes',

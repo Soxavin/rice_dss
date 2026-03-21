@@ -526,6 +526,12 @@ def render_result(output: dict, labels: dict = None):
         if nonbiotic_msg:
             st.info(f"ℹ️ {nonbiotic_msg}")
 
+    # --- Fertilizer rate disclaimer (N deficiency only) ---
+    if condition_key == 'n_deficiency':
+        fert_msg = labels.get('fertilizer_disclaimer', '')
+        if fert_msg:
+            st.caption(fert_msg)
+
     # --- Score + confidence gauge ---
     if not render_gauge(score, condition_key, conf, labels):
         # Fallback if Plotly is not installed
@@ -562,6 +568,16 @@ def render_result(output: dict, labels: dict = None):
 
         if recs.get('consult'):
             st.warning(f"🩺 {labels['result_consult']}")
+
+    # --- Secondary conditions ---
+    secondary = output.get('secondary_conditions', [])
+    if secondary:
+        st.markdown(f"#### {labels.get('also_consider', 'Also Consider')}")
+        for sc in secondary:
+            name = sc.get('condition', '')
+            sc_score = sc.get('score', 0)
+            st.markdown(f"- **{name}** ({sc_score:.0%})")
+        st.caption(labels.get('secondary_explanation', ''))
 
     # --- Sheath blight warning ---
     if warnings:

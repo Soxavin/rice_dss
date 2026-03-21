@@ -224,6 +224,10 @@ class DSSResponse(BaseModel):
         None,
         description="Structured recommendations for the identified condition"
     )
+    secondary_conditions: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Other conditions above monitoring threshold (score >= 0.40), if any"
+    )
     secondary_note: Optional[str] = None
     warnings: List[str] = Field(default_factory=list)
     disclaimer: Optional[str] = None
