@@ -1074,7 +1074,8 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
     # Without symptoms, the DSS would flag "out_of_scope" which isn't useful.
     missing = []
     if not symptoms and not additional_symptoms:
-        missing.append("At least one symptom (Section 2 or Section 9)")
+        _add_sec = "7" if is_detailed else "4"
+        missing.append(f"At least one symptom (Section 2 or Section {_add_sec})")
 
     if missing:
         st.error("⚠️ Please fill in the following before running:")
