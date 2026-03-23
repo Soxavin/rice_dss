@@ -786,6 +786,8 @@ with st.sidebar:
 # =============================================================================
 
 uploaded_image = None
+uploaded_images = []
+_multi_image_mode = False
 if _internal_mode in ("Image Only (ML)", "Hybrid (Recommended)"):
     if _internal_mode == "Image Only (ML)":
         st.subheader(f"📷 {L['image_title']}")
@@ -794,13 +796,33 @@ if _internal_mode in ("Image Only (ML)", "Hybrid (Recommended)"):
         st.subheader(f"0. {L['image_title']}")
         st.caption(L['image_optional'])
 
-    uploaded_image = st.file_uploader(
-        L['image_upload_label'],
-        type=["jpg", "jpeg", "png"],
-        help=L['image_upload_help']
-    )
-    if uploaded_image is not None:
-        st.image(uploaded_image, caption=L['image_uploaded_caption'], width=300)
+    # Single vs Multi-image toggle
+    _img_mode_options = [L.get('image_mode_single', 'Single photo'), L.get('image_mode_multi', 'Multiple angles (2–5 photos)')]
+    _img_mode = st.radio("", _img_mode_options, horizontal=True, label_visibility="collapsed")
+    _multi_image_mode = (_img_mode == _img_mode_options[1])
+
+    if _multi_image_mode:
+        st.caption(L.get('image_multi_caption', 'Upload 2–5 photos of the same leaf from different angles.'))
+        uploaded_images = st.file_uploader(
+            L.get('image_upload_multi_label', 'Upload leaf images (2–5)'),
+            type=["jpg", "jpeg", "png"],
+            accept_multiple_files=True,
+            help=L['image_upload_help']
+        )
+        if uploaded_images:
+            st.caption(f"{len(uploaded_images)} {L.get('image_multi_count', 'images uploaded')}")
+            cols = st.columns(min(len(uploaded_images), 5))
+            for i, img in enumerate(uploaded_images):
+                with cols[i % 5]:
+                    st.image(img, caption=f"{i+1}", width=140)
+    else:
+        uploaded_image = st.file_uploader(
+            L['image_upload_label'],
+            type=["jpg", "jpeg", "png"],
+            help=L['image_upload_help']
+        )
+        if uploaded_image is not None:
+            st.image(uploaded_image, caption=L['image_uploaded_caption'], width=300)
 
     st.markdown("---")
 
@@ -1002,9 +1024,18 @@ else:
 # This path handles the simplest flow: upload image → ML prediction → display.
 # No questionnaire form is shown — the user only provides a leaf photo.
 if _internal_mode == "Image Only (ML)" and ml_submitted:
-    if uploaded_image is None:
-        st.error("⚠️ Please upload a leaf image for ML-only diagnosis.")
-        st.stop()
+    # Validate: must have at least one image (single) or 2–5 images (multi)
+    if _multi_image_mode:
+        if len(uploaded_images) < 2:
+            st.error("⚠️ Please upload at least 2 leaf images for multi-angle diagnosis.")
+            st.stop()
+        if len(uploaded_images) > 5:
+            st.error("⚠️ Maximum 5 images allowed.")
+            st.stop()
+    else:
+        if uploaded_image is None:
+            st.error("⚠️ Please upload a leaf image for ML-only diagnosis.")
+            st.stop()
 
     model = load_ml_model()
     if model is None:
@@ -1015,24 +1046,49 @@ if _internal_mode == "Image Only (ML)" and ml_submitted:
         st.stop()
 
     # --- Progressive reveal ---
-    uploaded_image.seek(0)
-    image_bytes = uploaded_image.read()
     ml_probs = None
     gradcam_image = None
 
-    with st.status("Analyzing leaf image...", expanded=True) as status:
-        status.update(label="Running ML prediction...")
-        ml_probs = model.predict_from_bytes(image_bytes)
+    if _multi_image_mode:
+        # Multi-image: read all images, average predictions
+        all_image_bytes = []
+        for img in uploaded_images:
+            img.seek(0)
+            all_image_bytes.append(img.read())
 
-        if ml_probs is not None:
-            status.update(label="Generating Grad-CAM heatmap...")
-            gradcam_image = model.get_gradcam(image_bytes)
+        with st.status(f"Analyzing {len(all_image_bytes)} leaf images...", expanded=True) as status:
+            status.update(label=f"Running ML prediction on {len(all_image_bytes)} images...")
+            ml_probs = model.predict_from_multiple_bytes(all_image_bytes)
 
-        status.update(label="Running decision engine...")
-        output = run_dss({'ml_probabilities': ml_probs}, mode="ml")
-        output = translate_output(output, LANG)
+            if ml_probs is not None:
+                status.update(label="Generating Grad-CAM heatmap...")
+                gradcam_image = model.get_gradcam(all_image_bytes[0])
 
-        status.update(label="Diagnosis complete!", state="complete", expanded=False)
+            status.update(label="Running decision engine...")
+            output = run_dss({'ml_probabilities': ml_probs}, mode="ml")
+            output = translate_output(output, LANG)
+
+            status.update(label="Diagnosis complete!", state="complete", expanded=False)
+
+        image_bytes = all_image_bytes[0]  # For display
+    else:
+        # Single image
+        uploaded_image.seek(0)
+        image_bytes = uploaded_image.read()
+
+        with st.status("Analyzing leaf image...", expanded=True) as status:
+            status.update(label="Running ML prediction...")
+            ml_probs = model.predict_from_bytes(image_bytes)
+
+            if ml_probs is not None:
+                status.update(label="Generating Grad-CAM heatmap...")
+                gradcam_image = model.get_gradcam(image_bytes)
+
+            status.update(label="Running decision engine...")
+            output = run_dss({'ml_probabilities': ml_probs}, mode="ml")
+            output = translate_output(output, LANG)
+
+            status.update(label="Diagnosis complete!", state="complete", expanded=False)
 
     if ml_probs is None:
         st.error("Could not process image — please try a different photo.")
@@ -1114,15 +1170,27 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
     gradcam_image = None
     image_bytes = None
 
+    _has_images = (_multi_image_mode and len(uploaded_images) >= 2) or (not _multi_image_mode and uploaded_image is not None)
+
     with st.status("Running diagnosis...", expanded=True) as status:
         # Step 1: ML prediction (Hybrid mode with image)
-        if _internal_mode == "Hybrid (Recommended)" and uploaded_image is not None:
+        if _internal_mode == "Hybrid (Recommended)" and _has_images:
             model = load_ml_model()
             if model is not None:
-                status.update(label="Analyzing leaf image with ML model...")
-                uploaded_image.seek(0)
-                image_bytes = uploaded_image.read()
-                ml_probs = model.predict_from_bytes(image_bytes)
+                if _multi_image_mode and len(uploaded_images) >= 2:
+                    status.update(label=f"Analyzing {len(uploaded_images)} leaf images with ML model...")
+                    all_image_bytes = []
+                    for img in uploaded_images:
+                        img.seek(0)
+                        all_image_bytes.append(img.read())
+                    ml_probs = model.predict_from_multiple_bytes(all_image_bytes)
+                    image_bytes = all_image_bytes[0]
+                else:
+                    status.update(label="Analyzing leaf image with ML model...")
+                    uploaded_image.seek(0)
+                    image_bytes = uploaded_image.read()
+                    ml_probs = model.predict_from_bytes(image_bytes)
+
                 if ml_probs is not None:
                     raw_answers['ml_probabilities'] = ml_probs
                     status.update(label="Generating Grad-CAM heatmap...")
@@ -1141,7 +1209,7 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
         status.update(label="Diagnosis complete!", state="complete", expanded=False)
 
     # Show warnings outside status block so they remain visible
-    if _internal_mode == "Hybrid (Recommended)" and uploaded_image is not None:
+    if _internal_mode == "Hybrid (Recommended)" and _has_images:
         if ml_probs is None:
             st.warning(
                 "ML model not available or could not process image — "

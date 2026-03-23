@@ -257,7 +257,7 @@ Consult specialist: Yes
 
 # SLIDE 10 — REST API
 
-## 10 Endpoints (Live on Cloud Run)
+## 12 Endpoints (Live on Cloud Run)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -267,6 +267,8 @@ Consult specialist: Yes
 | `/hybrid` | POST | Full hybrid mode (recommended) |
 | `/predict-image` | POST | Upload leaf photo → ML diagnosis |
 | `/hybrid-image` | POST | Photo + questionnaire combined |
+| `/predict-images` | POST | Multi-image (2–5 angles) → averaged ML |
+| `/hybrid-images` | POST | Multi-image + questionnaire combined |
 | `/explain` | POST | Signal-level score breakdown |
 | `/logs/summary` | GET | Aggregated run statistics |
 | `/logs/runs` | GET | Recent run history |
@@ -288,15 +290,15 @@ uvicorn api.main:app --reload --port 8000
 
 # SLIDE 11 — Test Results
 
-## 142 / 142 Tests Passing
+## 155 / 155 Tests Passing
 
 | Test Suite | Tests | Coverage |
 |------------|-------|----------|
 | DSS Core — 20 disease cases | 30 | All 6 conditions + edge cases |
 | Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
 | Robustness (adversarial inputs) | 14 | Noise simulation, contradictory inputs |
-| API endpoints | 14 | All 10 endpoints + image upload |
-| ML pipeline | 35 | Dataset, inference, 4→3 bridge, multi-arch, experiments |
+| API endpoints | 21 | All 12 endpoints + image upload + multi-image |
+| ML pipeline | 42 | Dataset, inference, 4→3 bridge, multi-arch, multi-image, experiments |
 | Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
 | Secondary conditions | 14 | Extraction, translation, special outputs, full pipeline |
 
@@ -331,7 +333,7 @@ rice_dss/
 │   └── logger.py                JSONL audit trail
 ├── api/
 │   ├── schemas.py               Pydantic request/response models
-│   └── main.py                  FastAPI (10 endpoints, CORS, image upload)
+│   └── main.py                  FastAPI (12 endpoints, CORS, image upload)
 ├── ml/
 │   ├── dataset.py               TF dataset loader + augmentation
 │   ├── train.py                 Multi-architecture training pipeline
@@ -394,9 +396,9 @@ rice_dss/
 - Personalised recommendations (soil type, growth stage, fertilizer history)
 - ML image classifier trained — 91.85% accuracy on 9,200 images
 - 4→3 class bridging for safe ML→DSS integration
-- REST API with 10 endpoints (3 modes + image upload + explainability)
+- REST API with 12 endpoints (3 modes + image upload + multi-image + explainability)
 - Streamlit demo UI with 3-mode support
-- 142/142 automated tests passing
+- 155/155 automated tests passing
 - Deployed on Google Cloud Run (live)
 - Bilingual output (English + Khmer)
 - Version controlled on GitHub

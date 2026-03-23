@@ -56,7 +56,7 @@ rice_dss/
 │
 ├── api/                         REST API (FastAPI)
 │   ├── __init__.py
-│   ├── main.py                  10 endpoints + CORS + image upload
+│   ├── main.py                  12 endpoints + CORS + image upload
 │   └── schemas.py               Pydantic v2 request/response models
 │
 ├── ml/                          ML Pipeline (EfficientNetV2B0)
@@ -77,13 +77,13 @@ rice_dss/
 ├── ui/                          Demo Interface (Streamlit)
 │   └── app.py                   3-mode testing UI with Quick/Detailed questionnaire + language toggle
 │
-├── tests/                       Test Suite (142 tests)
+├── tests/                       Test Suite (155 tests)
 │   ├── __init__.py
 │   ├── test_dss.py              20 core disease cases (30 tests)
 │   ├── test_hybrid.py           Hybrid ML fusion tests (25 tests)
 │   ├── test_robustness.py       Adversarial input tests (14 tests)
-│   ├── test_api.py              API endpoint tests (14 tests)
-│   ├── test_ml.py               ML pipeline tests (35 tests)
+│   ├── test_api.py              API endpoint tests (21 tests)
+│   ├── test_ml.py               ML pipeline tests (42 tests)
 │   ├── test_gradcam.py          Grad-CAM explainability tests (10 tests)
 │   └── test_secondary.py        Secondary conditions tests (14 tests)
 │
@@ -144,7 +144,7 @@ pip install tensorflow    # Required for ML features
 ### 2. Verify the system
 
 ```bash
-# Run the full test suite (142 tests)
+# Run the full test suite (155 tests)
 pytest tests/ -v --tb=short
 
 # Run the local sanity check
@@ -190,6 +190,8 @@ docker compose --profile demo up
 | `/hybrid` | POST | Full hybrid mode (recommended) |
 | `/predict-image` | POST | Upload leaf photo for ML diagnosis |
 | `/hybrid-image` | POST | Photo + questionnaire combined |
+| `/predict-images` | POST | Multi-image (2–5 angles) → averaged ML diagnosis |
+| `/hybrid-images` | POST | Multi-image + questionnaire combined |
 | `/explain` | POST | Signal-level score breakdown |
 | `/logs/summary` | GET | Aggregated run statistics |
 | `/logs/runs` | GET | Recent run history |
@@ -264,7 +266,7 @@ The model trains on 4 classes (including healthy) for better feature learning. A
 
 ## Tests
 
-142 tests across 7 suites, all passing (some may be skipped depending on optional TF/Plotly dependencies):
+155 tests across 7 suites, all passing (some may be skipped depending on optional TF/Plotly dependencies):
 
 ```bash
 pytest tests/ -v --tb=short
@@ -275,8 +277,8 @@ pytest tests/ -v --tb=short
 | Core DSS (20 disease cases) | 30 | All 6 conditions + edge cases |
 | Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
 | Robustness (adversarial) | 14 | Noise simulation, contradictory inputs |
-| API endpoints | 14 | All 10 endpoints + image upload |
-| ML pipeline | 35 | Dataset, inference, 4-to-3 bridge, multi-arch, experiments |
+| API endpoints | 21 | All 12 endpoints + image upload + multi-image |
+| ML pipeline | 42 | Dataset, inference, 4-to-3 bridge, multi-arch, multi-image, experiments |
 | Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
 | Secondary conditions | 14 | Extraction, translation, special outputs, full pipeline |
 

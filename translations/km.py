@@ -311,6 +311,11 @@ UI_LABELS_KM = {
     # Image uploader
     'image_upload_label': 'បង្ហោះរូបភាពស្លឹក',
     'image_uploaded_caption': 'រូបភាពស្លឹកដែលបានបង្ហោះ',
+    'image_mode_single': 'រូបថតតែមួយ',
+    'image_mode_multi': 'មុំច្រើន (២–៥ រូបថត)',
+    'image_multi_caption': 'បង្ហោះរូបថត ២–៥ នៃស្លឹកដូចគ្នាពីមុំផ្សេងៗ សម្រាប់ការព្យាករណ៍ ML ត្រឹមត្រូវជាង។',
+    'image_upload_multi_label': 'បង្ហោះរូបភាពស្លឹក (២–៥)',
+    'image_multi_count': 'រូបភាពបានបង្ហោះ',
 
     # ML-only mode
     'ml_only_info': 'ក្នុងរបៀបរូបភាពតែប៉ុណ្ណោះ មិនត្រូវការកម្រងសំណួរទេ។ សូមបង្ហោះរូបភាពស្លឹកខាងលើ។',

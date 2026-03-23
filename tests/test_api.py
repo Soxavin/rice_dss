@@ -342,6 +342,112 @@ async def test_predict_image_no_model(client):
     assert response.status_code in (503, 422, 500)
 
 
+# =============================================================================
+# /predict-images and /hybrid-images MULTI-IMAGE ENDPOINT TESTS
+# =============================================================================
+
+@pytest.mark.asyncio
+async def test_predict_images_no_model(client):
+    """/predict-images should return 503 when no trained model is available."""
+    fake1 = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    fake2 = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    response = await client.post(
+        '/predict-images',
+        files=[
+            ('images', ('img1.jpg', fake1, 'image/jpeg')),
+            ('images', ('img2.jpg', fake2, 'image/jpeg')),
+        ]
+    )
+    assert response.status_code in (503, 422, 500)
+
+
+@pytest.mark.asyncio
+async def test_predict_images_rejects_single_image(client):
+    """/predict-images should reject requests with only 1 image."""
+    fake = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    response = await client.post(
+        '/predict-images',
+        files=[('images', ('img1.jpg', fake, 'image/jpeg'))]
+    )
+    assert response.status_code == 422
+    assert 'at least 2' in response.json()['detail'].lower()
+
+
+@pytest.mark.asyncio
+async def test_predict_images_rejects_too_many(client):
+    """/predict-images should reject requests with more than 5 images."""
+    fake = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    files = [('images', (f'img{i}.jpg', fake, 'image/jpeg')) for i in range(6)]
+    response = await client.post('/predict-images', files=files)
+    assert response.status_code == 422
+    assert 'maximum' in response.json()['detail'].lower()
+
+
+@pytest.mark.asyncio
+async def test_predict_images_rejects_bad_mime(client):
+    """/predict-images should reject non-image files."""
+    fake_img = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    fake_pdf = b'%PDF-1.4' + b'\x00' * 100
+    response = await client.post(
+        '/predict-images',
+        files=[
+            ('images', ('img1.jpg', fake_img, 'image/jpeg')),
+            ('images', ('doc.pdf', fake_pdf, 'application/pdf')),
+        ]
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_hybrid_images_no_model(client):
+    """/hybrid-images should return 503 when no trained model is available."""
+    import json as _json
+    fake1 = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    fake2 = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    questionnaire = _json.dumps({
+        'symptoms': ['dark_spots'],
+        'farmer_confidence': 'somewhat_sure',
+        'additional_symptoms': ['none'],
+    })
+    response = await client.post(
+        '/hybrid-images',
+        files=[
+            ('images', ('img1.jpg', fake1, 'image/jpeg')),
+            ('images', ('img2.jpg', fake2, 'image/jpeg')),
+        ],
+        data={'questionnaire': questionnaire}
+    )
+    assert response.status_code in (503, 422, 500)
+
+
+@pytest.mark.asyncio
+async def test_hybrid_images_rejects_bad_json(client):
+    """/hybrid-images should reject invalid JSON in questionnaire field."""
+    fake1 = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    fake2 = b'\xff\xd8\xff\xe0' + b'\x00' * 100
+    response = await client.post(
+        '/hybrid-images',
+        files=[
+            ('images', ('img1.jpg', fake1, 'image/jpeg')),
+            ('images', ('img2.jpg', fake2, 'image/jpeg')),
+        ],
+        data={'questionnaire': 'not valid json!!!'}
+    )
+    # Could be 422 (bad JSON) or 503 (no model) depending on order
+    assert response.status_code in (422, 503)
+
+
+@pytest.mark.asyncio
+async def test_root_lists_multi_image_endpoints(client):
+    """Root endpoint should list the new multi-image endpoints."""
+    response = await client.get('/')
+    assert response.status_code == 200
+    data = response.json()
+    endpoints = data['endpoints']
+    assert 'predict_images' in endpoints
+    assert 'hybrid_images' in endpoints
+
+
 @pytest.mark.asyncio
 async def test_hybrid_image_no_model(client):
     """

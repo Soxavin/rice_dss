@@ -312,6 +312,11 @@ UI_LABELS_EN = {
     # Image uploader
     'image_upload_label': 'Upload a leaf image',
     'image_uploaded_caption': 'Uploaded leaf image',
+    'image_mode_single': 'Single photo',
+    'image_mode_multi': 'Multiple angles (2–5 photos)',
+    'image_multi_caption': 'Upload 2–5 photos of the same leaf from different angles for more accurate ML prediction.',
+    'image_upload_multi_label': 'Upload leaf images (2–5)',
+    'image_multi_count': 'images uploaded',
 
     # ML-only mode
     'ml_only_info': 'In Image Only mode, the questionnaire is not needed. Upload a leaf image above.',

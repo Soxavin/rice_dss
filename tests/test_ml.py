@@ -567,3 +567,95 @@ class TestExperimentTracking:
         sig = inspect.signature(train)
         assert 'backbone' in sig.parameters
         assert 'experiment_name' in sig.parameters
+
+
+# =============================================================================
+# MULTI-IMAGE INFERENCE TESTS
+# =============================================================================
+
+class TestMultiImageInference:
+    """
+    Tests for predict_from_multiple_bytes() in ml/inference.py.
+    Uses mocking to test the averaging logic without a trained model.
+    """
+
+    def _make_mock_inference(self):
+        """Creates a mock inference object with predict_from_bytes and predict_from_multiple_bytes."""
+        from unittest.mock import MagicMock
+        obj = MagicMock(spec=RiceDSSInference)
+        obj.all_class_names = ALL_CLASS_NAMES
+        obj.dss_class_names = CLASS_NAMES
+        obj.predict_from_multiple_bytes = RiceDSSInference.predict_from_multiple_bytes.__get__(obj)
+        return obj
+
+    def test_averages_two_predictions(self):
+        """Two images should produce averaged probabilities."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(side_effect=[
+            {'blast': 0.80, 'brown_spot': 0.10, 'bacterial_blight': 0.10},
+            {'blast': 0.60, 'brown_spot': 0.30, 'bacterial_blight': 0.10},
+        ])
+        result = obj.predict_from_multiple_bytes([b'img1', b'img2'])
+        assert result is not None
+        assert abs(result['blast'] - 0.70) < 0.001
+        assert abs(result['brown_spot'] - 0.20) < 0.001
+        assert abs(result['bacterial_blight'] - 0.10) < 0.001
+
+    def test_averages_three_predictions(self):
+        """Three images should produce averaged probabilities."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(side_effect=[
+            {'blast': 0.90, 'brown_spot': 0.05, 'bacterial_blight': 0.05},
+            {'blast': 0.60, 'brown_spot': 0.20, 'bacterial_blight': 0.20},
+            {'blast': 0.30, 'brown_spot': 0.50, 'bacterial_blight': 0.20},
+        ])
+        result = obj.predict_from_multiple_bytes([b'img1', b'img2', b'img3'])
+        assert result is not None
+        assert abs(result['blast'] - 0.60) < 0.001
+        assert abs(result['brown_spot'] - 0.25) < 0.001
+        assert abs(result['bacterial_blight'] - 0.15) < 0.001
+
+    def test_skips_failed_images(self):
+        """If one image fails, result is based on the successful ones."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(side_effect=[
+            {'blast': 0.80, 'brown_spot': 0.10, 'bacterial_blight': 0.10},
+            None,  # failed image
+            {'blast': 0.60, 'brown_spot': 0.30, 'bacterial_blight': 0.10},
+        ])
+        result = obj.predict_from_multiple_bytes([b'img1', b'img2', b'img3'])
+        assert result is not None
+        assert abs(result['blast'] - 0.70) < 0.001
+
+    def test_all_images_fail_returns_none(self):
+        """If all images fail inference, should return None."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(return_value=None)
+        result = obj.predict_from_multiple_bytes([b'img1', b'img2'])
+        assert result is None
+
+    def test_result_has_exactly_three_keys(self):
+        """Averaged output must have exactly {blast, brown_spot, bacterial_blight}."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(return_value={
+            'blast': 0.50, 'brown_spot': 0.30, 'bacterial_blight': 0.20,
+        })
+        result = obj.predict_from_multiple_bytes([b'img1', b'img2'])
+        assert set(result.keys()) == BIOTIC_CONDITIONS
+
+    def test_result_sums_to_one(self):
+        """Averaged probabilities should sum to ~1.0."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(side_effect=[
+            {'blast': 0.70, 'brown_spot': 0.20, 'bacterial_blight': 0.10},
+            {'blast': 0.50, 'brown_spot': 0.30, 'bacterial_blight': 0.20},
+        ])
+        result = obj.predict_from_multiple_bytes([b'img1', b'img2'])
+        total = sum(result.values())
+        assert abs(total - 1.0) < 0.01, f"Probs sum to {total}, expected ~1.0"

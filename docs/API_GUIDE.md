@@ -41,6 +41,8 @@ CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
 | `/hybrid` | POST | Full hybrid (recommended) | `application/json` |
 | `/predict-image` | POST | Image upload → ML diagnosis | `multipart/form-data` |
 | `/hybrid-image` | POST | Image + questionnaire combined | `multipart/form-data` |
+| `/predict-images` | POST | Multi-image (2–5) → averaged ML diagnosis | `multipart/form-data` |
+| `/hybrid-images` | POST | Multi-image + questionnaire combined | `multipart/form-data` |
 | `/explain` | POST | Score breakdown / traceability | `application/json` |
 | `/logs/summary` | GET | Aggregated run statistics | — |
 | `/logs/runs` | GET | Recent run history | — |
@@ -202,7 +204,61 @@ curl -X POST http://localhost:8000/hybrid-image \
 
 ---
 
-## 6. Score Explanation
+## 6. Multi-Image Prediction (Multiple Angles)
+
+Upload 2–5 images of the same leaf (e.g., different angles, lighting) for a more robust ML prediction. The model runs on each image independently and **averages the probability vectors** across all images.
+
+```bash
+curl -X POST http://localhost:8000/predict-images \
+  -F "images=@leaf_top.jpg" \
+  -F "images=@leaf_side.jpg" \
+  -F "images=@leaf_close.jpg"
+```
+
+**Response** (extends standard DSS response with `ml_probabilities`, `gradcam_base64`, and `images_used`):
+```json
+{
+  "status": "assessed",
+  "condition_key": "blast",
+  "score": 0.78,
+  "ml_probabilities": {
+    "blast": 0.76,
+    "brown_spot": 0.16,
+    "bacterial_blight": 0.08
+  },
+  "gradcam_base64": "iVBORw0KGgo...",
+  "images_used": 3,
+  "mode_used": "ML Only",
+  "..."
+}
+```
+
+> **Limits:** Minimum 2 images, maximum 5. Each image max 10 MB. Grad-CAM is generated from the first image only.
+
+---
+
+## 7. Multi-Image Hybrid
+
+Upload multiple leaf images AND questionnaire answers together. ML predictions are averaged across all images, then fused with questionnaire scoring.
+
+```bash
+curl -X POST http://localhost:8000/hybrid-images \
+  -F "images=@leaf_top.jpg" \
+  -F "images=@leaf_side.jpg" \
+  -F 'questionnaire={
+    "growth_stage": "flowering",
+    "symptoms": ["dark_spots"],
+    "farmer_confidence": "very_sure",
+    "weather": "high_humidity",
+    "additional_symptoms": ["none"]
+  }'
+```
+
+> Same limits and response structure as `/predict-images`, but `mode_used` will be `"Hybrid (Recommended)"`.
+
+---
+
+## 8. Score Explanation
 
 Get a detailed signal-by-signal breakdown of how each condition was scored.
 
@@ -274,6 +330,12 @@ Every DSS endpoint returns this structure:
 | `ml_probabilities` | object | Raw 3-class ML model probabilities |
 | `gradcam_base64` | string\|null | Base64-encoded PNG of the Grad-CAM heatmap overlay (null if generation failed) |
 
+**Multi-image endpoint responses** (`/predict-images`, `/hybrid-images`) also include:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `images_used` | int | Number of images successfully processed and averaged |
+
 ---
 
 ## Error Codes
@@ -329,4 +391,17 @@ const hybridResponse = await fetch('http://localhost:8000/hybrid-image', {
   method: 'POST',
   body: hybridForm,
 });
+
+// Multi-image upload (multiple angles)
+const multiForm = new FormData();
+for (const file of fileInput.files) {  // 2–5 images
+  multiForm.append('images', file);
+}
+const multiResponse = await fetch('http://localhost:8000/predict-images', {
+  method: 'POST',
+  body: multiForm,
+});
+const multiResult = await multiResponse.json();
+console.log(multiResult.images_used);        // 3
+console.log(multiResult.ml_probabilities);   // averaged across all images
 ```

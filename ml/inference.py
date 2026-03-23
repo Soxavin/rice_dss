@@ -25,7 +25,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 # CONDITIONAL TENSORFLOW IMPORT
 # TensorFlow is a heavy dependency (~500MB). We make it optional so that:
@@ -292,6 +292,38 @@ class RiceDSSInference:
         except Exception as e:
             print(f"[ML Inference] Inference from bytes failed: {e}")
             return None
+
+    def predict_from_multiple_bytes(
+        self, images: List[bytes], use_tta: bool = False
+    ) -> Optional[Dict[str, float]]:
+        """
+        Runs inference on multiple images of the same leaf (e.g., different angles)
+        and averages the probability vectors for a more robust prediction.
+
+        Args:
+            images: List of raw image bytes (JPEG/PNG). Max 5 images.
+            use_tta: Enable test-time augmentation per image.
+
+        Returns:
+            dict or None: Averaged {blast, brown_spot, bacterial_blight} summing to ~1.0.
+            Returns None if all images fail inference.
+        """
+        all_probs = []
+        for image_bytes in images:
+            probs = self.predict_from_bytes(image_bytes, use_tta=use_tta)
+            if probs is not None:
+                all_probs.append(probs)
+
+        if not all_probs:
+            return None
+
+        # Average across all successful predictions
+        keys = all_probs[0].keys()
+        averaged = {
+            k: sum(p[k] for p in all_probs) / len(all_probs)
+            for k in keys
+        }
+        return averaged
 
     def get_gradcam(
         self, image_source, class_index: int = None

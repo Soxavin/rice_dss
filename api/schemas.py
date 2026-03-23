@@ -279,6 +279,17 @@ class ImagePredictionResponse(DSSResponse):
     )
 
 
+class MultiImagePredictionResponse(ImagePredictionResponse):
+    """
+    Response from /predict-images and /hybrid-images endpoints.
+    Extends ImagePredictionResponse with the number of images used.
+    The ml_probabilities field contains the averaged probabilities across all images.
+    """
+    images_used: int = Field(
+        description="Number of images that were successfully processed and averaged"
+    )
+
+
 # =============================================================================
 # EXPLANATION RESPONSE SCHEMA
 # =============================================================================

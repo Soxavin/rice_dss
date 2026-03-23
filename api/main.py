@@ -33,7 +33,8 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.schemas import (
-    QuestionnaireRequest, DSSResponse, ExplainResponse, ImagePredictionResponse
+    QuestionnaireRequest, DSSResponse, ExplainResponse, ImagePredictionResponse,
+    MultiImagePredictionResponse,
 )
 from dss.mode_layer import run_dss
 from dss.validation import validate_answers
@@ -123,6 +124,8 @@ async def root():
             "hybrid": "POST /hybrid",
             "predict_image": "POST /predict-image",
             "hybrid_image": "POST /hybrid-image",
+            "predict_images": "POST /predict-images",
+            "hybrid_images": "POST /hybrid-images",
             "explain": "POST /explain",
         }
     }
@@ -282,6 +285,7 @@ async def logs_runs(limit: int = 20):
 # Both checks happen BEFORE loading the model or reading the full file.
 
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_MULTI_IMAGES = 5  # Maximum images for multi-angle endpoints
 
 
 def _generate_gradcam_base64(model, image_bytes: bytes) -> str | None:
@@ -467,6 +471,141 @@ async def hybrid_image(
         output = translate_output(output, lang)
         output['ml_probabilities'] = probs
         output['gradcam_base64'] = gradcam_b64
+        return output
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
+
+
+# =============================================================================
+# MULTI-IMAGE ENDPOINTS
+# =============================================================================
+# These endpoints accept multiple leaf images (e.g., different angles of the
+# same leaf) and average the ML predictions across all images for a more
+# robust diagnosis. The single-image endpoints above remain unchanged.
+
+
+async def _validate_multi_images(images: list[UploadFile]) -> list[bytes]:
+    """
+    Validates and reads multiple uploaded images.
+    Returns list of image bytes. Raises HTTPException on validation failure.
+    """
+    if len(images) < 2:
+        raise HTTPException(
+            status_code=422,
+            detail="Multi-image endpoints require at least 2 images. Use /predict-image for single images."
+        )
+    if len(images) > MAX_MULTI_IMAGES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Too many images. Maximum is {MAX_MULTI_IMAGES}."
+        )
+
+    all_contents = []
+    for i, img in enumerate(images):
+        if img.content_type and img.content_type not in ALLOWED_MIME_TYPES:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Image {i+1}: unsupported type {img.content_type}. Use JPEG, PNG, or WebP."
+            )
+        contents = await img.read()
+        if len(contents) > MAX_IMAGE_SIZE:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Image {i+1}: too large. Maximum size is 10 MB per image."
+            )
+        all_contents.append(contents)
+
+    return all_contents
+
+
+@app.post(
+    "/predict-images",
+    response_model=MultiImagePredictionResponse,
+    summary="Multi-Image Prediction (Multiple Angles)",
+    description=(
+        "Upload multiple leaf images (2–5, e.g., different angles of the same leaf) "
+        "for ML-only diagnosis. Predictions are averaged across all images for higher accuracy. "
+        "**Cannot detect non-biotic stresses** — use /hybrid-images for full diagnosis."
+    ),
+    tags=["Image Endpoints"]
+)
+async def predict_images(
+    images: list[UploadFile] = File(..., description="2–5 leaf images (different angles)"),
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
+):
+    all_contents = await _validate_multi_images(images)
+
+    model = get_inference_model()
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="ML model not available. Train first with: python -m ml.train --data_dir data/"
+        )
+
+    probs = model.predict_from_multiple_bytes(all_contents)
+    if probs is None:
+        raise HTTPException(status_code=422, detail="Could not process any of the uploaded images.")
+
+    gradcam_b64 = _generate_gradcam_base64(model, all_contents[0])
+
+    raw = {'ml_probabilities': probs}
+    try:
+        output = run_dss(raw, mode="ml")
+        output = translate_output(output, lang)
+        output['ml_probabilities'] = probs
+        output['gradcam_base64'] = gradcam_b64
+        output['images_used'] = len(all_contents)
+        return output
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
+
+
+@app.post(
+    "/hybrid-images",
+    response_model=MultiImagePredictionResponse,
+    summary="Hybrid Diagnosis with Multiple Images",
+    description=(
+        "Upload multiple leaf images (2–5) alongside questionnaire answers for "
+        "full hybrid diagnosis. ML predictions are averaged across all images, "
+        "then fused with questionnaire scoring. Non-biotic stresses override ML output."
+    ),
+    tags=["Image Endpoints"]
+)
+async def hybrid_images(
+    images: list[UploadFile] = File(..., description="2–5 leaf images (different angles)"),
+    questionnaire: str = Form(
+        ...,
+        description="JSON string of questionnaire answers (same fields as QuestionnaireRequest)"
+    ),
+    lang: str = Query("en", description="Response language: 'en' or 'km'"),
+):
+    all_contents = await _validate_multi_images(images)
+
+    model = get_inference_model()
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="ML model not available. Train first with: python -m ml.train --data_dir data/"
+        )
+
+    probs = model.predict_from_multiple_bytes(all_contents)
+    if probs is None:
+        raise HTTPException(status_code=422, detail="Could not process any of the uploaded images.")
+
+    try:
+        raw = json.loads(questionnaire)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="Invalid JSON in questionnaire field.")
+
+    gradcam_b64 = _generate_gradcam_base64(model, all_contents[0])
+
+    raw['ml_probabilities'] = probs
+    try:
+        output = run_dss(raw, mode="hybrid")
+        output = translate_output(output, lang)
+        output['ml_probabilities'] = probs
+        output['gradcam_base64'] = gradcam_b64
+        output['images_used'] = len(all_contents)
         return output
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
