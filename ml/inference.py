@@ -51,6 +51,11 @@ from ml.dataset import CLASS_NAMES, ALL_CLASS_NAMES, DEFAULT_IMG_SIZE
 HEALTHY_DOMINANT_THRESHOLD = 0.60
 HEALTHY_CLASS_NAME = 'healthy'
 
+# Minimum confidence the model must have in its top class (across all 4 classes)
+# for the image to be considered a valid leaf. Images below this threshold
+# (e.g., random photos, diagrams, non-leaf objects) are rejected.
+MIN_CONFIDENCE_THRESHOLD = 0.55
+
 
 class RiceDSSInference:
     """
@@ -154,10 +159,11 @@ class RiceDSSInference:
         image = tf.expand_dims(image, axis=0)
         return image
 
-    def _bridge_to_dss(self, raw_probs: "np.ndarray") -> Dict[str, float]:
+    def _bridge_to_dss(self, raw_probs: "np.ndarray") -> Optional[Dict[str, float]]:
         """
         Converts 4-class raw softmax output to 3-key DSS-compatible dict.
 
+        If max confidence < MIN_CONFIDENCE_THRESHOLD → None (not a leaf).
         If healthy probability >= HEALTHY_DOMINANT_THRESHOLD → uniform probs.
         Otherwise → drop healthy, renormalize disease probs to sum to 1.0.
 
@@ -165,7 +171,8 @@ class RiceDSSInference:
             raw_probs: Array of shape (num_classes,) from model softmax.
 
         Returns:
-            dict: {blast, brown_spot, bacterial_blight} summing to ~1.0.
+            dict or None: {blast, brown_spot, bacterial_blight} summing to ~1.0.
+            Returns None if the image is not recognized as a rice leaf.
         """
         # Map model output neurons to class names
         # e.g., [0.05, 0.80, 0.10, 0.05] → {bacterial_blight: 0.05, blast: 0.80, ...}
@@ -173,6 +180,14 @@ class RiceDSSInference:
             self.all_class_names[i]: float(raw_probs[i])
             for i in range(len(self.all_class_names))
         }
+
+        # OUT-OF-DISTRIBUTION GATE
+        # If the model's top class confidence is below MIN_CONFIDENCE_THRESHOLD,
+        # the image is likely not a rice leaf (e.g., a diagram, random photo).
+        # Return None so the caller can handle it as "unrecognizable".
+        max_prob = max(full_probs.values())
+        if max_prob < MIN_CONFIDENCE_THRESHOLD:
+            return None
 
         healthy_prob = full_probs.get(HEALTHY_CLASS_NAME, 0.0)
 

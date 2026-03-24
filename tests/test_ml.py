@@ -372,19 +372,19 @@ class TestHealthyClassHandling:
         """When healthy < threshold, disease probs are renormalized to sum to 1.0."""
         import numpy as np
         obj = self._make_mock_inference()
-        # bacterial_blight=0.10, blast=0.50, brown_spot=0.30, healthy=0.10
-        raw = np.array([0.10, 0.50, 0.30, 0.10])
+        # bacterial_blight=0.05, blast=0.70, brown_spot=0.15, healthy=0.10
+        raw = np.array([0.05, 0.70, 0.15, 0.10])
         result = obj._bridge_to_dss(raw)
         # After dropping healthy (0.10) and renormalizing 0.90 total:
-        assert abs(result['blast'] - 0.50 / 0.90) < 0.01
-        assert abs(result['brown_spot'] - 0.30 / 0.90) < 0.01
-        assert abs(result['bacterial_blight'] - 0.10 / 0.90) < 0.01
+        assert abs(result['blast'] - 0.70 / 0.90) < 0.01
+        assert abs(result['brown_spot'] - 0.15 / 0.90) < 0.01
+        assert abs(result['bacterial_blight'] - 0.05 / 0.90) < 0.01
 
     def test_renormalized_probs_sum_to_one(self):
         """Renormalized output probs must sum to ~1.0."""
         import numpy as np
         obj = self._make_mock_inference()
-        raw = np.array([0.15, 0.40, 0.25, 0.20])
+        raw = np.array([0.10, 0.60, 0.20, 0.10])
         result = obj._bridge_to_dss(raw)
         total = sum(result.values())
         assert abs(total - 1.0) < 0.01, f"Probs sum to {total}, expected ~1.0"
@@ -393,7 +393,7 @@ class TestHealthyClassHandling:
         """Output must have exactly {blast, brown_spot, bacterial_blight}."""
         import numpy as np
         obj = self._make_mock_inference()
-        raw = np.array([0.20, 0.30, 0.40, 0.10])
+        raw = np.array([0.10, 0.60, 0.20, 0.10])
         result = obj._bridge_to_dss(raw)
         assert set(result.keys()) == BIOTIC_CONDITIONS
 
@@ -417,6 +417,25 @@ class TestHealthyClassHandling:
         total = sum(result.values())
         assert abs(total - 1.0) < 0.01
         assert set(result.keys()) == BIOTIC_CONDITIONS
+
+    def test_low_confidence_returns_none(self):
+        """Images with no class above MIN_CONFIDENCE_THRESHOLD are rejected as non-leaf."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        # All classes below threshold — model is confused (not a leaf)
+        raw = np.array([0.25, 0.25, 0.25, 0.25])
+        result = obj._bridge_to_dss(raw)
+        assert result is None
+
+    def test_confidence_above_threshold_passes(self):
+        """Images with at least one class above threshold should produce results."""
+        import numpy as np
+        obj = self._make_mock_inference()
+        # Blast clearly dominant — valid leaf image
+        raw = np.array([0.05, 0.80, 0.10, 0.05])
+        result = obj._bridge_to_dss(raw)
+        assert result is not None
+        assert 'blast' in result
 
 
 # =============================================================================

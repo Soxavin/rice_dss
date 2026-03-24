@@ -412,8 +412,21 @@ def render_gauge(score: float, condition_key: str, confidence_label: str,
 # IMAGE + GRAD-CAM COMPARISON
 # =============================================================================
 
-def render_image_comparison(image_bytes, gradcam_image):
-    """Shows original image and Grad-CAM overlay side by side."""
+def render_image_comparison(image_bytes, gradcam_image, all_image_bytes=None):
+    """Shows original image(s) and Grad-CAM overlay side by side."""
+    # Multi-image: show all uploaded images in a gallery row
+    if all_image_bytes and len(all_image_bytes) > 1:
+        st.caption(f"Uploaded {len(all_image_bytes)} leaf images")
+        cols = st.columns(min(len(all_image_bytes), 5))
+        for i, img_b in enumerate(all_image_bytes):
+            with cols[i % 5]:
+                st.image(img_b, caption=f"Image {i+1}", use_container_width=True)
+        # Show Grad-CAM below the gallery (generated from image 1)
+        if gradcam_image is not None:
+            st.image(gradcam_image, caption="Grad-CAM — Model Focus Areas (Image 1)",
+                     width=400)
+        return
+
     if gradcam_image is None:
         st.image(image_bytes, caption="Uploaded leaf image", width=300)
         return
@@ -1048,6 +1061,7 @@ if _internal_mode == "Image Only (ML)" and ml_submitted:
     # --- Progressive reveal ---
     ml_probs = None
     gradcam_image = None
+    all_image_bytes = None
 
     if _multi_image_mode:
         # Multi-image: read all images, average predictions
@@ -1091,14 +1105,14 @@ if _internal_mode == "Image Only (ML)" and ml_submitted:
             status.update(label="Diagnosis complete!", state="complete", expanded=False)
 
     if ml_probs is None:
-        st.error("Could not process image — please try a different photo.")
+        st.error("Could not recognize a rice leaf in this image. Please upload a clear photo of a rice leaf.")
         st.stop()
 
     st.markdown(f"## 🩺 {L['result_title']}")
     st.info(f"**{L['result_mode']}:** {L['mode_image']}")
 
     # --- Side-by-side image + Grad-CAM ---
-    render_image_comparison(image_bytes, gradcam_image)
+    render_image_comparison(image_bytes, gradcam_image, all_image_bytes=all_image_bytes)
 
     render_result(output, L)
 
@@ -1169,6 +1183,7 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
     ml_probs = None
     gradcam_image = None
     image_bytes = None
+    all_image_bytes = None
 
     _has_images = (_multi_image_mode and len(uploaded_images) >= 2) or (not _multi_image_mode and uploaded_image is not None)
 
@@ -1244,7 +1259,7 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
 
     # --- Side-by-side image + Grad-CAM ---
     if image_bytes is not None:
-        render_image_comparison(image_bytes, gradcam_image)
+        render_image_comparison(image_bytes, gradcam_image, all_image_bytes=all_image_bytes)
 
     render_result(output, L)
 

@@ -383,7 +383,7 @@ async def predict_image(
     # Run ML inference: image bytes → {blast, brown_spot, bacterial_blight} probs
     probs = model.predict_from_bytes(contents)
     if probs is None:
-        raise HTTPException(status_code=422, detail="Could not process image.")
+        raise HTTPException(status_code=422, detail="Could not recognize a rice leaf in this image. Please upload a clear photo of a rice leaf.")
 
     # Generate Grad-CAM overlay (non-blocking — failure is OK)
     gradcam_b64 = _generate_gradcam_base64(model, contents)
@@ -452,7 +452,7 @@ async def hybrid_image(
 
     probs = model.predict_from_bytes(contents)
     if probs is None:
-        raise HTTPException(status_code=422, detail="Could not process image.")
+        raise HTTPException(status_code=422, detail="Could not recognize a rice leaf in this image. Please upload a clear photo of a rice leaf.")
 
     # Parse the questionnaire JSON string from the form field
     try:
@@ -544,7 +544,7 @@ async def predict_images(
 
     probs = model.predict_from_multiple_bytes(all_contents)
     if probs is None:
-        raise HTTPException(status_code=422, detail="Could not process any of the uploaded images.")
+        raise HTTPException(status_code=422, detail="Could not recognize rice leaves in the uploaded images. Please upload clear photos of rice leaves.")
 
     gradcam_b64 = _generate_gradcam_base64(model, all_contents[0])
 
@@ -590,7 +590,7 @@ async def hybrid_images(
 
     probs = model.predict_from_multiple_bytes(all_contents)
     if probs is None:
-        raise HTTPException(status_code=422, detail="Could not process any of the uploaded images.")
+        raise HTTPException(status_code=422, detail="Could not recognize rice leaves in the uploaded images. Please upload clear photos of rice leaves.")
 
     try:
         raw = json.loads(questionnaire)
