@@ -447,3 +447,119 @@ class TestAdversarialInputs:
         }
         output = _run_safely(answers, 'only_slow_growth')
         assert output['status'] in {'uncertain', 'out_of_scope'}
+
+
+# =============================================================================
+# ERROR HANDLING / MALFORMED INPUT TESTS
+# =============================================================================
+
+class TestErrorHandling:
+    """Tests that malformed ML inputs are safely rejected, not silently used."""
+
+    def test_nan_ml_probabilities_rejected(self):
+        """NaN in ML probabilities must be rejected (not silently passed through)."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'weather': 'high_humidity',
+            'ml_probabilities': {
+                'blast': float('nan'), 'brown_spot': 0.3, 'bacterial_blight': 0.2
+            },
+        }
+        output = _run_safely(answers, 'nan_ml')
+        # NaN should be rejected → ML fusion disabled → questionnaire-only result
+        assert output['status'] in VALID_STATUSES
+
+    def test_inf_ml_probabilities_rejected(self):
+        """Inf in ML probabilities must be rejected."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'ml_probabilities': {
+                'blast': float('inf'), 'brown_spot': 0.3, 'bacterial_blight': 0.2
+            },
+        }
+        output = _run_safely(answers, 'inf_ml')
+        assert output['status'] in VALID_STATUSES
+
+    def test_negative_inf_ml_probabilities_rejected(self):
+        """Negative Inf in ML probabilities must be rejected."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'ml_probabilities': {
+                'blast': 0.5, 'brown_spot': float('-inf'), 'bacterial_blight': 0.2
+            },
+        }
+        output = _run_safely(answers, 'neg_inf_ml')
+        assert output['status'] in VALID_STATUSES
+
+    def test_ml_probabilities_wrong_keys_rejected(self):
+        """ML dict with wrong keys must be rejected."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'ml_probabilities': {
+                'blast': 0.5, 'wrong_key': 0.3, 'bacterial_blight': 0.2
+            },
+        }
+        output = _run_safely(answers, 'wrong_keys_ml')
+        assert output['status'] in VALID_STATUSES
+
+    def test_ml_probabilities_out_of_range_rejected(self):
+        """ML values outside [0, 1] must be rejected."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'ml_probabilities': {
+                'blast': 2.5, 'brown_spot': -0.3, 'bacterial_blight': 0.2
+            },
+        }
+        output = _run_safely(answers, 'out_of_range_ml')
+        assert output['status'] in VALID_STATUSES
+
+    def test_ml_probabilities_non_numeric_rejected(self):
+        """Non-numeric ML values must be rejected."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'ml_probabilities': {
+                'blast': 'high', 'brown_spot': 0.3, 'bacterial_blight': 0.2
+            },
+        }
+        output = _run_safely(answers, 'non_numeric_ml')
+        assert output['status'] in VALID_STATUSES
+
+    def test_ml_probabilities_string_rejected(self):
+        """Passing a string instead of dict for ml_probabilities."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'ml_probabilities': 'blast',
+        }
+        output = _run_safely(answers, 'string_ml')
+        assert output['status'] in VALID_STATUSES
+
+    def test_ml_probabilities_list_rejected(self):
+        """Passing a list instead of dict for ml_probabilities."""
+        answers = {
+            'symptoms': ['dark_spots'],
+            'farmer_confidence': 'very_sure',
+            'ml_probabilities': [0.5, 0.3, 0.2],
+        }
+        output = _run_safely(answers, 'list_ml')
+        assert output['status'] in VALID_STATUSES
+
+    def test_invalid_types_in_answers_no_crash(self):
+        """Passing wrong types for various fields should not crash."""
+        answers = {
+            'growth_stage': 123,
+            'symptoms': 'dark_spots',  # string instead of list
+            'symptom_location': {'leaf_blade': True},  # dict instead of list
+            'farmer_confidence': True,  # bool instead of string
+            'fertilizer_applied': 'yes',  # string instead of bool
+            'weather': ['heavy_rain'],  # list instead of string
+            'ml_probabilities': None,
+        }
+        output = _run_safely(answers, 'wrong_types')
+        assert output['status'] in VALID_STATUSES

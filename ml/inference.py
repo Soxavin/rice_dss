@@ -174,12 +174,29 @@ class RiceDSSInference:
             dict or None: {blast, brown_spot, bacterial_blight} summing to ~1.0.
             Returns None if the image is not recognized as a rice leaf.
         """
+        # Validate raw_probs shape and content before mapping
+        try:
+            if len(raw_probs) != len(self.all_class_names):
+                print(f"[ML Inference] raw_probs length {len(raw_probs)} != expected {len(self.all_class_names)}")
+                return None
+        except TypeError:
+            return None
+
         # Map model output neurons to class names
         # e.g., [0.05, 0.80, 0.10, 0.05] → {bacterial_blight: 0.05, blast: 0.80, ...}
-        full_probs = {
-            self.all_class_names[i]: float(raw_probs[i])
-            for i in range(len(self.all_class_names))
-        }
+        try:
+            full_probs = {
+                self.all_class_names[i]: float(raw_probs[i])
+                for i in range(len(self.all_class_names))
+            }
+        except (ValueError, TypeError, IndexError):
+            print("[ML Inference] Could not convert raw_probs to float dict")
+            return None
+
+        # Reject if any probability is NaN or Inf
+        if any(np.isnan(v) or np.isinf(v) for v in full_probs.values()):
+            print("[ML Inference] raw_probs contains NaN or Inf values")
+            return None
 
         # OUT-OF-DISTRIBUTION GATE
         # If the model's top class confidence is below MIN_CONFIDENCE_THRESHOLD,
@@ -256,7 +273,11 @@ class RiceDSSInference:
             contrast = tf.image.adjust_contrast(image_tensor, 1.1)
             predictions.append(self.model.predict(contrast, verbose=0)[0])
 
-        return np.mean(predictions, axis=0)
+        # Filter out any predictions containing NaN before averaging
+        valid = [p for p in predictions if not np.any(np.isnan(p))]
+        if not valid:
+            return predictions[0]  # Fall back to original if all NaN
+        return np.mean(valid, axis=0)
 
     def predict_from_image(
         self, image_path: str, use_tta: bool = False

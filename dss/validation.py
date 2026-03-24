@@ -224,7 +224,8 @@ def validate_ml_probabilities(ml_probs) -> dict:
         )
         return None
 
-    # Check all values are numeric and in [0.0, 1.0]
+    # Check all values are numeric, finite, and in [0.0, 1.0]
+    import math
     validated = {}
     for key in VALID_ML_KEYS:
         val = ml_probs[key]
@@ -232,6 +233,12 @@ def validate_ml_probabilities(ml_probs) -> dict:
             logger.warning(
                 f"[ML Validation] ml_probabilities['{key}'] is not numeric "
                 f"(got {type(val).__name__}: {val!r}). Disabling ML fusion."
+            )
+            return None
+        if math.isnan(val) or math.isinf(val):
+            logger.warning(
+                f"[ML Validation] ml_probabilities['{key}'] = {val} is not finite. "
+                f"Disabling ML fusion."
             )
             return None
         if val < 0.0 or val > 1.0:
@@ -277,8 +284,11 @@ def validate_answers(raw_answers: dict) -> dict:
     def get_valid(key, valid_set, default=None):
         """Helper: return value if valid, else default."""
         val = raw_answers.get(key, default)
-        if val in valid_set:
-            return val
+        try:
+            if val in valid_set:
+                return val
+        except TypeError:
+            pass  # unhashable type (e.g., list passed where string expected)
         return default  # treat invalid/missing as None (neutral)
 
     def get_valid_list(key, valid_set):

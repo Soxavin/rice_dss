@@ -154,6 +154,8 @@ async def questionnaire_endpoint(
     try:
         output = run_dss(raw, mode="questionnaire")
         return translate_output(output, lang)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -183,6 +185,8 @@ async def ml_only_endpoint(
     try:
         output = run_dss(raw, mode="ml")
         return translate_output(output, lang)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -212,6 +216,8 @@ async def hybrid_endpoint(
     try:
         output = run_dss(raw, mode="hybrid")
         return translate_output(output, lang)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -246,6 +252,8 @@ async def explain_endpoint(
         validated = validate_answers(raw)
         breakdown = explain_scores(validated)
         return translate_output({"explanations": breakdown}, lang)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Explainer error: {str(e)}")
 
@@ -376,7 +384,10 @@ async def predict_image(
         )
 
     # Gate 3: File size check (read bytes, then verify before processing)
-    contents = await image.read()
+    try:
+        contents = await image.read()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Failed to read uploaded image.")
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(status_code=422, detail="Image too large. Maximum size is 10 MB.")
 
@@ -397,6 +408,8 @@ async def predict_image(
         output['ml_probabilities'] = probs
         output['gradcam_base64'] = gradcam_b64
         return output
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -446,7 +459,10 @@ async def hybrid_image(
             detail="ML model not available. Train first with: python -m ml.train --data_dir data/"
         )
 
-    contents = await image.read()
+    try:
+        contents = await image.read()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Failed to read uploaded image.")
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(status_code=422, detail="Image too large. Maximum size is 10 MB.")
 
@@ -472,6 +488,8 @@ async def hybrid_image(
         output['ml_probabilities'] = probs
         output['gradcam_base64'] = gradcam_b64
         return output
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -507,7 +525,13 @@ async def _validate_multi_images(images: list[UploadFile]) -> list[bytes]:
                 status_code=422,
                 detail=f"Image {i+1}: unsupported type {img.content_type}. Use JPEG, PNG, or WebP."
             )
-        contents = await img.read()
+        try:
+            contents = await img.read()
+        except Exception:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Image {i+1}: failed to read uploaded file."
+            )
         if len(contents) > MAX_IMAGE_SIZE:
             raise HTTPException(
                 status_code=422,
@@ -558,6 +582,8 @@ async def predict_images(
         output['images_used'] = len(all_contents)
         output['images_agree'] = agreement['agree']
         return output
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
@@ -612,6 +638,8 @@ async def hybrid_images(
         output['images_used'] = len(all_contents)
         output['images_agree'] = agreement['agree']
         return output
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
