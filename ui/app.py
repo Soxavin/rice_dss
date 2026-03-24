@@ -1108,6 +1108,12 @@ if _internal_mode == "Image Only (ML)" and ml_submitted:
         st.error("Could not recognize a rice leaf in this image. Please upload a clear photo of a rice leaf.")
         st.stop()
 
+    # Multi-image disagreement warning
+    if _multi_image_mode and ml_probs is not None:
+        agreement = model.check_multi_image_agreement()
+        if not agreement['agree']:
+            st.warning(L.get('image_disagree_warning', 'Your images appear to show different conditions.'))
+
     st.markdown(f"## 🩺 {L['result_title']}")
     st.info(f"**{L['result_mode']}:** {L['mode_image']}")
 
@@ -1230,6 +1236,10 @@ elif _internal_mode != "Image Only (ML)" and form_submitted:
                 "ML model not available or could not process image — "
                 "fell back to questionnaire only."
             )
+        elif _multi_image_mode and model is not None:
+            agreement = model.check_multi_image_agreement()
+            if not agreement['agree']:
+                st.warning(L.get('image_disagree_warning', 'Your images appear to show different conditions.'))
 
     # --- Mode badge + diagnostic strength ---
     st.markdown(f"## 🩺 {L['result_title']}")

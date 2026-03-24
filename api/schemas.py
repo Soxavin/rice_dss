@@ -288,6 +288,11 @@ class MultiImagePredictionResponse(ImagePredictionResponse):
     images_used: int = Field(
         description="Number of images that were successfully processed and averaged"
     )
+    images_agree: bool = Field(
+        default=True,
+        description="Whether all images agree on the same top predicted condition. "
+                    "False suggests the images may show different leaves or conditions."
+    )
 
 
 # =============================================================================

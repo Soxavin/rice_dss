@@ -599,12 +599,13 @@ class TestMultiImageInference:
     """
 
     def _make_mock_inference(self):
-        """Creates a mock inference object with predict_from_bytes and predict_from_multiple_bytes."""
+        """Creates a mock inference object with predict_from_bytes, predict_from_multiple_bytes, and check_multi_image_agreement."""
         from unittest.mock import MagicMock
         obj = MagicMock(spec=RiceDSSInference)
         obj.all_class_names = ALL_CLASS_NAMES
         obj.dss_class_names = CLASS_NAMES
         obj.predict_from_multiple_bytes = RiceDSSInference.predict_from_multiple_bytes.__get__(obj)
+        obj.check_multi_image_agreement = RiceDSSInference.check_multi_image_agreement.__get__(obj)
         return obj
 
     def test_averages_two_predictions(self):
@@ -678,3 +679,37 @@ class TestMultiImageInference:
         result = obj.predict_from_multiple_bytes([b'img1', b'img2'])
         total = sum(result.values())
         assert abs(total - 1.0) < 0.01, f"Probs sum to {total}, expected ~1.0"
+
+    def test_agreement_when_images_agree(self):
+        """check_multi_image_agreement should return agree=True when all images predict the same top class."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(side_effect=[
+            {'blast': 0.80, 'brown_spot': 0.10, 'bacterial_blight': 0.10},
+            {'blast': 0.70, 'brown_spot': 0.20, 'bacterial_blight': 0.10},
+        ])
+        obj.predict_from_multiple_bytes([b'img1', b'img2'])
+        agreement = obj.check_multi_image_agreement()
+        assert agreement['agree'] is True
+        assert agreement['top_classes'] == ['blast', 'blast']
+
+    def test_disagreement_when_images_differ(self):
+        """check_multi_image_agreement should return agree=False when images predict different top classes."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        obj.predict_from_bytes = MagicMock(side_effect=[
+            {'blast': 0.10, 'brown_spot': 0.80, 'bacterial_blight': 0.10},
+            {'blast': 0.75, 'brown_spot': 0.15, 'bacterial_blight': 0.10},
+        ])
+        obj.predict_from_multiple_bytes([b'img1', b'img2'])
+        agreement = obj.check_multi_image_agreement()
+        assert agreement['agree'] is False
+        assert set(agreement['top_classes']) == {'blast', 'brown_spot'}
+
+    def test_agreement_without_prior_prediction(self):
+        """check_multi_image_agreement should return agree=True when called without prior multi-image prediction."""
+        from unittest.mock import MagicMock
+        obj = self._make_mock_inference()
+        agreement = obj.check_multi_image_agreement()
+        assert agreement['agree'] is True
+        assert agreement['top_classes'] == []

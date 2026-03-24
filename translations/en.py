@@ -317,6 +317,10 @@ UI_LABELS_EN = {
     'image_multi_caption': 'Upload 2–5 photos of the same leaf from different angles for more accurate ML prediction.',
     'image_upload_multi_label': 'Upload leaf images (2–5)',
     'image_multi_count': 'images uploaded',
+    'image_disagree_warning': (
+        'Your images appear to show different conditions. '
+        'For best results, upload photos of the same leaf from different angles.'
+    ),
 
     # ML-only mode
     'ml_only_info': 'In Image Only mode, the questionnaire is not needed. Upload a leaf image above.',

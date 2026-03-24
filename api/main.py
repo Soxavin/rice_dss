@@ -546,6 +546,7 @@ async def predict_images(
     if probs is None:
         raise HTTPException(status_code=422, detail="Could not recognize rice leaves in the uploaded images. Please upload clear photos of rice leaves.")
 
+    agreement = model.check_multi_image_agreement()
     gradcam_b64 = _generate_gradcam_base64(model, all_contents[0])
 
     raw = {'ml_probabilities': probs}
@@ -555,6 +556,7 @@ async def predict_images(
         output['ml_probabilities'] = probs
         output['gradcam_base64'] = gradcam_b64
         output['images_used'] = len(all_contents)
+        output['images_agree'] = agreement['agree']
         return output
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
@@ -592,6 +594,8 @@ async def hybrid_images(
     if probs is None:
         raise HTTPException(status_code=422, detail="Could not recognize rice leaves in the uploaded images. Please upload clear photos of rice leaves.")
 
+    agreement = model.check_multi_image_agreement()
+
     try:
         raw = json.loads(questionnaire)
     except json.JSONDecodeError:
@@ -606,6 +610,7 @@ async def hybrid_images(
         output['ml_probabilities'] = probs
         output['gradcam_base64'] = gradcam_b64
         output['images_used'] = len(all_contents)
+        output['images_agree'] = agreement['agree']
         return output
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")

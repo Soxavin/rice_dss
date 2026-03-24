@@ -338,7 +338,32 @@ class RiceDSSInference:
             k: sum(p[k] for p in all_probs) / len(all_probs)
             for k in keys
         }
+        # Store individual predictions for disagreement checking
+        self._last_individual_probs = all_probs
         return averaged
+
+    def check_multi_image_agreement(self) -> Dict:
+        """
+        Checks whether the most recent multi-image predictions agree on the
+        top predicted class. Call after predict_from_multiple_bytes().
+
+        Returns:
+            dict with keys:
+                'agree' (bool): True if all images predict the same top class.
+                'top_classes' (list[str]): Per-image top predicted class.
+                'unique_classes' (set[str]): Distinct top classes across images.
+        """
+        individual = getattr(self, '_last_individual_probs', [])
+        if not individual:
+            return {'agree': True, 'top_classes': [], 'unique_classes': set()}
+
+        top_classes = [max(p, key=p.get) for p in individual]
+        unique = set(top_classes)
+        return {
+            'agree': len(unique) == 1,
+            'top_classes': top_classes,
+            'unique_classes': unique,
+        }
 
     def get_gradcam(
         self, image_source, class_index: int = None
