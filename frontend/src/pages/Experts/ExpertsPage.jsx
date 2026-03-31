@@ -1,21 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
-import { Phone, Send, Search, MapPin, Star, ArrowRight, ShoppingBag } from 'lucide-react'
+import { Phone, Send, Search, MapPin, ShoppingBag } from 'lucide-react'
 
 const EXPERTS_DATA = [
-  { id: 1, name: 'Dr. Som Sopheap', titleKey: 'expert_role_agricultural_scientist', location: 'Phnom Penh, Cambodia', img: '👨‍🔬', telegram: 'dr_sopheap', online: true },
-  { id: 2, name: 'Eng Chantrea', titleKey: 'expert_role_rice_pathology', location: 'Battambang Region', img: '👨‍🌾', telegram: 'eng_chantrea', online: true },
-  { id: 3, name: 'Dr. Ly Rottanak', titleKey: 'expert_role_soil_science', location: 'Siem Reap Region', img: '👩‍🔬', telegram: 'ly_rottanak', online: false },
-  { id: 4, name: 'Nhem Sokha', titleKey: 'expert_role_agricultural_consultant', location: 'Kampong Cham', img: '👨‍🏫', telegram: 'nhem_sokha', online: true },
-  { id: 5, name: 'Chan Dara', titleKey: 'expert_role_rice_breeding', location: 'Prey Veng', img: '👩‍🌾', telegram: 'chan_dara', online: false },
-  { id: 6, name: 'Sok Visal', titleKey: 'expert_role_pest_management', location: 'Takeo', img: '👨‍🔬', telegram: 'sok_visal', online: true },
-]
-
-const SUPPLIERS = [
-  { id: 1, name: 'GreenGrowth Fertilizers', type: 'COMPANY', desc: 'Certified organic fertilizers and specialized pathogen treatments for industrial and small-scale rice farming.', location: 'Phnom Penh, Cambodia', rating: 4.5, telegram: 'greengrowth_supply' },
-  { id: 2, name: 'Rice Blast Disease', type: 'ARTICLE', desc: 'A fungal infection caused by Magnaporthe oryzae affecting rice plants. Crucial to understand for disease management.', location: null, telegram: null },
-  { id: 3, name: 'Optimizing Soil pH for Disease Resistance', type: 'ARTICLE', desc: 'Maintaining the ideal soil pH in the rice for a line of defense against many common rice pathogens.', location: null, telegram: null },
+  { id: 1, name: 'Dr. Som Sopheap', nameKm: 'ដុក្តូរ សំ សុភ័ព', titleKey: 'expert_role_agricultural_scientist', location: { en: 'Phnom Penh, Cambodia', km: 'ភ្នំពេញ, កម្ពុជា' }, img: '👨‍🔬', telegram: 'dr_sopheap', online: true },
+  { id: 2, name: 'Eng Chantrea', nameKm: 'អ៊ែង ច័ន្រ្ទា', titleKey: 'expert_role_rice_pathology', location: { en: 'Battambang Region', km: 'តំបន់បាត់ដំបង' }, img: '👨‍🌾', telegram: 'eng_chantrea', online: true },
+  { id: 3, name: 'Dr. Ly Rottanak', nameKm: 'ដុក្តូរ លី រដ្ឋណាក់', titleKey: 'expert_role_soil_science', location: { en: 'Siem Reap Region', km: 'តំបន់សៀមរាប' }, img: '👩‍🔬', telegram: 'ly_rottanak', online: false },
+  { id: 4, name: 'Nhem Sokha', nameKm: 'ញ៉ែម សុខា', titleKey: 'expert_role_agricultural_consultant', location: { en: 'Kampong Cham', km: 'កំពង់ចាម' }, img: '👨‍🏫', telegram: 'nhem_sokha', online: true },
+  { id: 5, name: 'Chan Dara', nameKm: 'ចាន់ ដារ៉ា', titleKey: 'expert_role_rice_breeding', location: { en: 'Prey Veng', km: 'ព្រៃវែង' }, img: '👩‍🌾', telegram: 'chan_dara', online: false },
+  { id: 6, name: 'Sok Visal', nameKm: 'សុក វិសាល', titleKey: 'expert_role_pest_management', location: { en: 'Takeo', km: 'តាកែវ' }, img: '👨‍🔬', telegram: 'sok_visal', online: true },
 ]
 
 const PRODUCTS = [
@@ -26,17 +20,34 @@ const PRODUCTS = [
 ]
 
 const FEATURED_SUPPLIERS = [
-  { name: 'Green Growth Agri-Supply', desc: 'Sustainable farming solutions', location: 'Phnom Penh, Cambodia', telegram: 'greengrowth_supply' },
-  { name: 'Harvest HUB', desc: 'Seeds & Farming Equipment', location: 'Phnom Penh, Cambodia', telegram: 'harvest_hub_kh' },
+  {
+    name: 'Green Growth Agri-Supply',
+    desc: { en: 'Sustainable farming solutions', km: 'ដំណោះស្រាយកសិកម្មចីរភាព' },
+    location: { en: 'Phnom Penh, Cambodia', km: 'ភ្នំពេញ, កម្ពុជា' },
+    telegram: 'greengrowth_supply',
+  },
+  {
+    name: 'Harvest HUB',
+    desc: { en: 'Seeds & Farming Equipment', km: 'គ្រាប់ពូជ និងឧបករណ៍កសិកម្ម' },
+    location: { en: 'Phnom Penh, Cambodia', km: 'ភ្នំពេញ, កម្ពុជា' },
+    telegram: 'harvest_hub_kh',
+  },
 ]
 
 export default function ExpertsPage() {
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
   const [tab, setTab] = useState('All')
-
-  const EXPERTS = EXPERTS_DATA.map(e => ({ ...e, title: t(e.titleKey) }))
   const [search, setSearch] = useState('')
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
+
+  const bil = (obj) => (typeof obj === 'object' ? obj[lang] || obj.en : obj)
+
+  const expertName = (expert) =>
+    lang === 'km' && expert.nameKm
+      ? `${expert.nameKm} (${expert.name})`
+      : expert.name
+
+  const EXPERTS = EXPERTS_DATA.map((e) => ({ ...e, title: t(e.titleKey) }))
 
   const tabs = [
     { key: 'All', label: t('experts_all') },
@@ -96,9 +107,9 @@ export default function ExpertsPage() {
                   )}
                 </div>
                 <p className="mt-3 text-[10px] font-semibold tracking-wider text-primary-600 uppercase">{expert.title}</p>
-                <h3 className="mt-1 font-bold text-neutral-900">{expert.name}</h3>
+                <h3 className="mt-1 font-bold text-neutral-900">{expertName(expert)}</h3>
                 <p className="text-xs text-neutral-500 flex items-center gap-1 mt-1">
-                  <MapPin size={12} /> {expert.location}
+                  <MapPin size={12} /> {bil(expert.location)}
                 </p>
                 <div className="mt-4 flex gap-2">
                   <button className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-primary-600 text-white rounded-lg text-xs font-medium border-none cursor-pointer hover:bg-primary-700">
@@ -129,9 +140,9 @@ export default function ExpertsPage() {
             {FEATURED_SUPPLIERS.map((s) => (
               <div key={s.name} className="bg-white border border-primary-200 rounded-xl p-5">
                 <h3 className="font-bold text-neutral-900">{s.name}</h3>
-                <p className="text-sm text-neutral-600 mt-1">{s.desc}</p>
+                <p className="text-sm text-neutral-600 mt-1">{bil(s.desc)}</p>
                 <p className="text-xs text-neutral-500 flex items-center gap-1 mt-2">
-                  <MapPin size={12} /> {s.location}
+                  <MapPin size={12} /> {bil(s.location)}
                 </p>
                 <div className="mt-4 flex gap-2">
                   <Link to="/experts" className="px-4 py-1.5 bg-primary-600 text-white text-xs rounded-lg font-medium no-underline hover:bg-primary-700">
@@ -155,7 +166,7 @@ export default function ExpertsPage() {
           <p className="text-sm text-neutral-600 mt-1">{t('suppliers_essential_desc')}</p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {PRODUCTS.map((p) => (
-              <div key={p.id} className="bg-white border border-neutral-200 rounded-xl p-4 hover-lift">
+              <div key={p.id} className="bg-white border border-neutral-200 rounded-xl p-4 hover-lift flex flex-col">
                 <div className="w-full h-24 bg-neutral-50 rounded-lg flex items-center justify-center text-4xl">
                   {p.img}
                 </div>
@@ -166,7 +177,7 @@ export default function ExpertsPage() {
                   href={`https://t.me/${p.telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${p.name}. Please send me details and pricing.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 w-full inline-flex items-center justify-center gap-1.5 py-2 bg-primary-600 text-white rounded-lg text-xs font-medium no-underline hover:bg-primary-700 cursor-pointer"
+                  className="mt-auto pt-3 w-full inline-flex items-center justify-center gap-1.5 py-2 bg-primary-600 text-white rounded-lg text-xs font-medium no-underline hover:bg-primary-700 cursor-pointer"
                 >
                   <ShoppingBag size={14} /> {p.price ? t('suppliers_buy') : t('suppliers_inquire')}
                 </a>

@@ -1,31 +1,56 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+} from 'firebase/auth'
+import { auth, googleProvider, facebookProvider } from '../firebase'
 
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('srov_meas_user')
-      return stored ? JSON.parse(stored) : null
-    } catch {
-      return null
-    }
-  })
+  const [user, setUser] = useState(null)
+  // loading = true until Firebase tells us the initial auth state
+  const [loading, setLoading] = useState(true)
 
-  const login = (userData) => {
-    setUser(userData)
-    localStorage.setItem('srov_meas_user', JSON.stringify(userData))
+  useEffect(() => {
+    // Firebase calls this once immediately with the persisted user (or null),
+    // then again any time the user signs in or out.
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser)
+      setLoading(false)
+    })
+    return unsubscribe
+  }, [])
+
+  const loginWithGoogle   = () => signInWithPopup(auth, googleProvider)
+  const loginWithFacebook = () => signInWithPopup(auth, facebookProvider)
+  const loginWithEmail    = (email, password) => signInWithEmailAndPassword(auth, email, password)
+
+  const registerWithEmail = async (email, password, name) => {
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    // Store the display name on the Firebase user profile
+    await updateProfile(result.user, { displayName: name })
+    return result
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('srov_meas_user')
-  }
+  const logout = () => signOut(auth)
 
   const isAuthenticated = !!user
 
+  // Don't render children until we know auth state — prevents brief "logged out" flash
+  if (loading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #d4e6a5', borderTopColor: '#558b2f', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    </div>
+  )
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loginWithGoogle, loginWithFacebook, loginWithEmail, registerWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   )

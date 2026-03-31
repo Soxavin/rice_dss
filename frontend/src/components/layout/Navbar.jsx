@@ -114,9 +114,13 @@ export default function Navbar() {
                 >
                   {t('nav_start_analysis')}
                 </Link>
-                <div className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-medium">
-                  {user?.name?.[0] || 'U'}
-                </div>
+                {user?.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-medium">
+                    {user?.displayName?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
                 <button onClick={logout} className="text-sm text-neutral-600 hover:text-neutral-800 bg-transparent border-none cursor-pointer transition-colors">
                   {t('nav_logout')}
                 </button>

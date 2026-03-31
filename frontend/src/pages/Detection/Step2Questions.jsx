@@ -111,11 +111,15 @@ export default function Step2Questions() {
   })
 
   useEffect(() => {
+    const savedMode = sessionStorage.getItem('detect_mode')
+    if (!savedMode) {
+      navigate('/detect', { replace: true })
+      return
+    }
+    setMode(savedMode)
     const stored = sessionStorage.getItem('detect_images')
     if (stored) setUploadedImages(JSON.parse(stored))
-    const savedMode = sessionStorage.getItem('detect_mode')
-    if (savedMode) setMode(savedMode)
-  }, [])
+  }, [navigate])
 
   const set = (field, val) => setAnswers(a => ({ ...a, [field]: val }))
 
