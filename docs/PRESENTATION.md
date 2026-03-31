@@ -13,7 +13,7 @@
 
 **Final Year Project**<br>
 Student: Vin (Soxavin)<br>
-Date: March 2026
+Date: March 31, 2026
 
 > A rule-based + machine learning hybrid system to help Cambodian rice farmers identify paddy diseases from field symptoms and leaf photos.
 
@@ -359,6 +359,25 @@ rice_dss/
 │   ├── rice_disease_model.keras  Trained model (91.85% accuracy)
 │   ├── evaluation/              Confusion matrix + classification report
 │   └── experiments/             Experiment snapshots for comparison
+├── frontend/                    React Web Application
+│   └── src/
+│       ├── pages/
+│       │   ├── Landing.jsx      Landing page (fully styled)
+│       │   ├── Detection/
+│       │   │   ├── Step1Upload.jsx   Image upload + mode selector
+│       │   │   ├── Step2Questions.jsx Questionnaire (mode-aware)
+│       │   │   └── Step3Results.jsx  Results display + Grad-CAM viewer
+│       │   └── auth/ (pending styling)
+│       ├── components/layout/
+│       │   ├── Navbar.jsx       Fully styled, bilingual, scroll-aware
+│       │   └── Footer.jsx       Dark green, 4-column
+│       ├── context/
+│       │   ├── LanguageContext.jsx  EN/KH i18n (useLanguage → t())
+│       │   └── AuthContext.jsx      Auth state
+│       ├── data/
+│       │   └── translations.js  ~350+ keys, full EN + Khmer coverage
+│       └── api/
+│           └── client.js        Axios instance → proxied to :8000
 ├── Dockerfile                   Container deployment
 ├── docker-compose.yml           API + UI services
 ├── docs/                        Project documentation
@@ -371,37 +390,103 @@ rice_dss/
 
 ---
 
-# SLIDE 13 — What's Next
+# SLIDE 13 — React Frontend (In Progress)
+
+## Web Application — Built from scratch, matching Figma designs
+
+**Stack**: React 18 + React Router v6 + Vite + Tailwind CSS v4
+
+### Completed Pages
+
+| Page | Status | Notes |
+|------|--------|-------|
+| Landing Page | Done | Hero, services grid, How It Works, CTA |
+| Navbar + Footer | Done | Scroll-aware, bilingual toggle, dark green footer |
+| Step 1 — Upload | Done | 3-mode selector (Hybrid / ML-only / Questionnaire) |
+| Step 2 — Questionnaire | Done | All 15 fields, mode-aware, routes to correct endpoint |
+| Step 3 — Results | Done | Diagnosis, confidence, Grad-CAM viewer, recommendations |
+
+### Pages Remaining (styling only — API already integrated)
+
+| Page | Status |
+|------|--------|
+| Sign In / Sign Up | Pending |
+| Learning Resources | Pending |
+| Experts & Suppliers | Pending |
+| Crop Data Integration | Pending |
+
+### Detection Flow — End-to-End Connected
+
+```
+Step 1 (Mode Select + Upload)
+    ↓  sessionStorage[detect_mode, detect_images]
+    ↓  window.__detectFiles (File objects)
+Step 2 (Questionnaire — skipped in ML-only mode)
+    ↓  routes to correct API endpoint:
+    │   Hybrid + 1 image  → POST /hybrid-image
+    │   Hybrid + 2–5 img  → POST /hybrid-images
+    │   ML-only + 1 image → POST /predict-image
+    │   ML-only + 2–5 img → POST /predict-images
+    │   Questionnaire     → POST /questionnaire
+    ↓  sessionStorage[detect_result]
+Step 3 (Results)
+    ↓  Tabbed panel: 📷 Your Photo | 🔬 AI Analysis (Grad-CAM)
+    ↓  Confidence score, recommendations, secondary conditions
+    ↓  Bilingual — switches instantly between EN and Khmer
+```
+
+### i18n Architecture
+- All ~350+ strings stored in `translations.js` (EN + Khmer)
+- `useLanguage()` hook → `t(key)` function — zero hardcoded English strings
+- Language switches instantly throughout the entire app in real time
+
+---
+
+---
+
+# SLIDE 14 — What's Next
 
 ## Remaining work
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Frontend UI (teammate — Figma design) | In Progress |
-| 2 | Connect frontend to API endpoints | Pending |
-| 3 | Cloud Run deployment | Done |
-| 4 | FYP report writing | Pending |
-| 5 | Defence preparation | Pending |
+| 1 | Frontend — remaining pages (Sign In, Resources, Experts) | In Progress |
+| 2 | Authentication flow (Sign In / Sign Up + backend) | Pending |
+| 3 | Push all commits to GitHub origin | Pending |
+| 4 | Redeploy backend to Cloud Run | Pending |
+| 5 | FYP report writing | Pending |
+| 6 | Defence preparation | Pending |
 
 ---
 
 ---
 
-# SLIDE 14 — Summary
+# SLIDE 15 — Summary
 
 ## What has been achieved
 
+**Backend (Complete)**
 - Full rule-based DSS logic — 6 conditions, 8-step decision hierarchy
 - Scientifically validated scoring weights (referenced to agricultural literature)
 - Personalised recommendations (soil type, growth stage, fertilizer history)
 - ML image classifier trained — 91.85% accuracy on 9,200 images
 - 4→3 class bridging for safe ML→DSS integration
+- Grad-CAM heatmap generation for visual explainability
+- Secondary conditions surfacing (co-occurring conditions above 0.40 threshold)
 - REST API with 12 endpoints (3 modes + image upload + multi-image + explainability)
 - Streamlit demo UI with 3-mode support
 - 155/155 automated tests passing
 - Deployed on Google Cloud Run (live)
 - Bilingual output (English + Khmer)
-- Version controlled on GitHub
+
+**Frontend (Core Flow Complete)**
+- React web application matching Figma designs
+- Landing page, Navbar, Footer — fully styled
+- Full 3-step detection flow connected end-to-end to the API
+- 3-mode support: Hybrid (recommended), ML-only, Questionnaire-only
+- Grad-CAM viewer in results (tabbed: photo vs AI analysis)
+- ~350+ i18n keys — full English + Khmer coverage, zero hardcoded strings
+- Bilingual toggle — switches the entire app in real time
 
 ## Core design principle
 > Questionnaire biological reasoning always takes priority.

@@ -1,0 +1,432 @@
+import { Link } from 'react-router-dom'
+import { useLanguage } from '../context/LanguageContext'
+import {
+  Search, Leaf, Users, BookOpen, ShoppingBag,
+  ArrowRight, Camera, FileText, Cpu, Lightbulb,
+  Play, CheckCircle2
+} from 'lucide-react'
+
+const HERO_BG = '/images/hero-bg.jpg'
+const FARMER_IMG = '/images/farmer.jpg'
+const ANALYSIS_IMG = '/images/analysis-leaf.jpg'
+
+/* Shared inline styles — hardcoded for Tailwind v4 compatibility */
+const cardStyle = {
+  border: '1px solid #bdbdbd',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+  borderRadius: '16px',
+}
+const floatingCard = {
+  border: '1px solid rgba(0,0,0,0.08)',
+  boxShadow: '0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
+  borderRadius: '16px',
+  backgroundColor: '#ffffff',
+}
+const btnGreenFilled = {
+  backgroundColor: '#558b2f',
+  color: '#fff',
+  borderRadius: '8px',
+  padding: '12px 24px',
+  fontWeight: 600,
+  fontSize: '14px',
+  boxShadow: '0 2px 8px rgba(85,139,47,0.35)',
+}
+const btnGreenOutline = {
+  border: '2px solid #558b2f',
+  color: '#33691e',
+  borderRadius: '8px',
+  padding: '10px 24px',
+  fontWeight: 600,
+  fontSize: '14px',
+  backgroundColor: 'transparent',
+}
+const btnWhiteOutline = {
+  border: '2px solid rgba(255,255,255,0.65)',
+  borderRadius: '8px',
+  padding: '12px 28px',
+  color: '#ffffff',
+  fontWeight: 600,
+  fontSize: '14px',
+}
+
+export default function Landing() {
+  const { t } = useLanguage()
+
+  const services = [
+    {
+      icon: Search, title: t('service_detection'),
+      desc: t('service_detection_desc'),
+      bullets: ['Real-time image processing', 'Disease pattern recognition'],
+      link: '/detect', iconBg: '#dcfce7', iconColor: '#16a34a',
+    },
+    {
+      icon: Leaf, title: t('service_crop'),
+      desc: t('service_crop_desc'),
+      bullets: ['Variety & planting date tracking', 'Fertilizer & pesticide logs'],
+      link: '/crop-integration', iconBg: '#d1fae5', iconColor: '#059669',
+    },
+    {
+      icon: Users, title: t('service_expert'),
+      desc: t('service_expert_desc'),
+      bullets: ['Live consultation', 'Follow-up support'],
+      link: '/experts', iconBg: '#dbeafe', iconColor: '#2563eb',
+    },
+    {
+      icon: BookOpen, title: t('service_learning'),
+      desc: t('service_learning_desc'),
+      bullets: ['Khmer-first content', 'Video tutorials'],
+      link: '/learn', iconBg: '#fef3c7', iconColor: '#d97706',
+    },
+    {
+      icon: ShoppingBag, title: t('service_suppliers'),
+      desc: t('service_suppliers_desc'),
+      bullets: ['Verified suppliers', 'Price comparison'],
+      link: '/experts?tab=suppliers', iconBg: '#f3e8ff', iconColor: '#9333ea',
+    },
+  ]
+
+  const steps = [
+    { icon: Camera, label: t('how_step1'), desc: 'Take clear photos of affected rice plants or field areas showing symptoms.' },
+    { icon: FileText, label: t('how_step2'), desc: 'Provide simple questions about weather, soil conditions, and farming practices.' },
+    { icon: Cpu, label: t('how_step3'), desc: 'Our AI analyzes images and cross-references against known diseases instantly.' },
+    { icon: Lightbulb, label: t('how_step4'), desc: 'Receive targeted recommendations for treatment, prevention, and expert support.' },
+  ]
+
+  const articles = [
+    { title: '10 Ways to Prevent Rice Blast Diseases', desc: 'Essential preventive measures every farmer should know.', category: 'Disease Prevention', catBg: '#fef2f2', catColor: '#dc2626', type: 'article', img: '/images/article1.jpg' },
+    { title: 'Proper Fertilizer Application', desc: 'Step-by-step video guide on fertilizing rice crops.', category: 'Fertilizer', catBg: '#fffbeb', catColor: '#d97706', type: 'video', img: '/images/article2.jpg' },
+    { title: 'Water Management Guide', desc: 'Optimize irrigation for healthy rice growth.', category: 'Irrigation', catBg: '#eff6ff', catColor: '#2563eb', type: 'article', img: '/images/article3.jpg' },
+    { title: 'Early Disease Detection', desc: 'Learn to spot disease symptoms before it spreads.', category: 'Disease', catBg: '#f0fdf4', catColor: '#16a34a', type: 'video', img: '/images/article4.jpg' },
+  ]
+
+  /* Reusable service card renderer */
+  const ServiceCard = ({ s }) => (
+    <Link
+      to={s.link}
+      className="group p-6 no-underline text-left transition-all hover-lift"
+      style={{ ...cardStyle, backgroundColor: '#fff', display: 'block' }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8bc34a'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.14)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bdbdbd'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; }}
+    >
+      <div className="w-12 h-12 flex items-center justify-center" style={{ backgroundColor: s.iconBg, borderRadius: '12px' }}>
+        <s.icon size={22} style={{ color: s.iconColor }} />
+      </div>
+      <h3 className="mt-4 font-semibold text-base" style={{ color: '#212121' }}>{s.title}</h3>
+      <p className="mt-2 text-sm leading-relaxed" style={{ color: '#757575' }}>{s.desc}</p>
+      <ul className="mt-4 space-y-2 list-none">
+        {s.bullets.map((b) => (
+          <li key={b} className="flex items-center gap-2 text-xs" style={{ color: '#616161' }}>
+            <CheckCircle2 size={14} style={{ color: '#6b9f37' }} className="shrink-0" />
+            {b}
+          </li>
+        ))}
+      </ul>
+    </Link>
+  )
+
+  return (
+    <div>
+      {/* ═══════════════ HERO ═══════════════ */}
+      <section className="relative min-h-[620px] flex items-center overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={HERO_BG} alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(to right, rgba(247,251,231,0.97) 0%, rgba(255,255,255,0.92) 30%, rgba(255,255,255,0.5) 55%, rgba(255,255,255,0.05) 100%)'
+          }} />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <span
+                className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-primary-700 mb-6"
+                style={{ backgroundColor: '#eef5d3', border: '1px solid #d4e6a5' }}
+              >
+                {t('hero_badge')}
+              </span>
+              <h1 className="font-heading text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-neutral-900 leading-[1.15] tracking-tight">
+                {t('hero_title_1')}{' '}
+                <br className="hidden sm:block" />
+                <span className="accent-underline italic text-primary-700">{t('hero_title_2')}</span>
+              </h1>
+              <p className="mt-5 text-neutral-600 text-base leading-relaxed max-w-lg">
+                {t('hero_subtitle')}
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/detect"
+                  className="inline-flex items-center gap-2 no-underline transition-all hover:opacity-90"
+                  style={btnGreenFilled}
+                >
+                  {t('hero_cta')} <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/learn"
+                  className="inline-flex items-center gap-2 no-underline transition-colors hover:bg-primary-50"
+                  style={btnGreenOutline}
+                >
+                  {t('hero_learn_more')}
+                </Link>
+              </div>
+              {/* Social proof */}
+              <div className="mt-6 flex flex-wrap items-center gap-5">
+                {[
+                  { val: '1,200+', label: 'Farmers Helped' },
+                  { val: '4', label: 'Diseases Detected' },
+                  { val: '95%', label: 'AI Accuracy' },
+                ].map((s) => (
+                  <div key={s.label} className="flex items-baseline gap-1.5">
+                    <span className="text-lg font-bold" style={{ color: '#558b2f' }}>{s.val}</span>
+                    <span className="text-xs" style={{ color: '#757575' }}>{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Farmer card */}
+            <div className="hidden lg:flex justify-end items-center">
+              <div className="w-full max-w-[400px] p-3" style={floatingCard}>
+                <div className="relative overflow-hidden" style={{ borderRadius: '12px' }}>
+                  <img src={FARMER_IMG} alt="Farmer in rice field" className="w-full h-64 object-cover" />
+                  {/* Overlay badge on image */}
+                  <div className="absolute bottom-3 left-3 right-3 px-3 py-2 rounded-lg flex items-center justify-between" style={{ backgroundColor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)' }}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#6b9f37' }} />
+                      <span className="text-xs font-medium" style={{ color: '#424242' }}>Rice crop detected</span>
+                    </div>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#eef5d3', color: '#33691e' }}>95% Match</span>
+                  </div>
+                </div>
+                <div className="mt-3 px-1 pb-1 flex items-center gap-2">
+                  <CheckCircle2 size={14} style={{ color: '#558b2f' }} />
+                  <span className="text-xs text-neutral-500">AI analysis complete — no disease detected</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ SERVICES ═══════════════ */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+              {t('services_title')}
+            </h2>
+            <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <p className="mt-4 text-neutral-500 text-sm leading-relaxed">
+              {t('services_subtitle')}
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {services.slice(0, 3).map((s) => <ServiceCard key={s.title} s={s} />)}
+          </div>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[54rem] mx-auto">
+            {services.slice(3).map((s) => <ServiceCard key={s.title} s={s} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ HOW IT WORKS ═══════════════ */}
+      <section className="py-20 bg-gradient-green">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+              {t('how_title')}
+            </h2>
+            <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <p className="mt-4 text-neutral-600 text-sm">{t('how_subtitle')}</p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {steps.map((step, i) => (
+              <div key={step.label} className="rounded-2xl p-6 text-white flex flex-col" style={{
+                background: 'linear-gradient(145deg, #b8910c 0%, #c5a028 55%, #d4b438 100%)',
+                boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
+                minHeight: '220px',
+              }}>
+                <div className="flex items-start justify-between mb-5">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
+                    <step.icon size={22} />
+                  </div>
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                    {i + 1}
+                  </span>
+                </div>
+                <h4 className="font-semibold text-[15px] leading-snug">{step.label}</h4>
+                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ AI VISUAL ANALYSIS ═══════════════ */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+                {t('visual_title')}
+              </h2>
+              <p className="mt-4 text-neutral-600 text-sm leading-relaxed">
+                Our advanced computer vision technology can identify various rice crop stress factors including:
+              </p>
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                {[
+                  { label: 'Root Damage', icon: '🌱' },
+                  { label: 'Disease Detection', icon: '🔬' },
+                  { label: 'Nutrient Deficiency', icon: '🧪' },
+                  { label: 'Environmental Stress', icon: '🌡️' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: '#f7fbe7', border: '1px solid #d4e6a5' }}>
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-sm font-medium text-neutral-800">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+              <Link
+                to="/detect"
+                className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg no-underline text-sm transition-all"
+                style={{ boxShadow: '0 2px 8px rgba(85,139,47,0.3)' }}
+              >
+                Try Analysis Now <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            {/* Analysis card */}
+            <div className="p-6" style={floatingCard}>
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Analysis Results</p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
+                <span className="text-sm font-semibold text-neutral-900">Nitrogen Deficiency Detected</span>
+              </div>
+              <span className="text-xs text-neutral-500 ml-5">Confidence: 89%</span>
+              <div className="mt-4 w-full h-44 rounded-xl overflow-hidden">
+                <img src={ANALYSIS_IMG} alt="Analysis" className="w-full h-full object-cover" />
+              </div>
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-neutral-700">Recommendations:</p>
+                <ul className="mt-2 space-y-1.5 list-none">
+                  {['Apply nitrogen fertilizer (20-30 kg/ha)', 'Monitor plant response in 7-10 days', 'Contact local agricultural expert'].map((r) => (
+                    <li key={r} className="flex items-start gap-2 text-xs text-neutral-500">
+                      <CheckCircle2 size={13} className="text-primary-500 shrink-0 mt-0.5" />
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ EDUCATIONAL RESOURCES ═══════════════ */}
+      <section className="py-20" style={{ backgroundColor: '#fafafa' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+              {t('edu_title')}
+            </h2>
+            <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <p className="mt-4 text-neutral-500 text-sm">{t('edu_subtitle')}</p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {articles.map((a) => (
+              <Link key={a.title} to="/learn" className="group overflow-hidden hover-lift no-underline text-left transition-all" style={{ ...cardStyle, backgroundColor: '#fff', display: 'block' }}>
+                <div className="relative h-40 overflow-hidden">
+                  <img src={a.img} alt={a.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  {a.type === 'video' && (
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                      <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.95)', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+                        <Play size={18} className="text-primary-600 ml-0.5" fill="currentColor" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="p-5">
+                  <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold mb-3" style={{ backgroundColor: a.catBg, color: a.catColor }}>
+                    {a.category}
+                  </span>
+                  <h4 className="font-semibold text-neutral-900 text-sm group-hover:text-primary-600 transition-colors leading-snug">
+                    {a.title}
+                  </h4>
+                  <p className="mt-2 text-xs text-neutral-500 leading-relaxed">{a.desc}</p>
+                  <span className="mt-3 text-xs text-primary-600 font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
+                    {a.type === 'video' ? 'Watch Video' : 'Read Article'} <ArrowRight size={12} />
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              to="/learn"
+              className="inline-flex items-center gap-2 no-underline transition-colors hover:bg-primary-50"
+              style={btnGreenOutline}
+            >
+              View All Resources <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ PARTNERS ═══════════════ */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
+          <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+
+          <div className="mt-10 flex flex-wrap justify-center gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="w-40 h-20 rounded-xl flex items-center justify-center text-neutral-400 text-xs font-medium" style={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0' }}>
+                Partner Logo {i}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-x-10 gap-y-3">
+            {[t('partner_1'), t('partner_2'), t('partner_3')].map((p) => (
+              <div key={p} className="flex items-center gap-2">
+                <span style={{ color: '#c5a028' }}>★</span>
+                <span className="text-sm font-medium text-neutral-500">{p}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ CTA ═══════════════ */}
+      <section className="py-16" style={{ backgroundColor: '#1a2e1a' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white">
+            {t('cta_title')}
+          </h2>
+          <p className="mt-3 text-sm max-w-md mx-auto" style={{ color: '#a8c89a' }}>
+            Start detecting diseases early and get expert recommendations today.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Link
+              to="/detect"
+              className="inline-flex items-center gap-2 no-underline transition-colors hover:opacity-90"
+              style={{ backgroundColor: '#fff', color: '#212121', borderRadius: '8px', padding: '12px 28px', fontWeight: 600, fontSize: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
+            >
+              {t('cta_button')} <ArrowRight size={16} />
+            </Link>
+            <Link
+              to="/experts"
+              className="inline-flex items-center gap-2 no-underline transition-colors text-white hover:bg-white/10 font-semibold text-sm"
+              style={btnWhiteOutline}
+            >
+              Contact Expert
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
