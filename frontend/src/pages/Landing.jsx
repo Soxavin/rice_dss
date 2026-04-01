@@ -127,7 +127,7 @@ export default function Landing() {
   return (
     <div>
       {/* ═══════════════ HERO ═══════════════ */}
-      <section className="relative min-h-[620px] flex items-center overflow-hidden">
+      <section className="relative min-h-[calc(100vh-64px)] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <img src={HERO_BG} alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0" style={{

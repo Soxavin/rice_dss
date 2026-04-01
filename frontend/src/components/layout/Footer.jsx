@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function Footer() {
-  const { lang, setLang, t } = useLanguage()
+  const { lang, switchLang, t } = useLanguage()
 
   return (
     <footer className="bg-footer-dark text-white">
@@ -20,7 +20,7 @@ export default function Footer() {
               {t('footer_tagline')}
             </p>
             <button
-              onClick={() => setLang(lang === 'en' ? 'km' : 'en')}
+              onClick={() => switchLang(lang === 'en' ? 'km' : 'en')}
               className="mt-4 text-sm text-primary-300 hover:text-primary-200 bg-transparent border-none cursor-pointer transition-colors"
             >
               {t('footer_switch_km')}

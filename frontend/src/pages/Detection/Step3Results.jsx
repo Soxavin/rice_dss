@@ -68,6 +68,16 @@ export default function Step3Results() {
     ? gradcamSrc
     : (uploadedImages[activeImg]?.preview || FALLBACK_IMG)
 
+  // Translate mode_used badge — backend sends English string, map to t() key
+  const modeLabel = (raw) => {
+    if (!raw) return null
+    const r = raw.toLowerCase()
+    if (r.includes('hybrid'))         return t('detect_mode_badge_hybrid')
+    if (r.includes('ml') || r.includes('image') || r.includes('only')) return t('detect_mode_badge_ml')
+    if (r.includes('questionnaire'))  return t('detect_mode_badge_questionnaire')
+    return raw
+  }
+
   const products      = PRODUCTS.filter(p => p.conditions.includes(condKey))
   const displayProducts = products.length > 0 ? products : PRODUCTS.slice(0, 2)
 
@@ -217,7 +227,7 @@ export default function Step3Results() {
                 </div>
                 {result.mode_used && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#eef5d3', color: '#33691e' }}>
-                    {result.mode_used}
+                    {modeLabel(result.mode_used)}
                   </span>
                 )}
               </div>

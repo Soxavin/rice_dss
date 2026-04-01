@@ -203,7 +203,9 @@ export default function Step2Questions() {
         },
         secondary_conditions: [],
         warnings: [],
-        mode_used: files.length > 0 ? t('demo_mode_hybrid') : t('demo_mode_questionnaire'),
+        mode_used: mode === 'questionnaire' ? t('demo_mode_questionnaire')
+                 : mode === 'ml'            ? t('demo_mode_ml')
+                 :                            t('demo_mode_hybrid'),
         disclaimer: t('demo_disclaimer'),
       }))
       navigate('/detect/results')

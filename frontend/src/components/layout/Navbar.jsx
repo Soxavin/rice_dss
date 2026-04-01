@@ -5,7 +5,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 
 export default function Navbar() {
-  const { lang, setLang, t } = useLanguage()
+  const { lang, switchLang, t } = useLanguage()
   const { isAuthenticated, user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -14,7 +14,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const dropdownRef = useRef(null)
 
-  const toggleLang = () => setLang(lang === 'en' ? 'km' : 'en')
+  const toggleLang = () => switchLang(lang === 'en' ? 'km' : 'en')
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)

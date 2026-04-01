@@ -16,7 +16,7 @@ function getErrorKey(code) {
 }
 
 export default function SignIn() {
-  const { lang, setLang, t } = useLanguage()
+  const { lang, switchLang, t } = useLanguage()
   const { loginWithGoogle, loginWithFacebook, loginWithEmail } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail]               = useState('')
@@ -98,10 +98,10 @@ export default function SignIn() {
 
           {/* Language toggle */}
           <div className="mt-6 flex rounded-lg overflow-hidden w-fit" style={{ border: '1px solid #e0e0e0' }}>
-            <button onClick={() => setLang('en')} className={`px-4 py-1.5 text-sm font-medium border-none cursor-pointer transition-colors ${lang === 'en' ? 'bg-primary-500 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'}`}>
+            <button onClick={() => switchLang('en')} className={`px-4 py-1.5 text-sm font-medium border-none cursor-pointer transition-colors ${lang === 'en' ? 'bg-primary-500 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'}`}>
               English
             </button>
-            <button onClick={() => setLang('km')} className={`px-4 py-1.5 text-sm font-medium border-none cursor-pointer transition-colors ${lang === 'km' ? 'bg-primary-500 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'}`}>
+            <button onClick={() => switchLang('km')} className={`px-4 py-1.5 text-sm font-medium border-none cursor-pointer transition-colors ${lang === 'km' ? 'bg-primary-500 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'}`}>
               ភាសាខ្មែរ
             </button>
           </div>
