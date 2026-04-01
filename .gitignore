@@ -39,6 +39,8 @@ models/experiments/**/*.keras
 
 # Training data (large — do not commit)
 data/
+# But allow frontend src/data (translations, static JS data files)
+!frontend/src/data/
 
 # VS Code
 .vscode/
