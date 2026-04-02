@@ -169,6 +169,17 @@ export default function Step1Upload() {
             </div>
           )}
 
+          {/* Rice-leaf only reminder */}
+          {(mode === 'hybrid' || mode === 'ml') && (
+            <div
+              className="mt-4 flex items-start gap-2 px-4 py-3 rounded-lg text-sm"
+              style={{ backgroundColor: '#fffbeb', border: '1px solid #fde047' }}
+            >
+              <span className="shrink-0">⚠️</span>
+              <p style={{ color: '#92400e' }}>{t('detect_rice_leaf_warning')}</p>
+            </div>
+          )}
+
           {/* Uploaded previews */}
           {images.length > 0 && (
             <div className="mt-6">

@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from ml.dataset import CLASS_NAMES, ALL_CLASS_NAMES, get_class_index_map
 from ml.inference import (
     RiceDSSInference, get_placeholder_probabilities,
-    HEALTHY_DOMINANT_THRESHOLD, HEALTHY_CLASS_NAME
+    HEALTHY_CLASS_NAME
 )
 from dss.output_builder import BIOTIC_CONDITIONS
 
@@ -372,19 +372,21 @@ class TestHealthyClassHandling:
         """When healthy < threshold, disease probs are renormalized to sum to 1.0."""
         import numpy as np
         obj = self._make_mock_inference()
-        # bacterial_blight=0.05, blast=0.70, brown_spot=0.15, healthy=0.10
-        raw = np.array([0.05, 0.70, 0.15, 0.10])
+        # blast dominant (0.82 > MIN_CONFIDENCE_THRESHOLD=0.80), healthy low
+        # bacterial_blight=0.05, blast=0.82, brown_spot=0.08, healthy=0.05
+        raw = np.array([0.05, 0.82, 0.08, 0.05])
         result = obj._bridge_to_dss(raw)
-        # After dropping healthy (0.10) and renormalizing 0.90 total:
-        assert abs(result['blast'] - 0.70 / 0.90) < 0.01
-        assert abs(result['brown_spot'] - 0.15 / 0.90) < 0.01
-        assert abs(result['bacterial_blight'] - 0.05 / 0.90) < 0.01
+        # After dropping healthy (0.05) and renormalizing 0.95 total:
+        assert abs(result['blast'] - 0.82 / 0.95) < 0.01
+        assert abs(result['brown_spot'] - 0.08 / 0.95) < 0.01
+        assert abs(result['bacterial_blight'] - 0.05 / 0.95) < 0.01
 
     def test_renormalized_probs_sum_to_one(self):
         """Renormalized output probs must sum to ~1.0."""
         import numpy as np
         obj = self._make_mock_inference()
-        raw = np.array([0.10, 0.60, 0.20, 0.10])
+        # blast=0.82 passes MIN_CONFIDENCE_THRESHOLD=0.80
+        raw = np.array([0.05, 0.82, 0.08, 0.05])
         result = obj._bridge_to_dss(raw)
         total = sum(result.values())
         assert abs(total - 1.0) < 0.01, f"Probs sum to {total}, expected ~1.0"
@@ -393,7 +395,8 @@ class TestHealthyClassHandling:
         """Output must have exactly {blast, brown_spot, bacterial_blight}."""
         import numpy as np
         obj = self._make_mock_inference()
-        raw = np.array([0.10, 0.60, 0.20, 0.10])
+        # blast=0.82 passes MIN_CONFIDENCE_THRESHOLD=0.80
+        raw = np.array([0.05, 0.82, 0.08, 0.05])
         result = obj._bridge_to_dss(raw)
         assert set(result.keys()) == BIOTIC_CONDITIONS
 
@@ -401,7 +404,11 @@ class TestHealthyClassHandling:
         """Healthy probability exactly at threshold should return uniform."""
         import numpy as np
         obj = self._make_mock_inference()
-        raw = np.array([0.10, 0.15, 0.15, HEALTHY_DOMINANT_THRESHOLD])
+        # healthy=0.60 >= HEALTHY_DOMINANT_THRESHOLD; max_prob=0.60 < MIN_CONFIDENCE=0.80
+        # So this hits the OOD gate first and returns None.
+        # Test updated: use a case where healthy dominates AND passes OOD gate.
+        # healthy=0.85 > both thresholds → uniform probs returned.
+        raw = np.array([0.05, 0.05, 0.05, 0.85])
         result = obj._bridge_to_dss(raw)
         assert abs(result['blast'] - 0.333) < 0.01
 
@@ -409,11 +416,11 @@ class TestHealthyClassHandling:
         """Healthy probability just below threshold should renormalize."""
         import numpy as np
         obj = self._make_mock_inference()
-        healthy_val = HEALTHY_DOMINANT_THRESHOLD - 0.01
-        remainder = 1.0 - healthy_val
-        raw = np.array([remainder / 3, remainder / 3, remainder / 3, healthy_val])
+        # blast=0.82 passes OOD gate; healthy=0.10 is below HEALTHY_DOMINANT_THRESHOLD (0.60)
+        # so disease probs should be renormalized, not uniform
+        raw = np.array([0.04, 0.82, 0.04, 0.10])
         result = obj._bridge_to_dss(raw)
-        # Should NOT be uniform — should be renormalized
+        # Should NOT be uniform — should be renormalized (healthy=0.10 < 0.60 threshold)
         total = sum(result.values())
         assert abs(total - 1.0) < 0.01
         assert set(result.keys()) == BIOTIC_CONDITIONS

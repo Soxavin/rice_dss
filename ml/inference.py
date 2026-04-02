@@ -54,7 +54,7 @@ HEALTHY_CLASS_NAME = 'healthy'
 # Minimum confidence the model must have in its top class (across all 4 classes)
 # for the image to be considered a valid leaf. Images below this threshold
 # (e.g., random photos, diagrams, non-leaf objects) are rejected.
-MIN_CONFIDENCE_THRESHOLD = 0.55
+MIN_CONFIDENCE_THRESHOLD = 0.80
 
 
 class RiceDSSInference:
