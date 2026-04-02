@@ -39,12 +39,51 @@ export default function Step3Results() {
   }, [])
 
   if (!result) {
+    // Check if we're still loading from sessionStorage (brief flash) or genuinely no result
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <p className="text-neutral-500">{t('detect_no_result')}</p>
-        <Link to="/detect" className="mt-4 inline-block font-medium no-underline hover:underline" style={{ color: '#558b2f' }}>
-          ← {t('detect_start_new')}
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Skeleton header */}
+        <div className="flex items-start justify-between gap-6 mb-5">
+          <div>
+            <div className="skeleton h-8 w-64 mb-2" />
+            <div className="skeleton h-4 w-48" />
+          </div>
+          <div className="hidden sm:flex flex-col items-end gap-2">
+            <div className="skeleton h-4 w-20" />
+            <div className="skeleton h-2 w-28" />
+          </div>
+        </div>
+        {/* Skeleton main card */}
+        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #e0e0e0' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="skeleton" style={{ minHeight: '360px' }} />
+            <div className="p-6 space-y-4 bg-white">
+              <div className="skeleton h-4 w-24" />
+              <div className="skeleton h-8 w-48" />
+              <div className="skeleton h-10 w-36 rounded-lg" />
+              <div className="mt-8 skeleton h-4 w-full" />
+              <div className="skeleton h-3 w-3/4" />
+            </div>
+          </div>
+        </div>
+        {/* Skeleton detail rows */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="skeleton h-32 rounded-xl" />
+            <div className="skeleton h-40 rounded-xl" />
+          </div>
+          <div className="space-y-4">
+            <div className="skeleton h-48 rounded-xl" />
+            <div className="skeleton h-36 rounded-xl" />
+          </div>
+        </div>
+        {/* Fallback link after 2s if no result ever arrives */}
+        <p className="mt-6 text-center text-sm text-neutral-400">
+          {t('detect_no_result')}{' '}
+          <Link to="/detect" className="font-medium no-underline hover:underline" style={{ color: '#558b2f' }}>
+            ← {t('detect_start_new')}
+          </Link>
+        </p>
       </div>
     )
   }
@@ -194,8 +233,11 @@ export default function Step3Results() {
               <img
                 src={displayImg}
                 alt={result.primary_condition || 'Analysis result'}
-                className="w-full h-full object-contain"
-                style={{ maxHeight: '380px' }}
+                className="w-full h-full"
+                style={{
+                  maxHeight: '380px',
+                  objectFit: (activeTab === 'gradcam' && gradcamSrc) ? 'contain' : 'cover',
+                }}
                 onError={e => { e.target.src = FALLBACK_IMG }}
               />
             </div>

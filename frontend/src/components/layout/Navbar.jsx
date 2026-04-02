@@ -157,7 +157,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-neutral-100 px-4 py-4 space-y-1 shadow-lg">
+        <div className="md:hidden bg-white border-t border-neutral-100 px-4 py-4 space-y-1 shadow-lg mobile-menu-enter">
           <Link to="/" className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
             {t('nav_home')}
           </Link>

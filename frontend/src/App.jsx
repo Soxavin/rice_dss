@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/layout/Layout'
@@ -14,12 +15,20 @@ import ArticleDetail from './pages/Learning/ArticleDetail'
 import VideoDetail from './pages/Learning/VideoDetail'
 import ExpertsPage from './pages/Experts/ExpertsPage'
 import CropIntegration from './pages/CropIntegration'
+import NotFound from './pages/NotFound'
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
 
 export default function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Landing />} />
@@ -32,6 +41,7 @@ export default function App() {
               <Route path="/learn/video/:id" element={<VideoDetail />} />
               <Route path="/experts" element={<ExpertsPage />} />
               <Route path="/crop-integration" element={<CropIntegration />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
             {/* Auth pages — no navbar/footer layout */}
             <Route path="/sign-in" element={<SignIn />} />
