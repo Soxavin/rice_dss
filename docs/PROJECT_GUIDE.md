@@ -417,14 +417,19 @@ Input (224x224x3)
 python -m ml.train --data_dir data/ --epochs 20
 ```
 
-### `ml/inference.py` — Inference Wrapper (4-to-3 Bridging)
+### `ml/inference.py` — Inference Wrapper (4-to-3 Bridging + OOD Rejection)
 
-**What it does:** Loads the trained 4-class model and converts its output to the 3-key probability dict that the DSS expects.
+**What it does:** Loads the trained 4-class model and converts its output to the 3-key probability dict that the DSS expects. Also enforces two OOD (out-of-distribution) gates to reject non-rice images before they reach the DSS.
 
-**The bridging problem:** The model trains on 4 classes (including "healthy") because having a healthy class improves feature learning. But the DSS only knows about 3 biotic diseases. The `_bridge_to_dss()` method solves this:
+**The bridging problem:** The model trains on 4 classes (including "healthy") because having a healthy class improves feature learning. But the DSS only knows about 3 biotic diseases. The `_bridge_to_dss()` method solves this through a sequence of checks:
 
-- **If healthy probability >= 60%:** The model thinks the leaf is healthy. Return uniform probabilities (1/3 each) so the DSS ignores ML and relies on questionnaire evidence only.
-- **Otherwise:** Drop the healthy class, take the 3 disease probabilities, and renormalise them to sum to 1.0.
+1. **Confidence gate** (`MIN_CONFIDENCE_THRESHOLD = 0.80`) — if the model's top class probability is below 0.80, the image is likely not a rice leaf (e.g., a diagram, random photo, screenshot). Returns `None` so the API caller returns a 422 error to the user.
+
+2. **Healthy gate** (`HEALTHY_DOMINANT_THRESHOLD = 0.60`) — if the healthy class probability is >= 0.60, the model thinks the leaf is healthy. Returns uniform probabilities (1/3 each) so the DSS ignores ML and relies on questionnaire evidence only.
+
+3. **Renormalisation** — otherwise, drops the healthy class and renormalises the 3 disease probabilities to sum to 1.0.
+
+**Known limitation:** The model is a closed-world classifier — it has no explicit "not a rice plant" class. Non-rice images that happen to strongly resemble disease textures (max-prob >= 0.80) will pass the confidence gate. The frontend displays a warning reminding users to upload actual rice leaf photos.
 
 **Class: `RiceDSSInference`**
 - `predict_from_image(path)` — loads an image file and returns 3-key probabilities

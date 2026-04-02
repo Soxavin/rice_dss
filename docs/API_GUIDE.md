@@ -343,9 +343,19 @@ Every DSS endpoint returns this structure:
 | Code | Meaning | When |
 |------|---------|------|
 | 200 | Success | Normal response |
-| 422 | Unprocessable Entity | Invalid image format, malformed JSON |
+| 422 | Unprocessable Entity | Invalid image format; image too large (>10 MB); image not recognised as a rice leaf (ML confidence < 0.80); malformed JSON |
 | 500 | Internal Server Error | DSS logic error (should not happen) |
 | 503 | Service Unavailable | ML model not loaded (for image endpoints) |
+
+### OOD (Non-Rice Image) Error
+
+When an uploaded image does not pass the ML confidence gate (`MIN_CONFIDENCE_THRESHOLD = 0.80`), the API returns:
+```json
+{
+  "detail": "Could not recognize a rice leaf in this image. Please upload a clear photo of an affected rice plant leaf."
+}
+```
+HTTP status: `422`. The frontend should surface this as a user-facing error message on Step 2/3. The model is a closed-world classifier — it cannot distinguish "not a rice plant" from "a rice plant I'm uncertain about." Images that strongly resemble disease textures may still pass this gate.
 
 ---
 

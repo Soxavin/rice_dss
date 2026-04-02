@@ -232,6 +232,15 @@ The model trains on 4 classes (including healthy) for better feature learning. A
 - If healthy probability >= 60%: return uniform probabilities (DSS relies on questionnaire)
 - Otherwise: drop healthy class, renormalize 3 disease probabilities to sum to 1.0
 
+### Out-of-Distribution (OOD) Rejection
+
+The model is a closed-world classifier — it cannot detect images that are not rice leaves. Two gates prevent silent misclassification:
+
+1. **Confidence gate** (`MIN_CONFIDENCE_THRESHOLD = 0.80`) — if the model's top class probability is below 80%, the image is rejected as unrecognisable. The API returns a 422 error: "Could not recognize a rice leaf in this image."
+2. **Healthy gate** (`HEALTHY_DOMINANT_THRESHOLD = 0.60`) — if the healthy class scores >= 60%, the ML signal is neutralised (uniform probabilities returned) and the DSS relies on questionnaire answers only.
+
+**Limitation:** The model has no explicit "not a rice plant" class. Non-rice images that happen to strongly resemble disease textures (high max-prob ≥ 0.80) will pass the confidence gate and produce a result. The frontend displays a warning reminding users to upload actual rice leaf photos.
+
 ---
 
 ## Key Design Decisions
@@ -266,7 +275,7 @@ The model trains on 4 classes (including healthy) for better feature learning. A
 
 ## Tests
 
-155 tests across 7 suites, all passing (some may be skipped depending on optional TF/Plotly dependencies):
+162 tests across 7 suites, all passing (some may be skipped depending on optional TF/Plotly dependencies):
 
 ```bash
 pytest tests/ -v --tb=short
@@ -278,7 +287,7 @@ pytest tests/ -v --tb=short
 | Hybrid ML fusion | 25 | Agreement, disagreement, non-biotic override |
 | Robustness (adversarial) | 14 | Noise simulation, contradictory inputs |
 | API endpoints | 21 | All 12 endpoints + image upload + multi-image |
-| ML pipeline | 42 | Dataset, inference, 4-to-3 bridge, multi-arch, multi-image, experiments |
+| ML pipeline | 42 | Dataset, inference, 4-to-3 bridge, OOD gate, multi-arch, multi-image, experiments |
 | Grad-CAM | 10 | Heatmap generation, overlay, schema validation |
 | Secondary conditions | 14 | Extraction, translation, special outputs, full pipeline |
 
@@ -321,6 +330,66 @@ data/
 ```bash
 python -m ml.train --data_dir data/ --backbone efficientnetv2b0 --head_units 256 --epochs 30
 ```
+
+---
+
+## Frontend (React Web App)
+
+The production frontend is a React 18 + Vite + Tailwind v4 single-page application.
+
+**Live URL:** https://rice-dss.vercel.app
+
+**Stack:**
+- React 18 + React Router v6
+- Vite 8.0.3 + `@tailwindcss/vite`
+- Firebase v11 (Google + Email/Password auth)
+- Axios (proxied to `/api` locally, or `VITE_API_URL` in production)
+- Lucide React icons, Playfair Display + Inter fonts
+
+**Local development:**
+```bash
+cd frontend
+npm install
+npm run dev       # → http://localhost:3000
+```
+
+**Environment variables** (create `frontend/.env.local`):
+```
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_API_URL=https://rice-dss-137747818788.asia-southeast1.run.app
+```
+
+**Vercel deployment:**
+- Connected to the `main` branch of this repo — every `git push` auto-deploys
+- Root directory: `frontend`
+- Set all `VITE_*` env vars in Vercel dashboard → Settings → Environment Variables
+- Add the Vercel domain to Firebase Console → Authentication → Authorized domains (required for Google sign-in)
+
+**Key pages:**
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Landing | Hero, services, how-it-works, educational resources |
+| `/detect` | Step 1 — Upload | Mode selector (Hybrid / ML-only / Questionnaire) + image upload |
+| `/detect/questions` | Step 2 — Questions | Mode-aware questionnaire + navigation guard |
+| `/detect/results` | Step 3 — Results | Diagnosis card, Grad-CAM viewer, recommendations, products |
+| `/experts` | Experts & Support | Agricultural experts, suppliers, treatments |
+| `/learn` | Learning | Articles and video resources |
+| `/sign-in` / `/sign-up` | Auth | Firebase-backed sign in/up |
+
+**Detection flow (data passing between steps):**
+- Step 1 → Step 2: `sessionStorage['detect_mode']` + `sessionStorage['detect_images']` + `window.__detectFiles`
+- Step 2 → Backend: mode-aware API call (see `frontend/src/api/client.js`)
+- Step 2 → Step 3: `sessionStorage['detect_result']` (full `DSSResponse` JSON)
+
+**Language system:**
+- EN/KM toggle with 130ms fade transition via `LanguageContext.jsx`
+- Always use `switchLang(newLang)` from UI — never call `setLang` directly
+- All strings in `frontend/src/data/translations.js` (~500+ keys)
 
 ---
 
