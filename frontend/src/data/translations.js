@@ -50,9 +50,9 @@ export const translations = {
     partner_1: 'Trusted Collaboration',
     partner_2: 'Growing Together',
     partner_3: 'Quality First',
-    partner_rupp: 'Royal University of Phnom Penh',
-    partner_maff: 'Ministry of Agriculture, Forestry & Fisheries',
-    partner_fao: 'Food & Agriculture Organization (UN)',
+    partner_aupp: 'American University of Phnom Penh (AUPP)',
+    partner_moa:  'Ministry of Agriculture & Rural Development',
+    partner_ari:  'Agricultural Research Institute',
 
     // CTA
     cta_title: 'Ready to Protect Your Rice Crops?',
@@ -115,6 +115,9 @@ export const translations = {
     auth_protecting: 'Protecting your harvest with AI',
     auth_empowering: 'Empowering farmers with advanced AI technology to detect diseases early and improve crop yields.',
     auth_farmers_joined: 'farmers joined Srov Meas platform',
+    auth_feature_instant:   'Instant AI-powered disease detection',
+    auth_feature_accurate:  '91.85% model accuracy on rice diseases',
+    auth_feature_bilingual: 'Full Khmer & English support',
 
     // ─── Detection Step 1 ────────────────────────────────────────────────────────
     detect_step1_title: 'Step 1: Upload Images',
@@ -634,9 +637,9 @@ export const translations = {
     partner_1: 'កិច្ចសហការដែលគួរឱ្យទុកចិត្ត',
     partner_2: 'រីកចម្រើនជាមួយគ្នា',
     partner_3: 'គុណភាពជាអាទិភាព',
-    partner_rupp: 'សាកលវិទ្យាល័យភូមិន្ទភ្នំពេញ',
-    partner_maff: 'ក្រសួងកសិកម្ម រុក្ខាប្រមាញ់ និងនេសាទ',
-    partner_fao: 'អង្គការស្បៀងអាហារ និងកសិកម្ម (UN)',
+    partner_aupp: 'សាកលវិទ្យាល័យអាមេរិចនៃភ្នំពេញ (AUPP)',
+    partner_moa:  'ក្រសួងកសិកម្ម និងអភិវឌ្ឍន៍សហគមន៍',
+    partner_ari:  'វិទ្យាស្ថានស្រាវជ្រាវកសិកម្ម',
 
     // CTA
     cta_title: 'រួចរាល់ក្នុងការការពារដំណាំស្រូវរបស់អ្នក?',
@@ -699,6 +702,9 @@ export const translations = {
     auth_protecting: 'ការពារការប្រមូលផលរបស់អ្នកដោយ AI',
     auth_empowering: 'ផ្តល់សមត្ថភាពដល់កសិករជាមួយបច្ចេកវិទ្យា AI កម្រិតខ្ពស់ដើម្បីរកឃើញជំងឺមុន និងកែលម្អផលដំណាំ។',
     auth_farmers_joined: 'កសិករបានចូលរួម Srov Meas',
+    auth_feature_instant:   'រកឃើញជំងឺដំណាំភ្លាមៗដោយ AI',
+    auth_feature_accurate:  'ភាពត្រឹមត្រូវ 91.85% លើជំងឺស្រូវវ',
+    auth_feature_bilingual: 'គាំទ្រពេញលេញភាសាខ្មែរ និងអង់គ្លេស',
 
     // ─── Detection Step 1 ────────────────────────────────────────────────────────
     detect_step1_title: 'ជំហានទី ១: បង្ហោះរូបភាព',

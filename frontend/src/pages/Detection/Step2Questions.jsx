@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { hybridImages, hybridImage, diagnoseQuestionnaire, predictImage, predictImages } from '../../api/client'
@@ -95,6 +95,7 @@ export default function Step2Questions() {
   const [apiError, setApiError] = useState(null)
   const [uploadedImages, setUploadedImages] = useState([])
   const [mode, setMode] = useState('hybrid')
+  const mountedRef = useRef(true)
 
   const [answers, setAnswers] = useState({
     growth_stage:        null,
@@ -112,6 +113,7 @@ export default function Step2Questions() {
   })
 
   useEffect(() => {
+    mountedRef.current = true
     const savedMode = sessionStorage.getItem('detect_mode')
     if (!savedMode) {
       navigate('/detect', { replace: true })
@@ -120,6 +122,7 @@ export default function Step2Questions() {
     setMode(savedMode)
     const stored = sessionStorage.getItem('detect_images')
     if (stored) setUploadedImages(JSON.parse(stored))
+    return () => { mountedRef.current = false }
   }, [navigate])
 
   const set = (field, val) => setAnswers(a => ({ ...a, [field]: val }))
@@ -184,9 +187,10 @@ export default function Step2Questions() {
       }
 
       sessionStorage.setItem('detect_result', JSON.stringify(result))
-      navigate('/detect/results')
+      if (mountedRef.current) navigate('/detect/results')
     } catch (err) {
       console.error('Analysis error:', err)
+      if (!mountedRef.current) return
       const status = err.response?.status
       const detail = err.response?.data?.detail
 
@@ -216,7 +220,7 @@ export default function Step2Questions() {
                    :                            t('demo_mode_hybrid'),
           disclaimer: t('demo_disclaimer'),
         }))
-        navigate('/detect/results')
+        if (mountedRef.current) navigate('/detect/results')
       }
     } finally {
       setLoading(false)

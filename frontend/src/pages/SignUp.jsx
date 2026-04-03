@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { User, Mail, Lock } from 'lucide-react'
+import { User, Mail, Lock, Eye, EyeOff, Leaf, ShieldCheck, Zap } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -15,11 +15,19 @@ function getErrorKey(code) {
   return 'auth_error_generic'
 }
 
+const FEATURES = [
+  { icon: Zap,         key: 'auth_feature_instant' },
+  { icon: ShieldCheck, key: 'auth_feature_accurate' },
+  { icon: Leaf,        key: 'auth_feature_bilingual' },
+]
+
 export default function SignUp() {
   const { lang, switchLang, t } = useLanguage()
   const { loginWithGoogle, loginWithFacebook, registerWithEmail } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', agreed: false })
+  const [showPassword, setShowPassword]   = useState(false)
+  const [showConfirm, setShowConfirm]     = useState(false)
   const [error, setError]   = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -69,37 +77,57 @@ export default function SignUp() {
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex">
-      {/* Left — Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative">
-        <img src={AUTH_BG} alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        <div className="absolute top-8 left-8">
+
+      {/* Left — Image panel */}
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col">
+        <img src={AUTH_BG} alt="" className="w-full h-full object-cover absolute inset-0" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(26,46,26,0.55) 0%, rgba(26,46,26,0.75) 100%)' }} />
+
+        <div className="relative z-10 flex flex-col h-full p-10">
           <span className="font-heading text-2xl font-bold text-white italic">Srov Meas</span>
-        </div>
-        <div className="absolute bottom-0 left-0 p-10">
-          <h2 className="font-heading text-3xl font-bold text-white italic leading-snug">
-            {t('auth_protecting')}
-          </h2>
-          <p className="mt-3 text-white/80 text-sm max-w-md leading-relaxed">
-            {t('auth_empowering')}
-          </p>
-          <div className="flex gap-2 mt-6">
-            <span className="w-8 h-2 rounded-full bg-primary-400" />
-            <span className="w-2 h-2 rounded-full bg-white/40" />
-            <span className="w-2 h-2 rounded-full bg-white/40" />
+
+          <div className="flex-1 flex flex-col justify-center">
+            <h2 className="font-heading text-4xl font-bold text-white italic leading-snug">
+              {t('auth_protecting')}
+            </h2>
+            <p className="mt-3 text-white/75 text-sm max-w-sm leading-relaxed">
+              {t('auth_empowering')}
+            </p>
+
+            <div className="mt-8 space-y-3">
+              {FEATURES.map(({ icon: Icon, key }) => (
+                <div key={key} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(168,208,96,0.25)', border: '1px solid rgba(168,208,96,0.4)' }}>
+                    <Icon size={15} style={{ color: '#a8d060' }} />
+                  </div>
+                  <span className="text-sm text-white/85">{t(key)}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="mt-3 text-xs text-white/50">600+ {t('auth_farmers_joined')}</p>
+
+          <div>
+            <div className="flex gap-2">
+              <span className="w-8 h-2 rounded-full bg-primary-400" />
+              <span className="w-2 h-2 rounded-full bg-white/40" />
+              <span className="w-2 h-2 rounded-full bg-white/40" />
+            </div>
+            <p className="mt-3 text-xs text-white/45">600+ {t('auth_farmers_joined')}</p>
+          </div>
         </div>
       </div>
 
       {/* Right — Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-white via-primary-50/30 to-white">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-10" style={{ background: 'linear-gradient(135deg, #f7fbe7 0%, #fff 40%, #fff 100%)' }}>
         <div className="w-full max-w-md">
+
+          <div className="h-1 w-12 rounded-full mb-8" style={{ background: 'linear-gradient(to right, #558b2f, #c5a028)' }} />
+
           <h1 className="font-heading text-3xl font-bold text-neutral-900">{t('auth_create')}</h1>
-          <p className="mt-1 text-neutral-600 text-sm">{t('auth_sign_up_subtitle')}</p>
+          <p className="mt-1 text-neutral-500 text-sm">{t('auth_sign_up_subtitle')}</p>
 
           {/* Language toggle */}
-          <div className="mt-6 flex rounded-lg overflow-hidden w-fit" style={{ border: '1px solid #e0e0e0' }}>
+          <div className="mt-5 flex rounded-lg overflow-hidden w-fit" style={{ border: '1px solid #e0e0e0' }}>
             <button onClick={() => switchLang('en')} className={`px-4 py-1.5 text-sm font-medium border-none cursor-pointer transition-colors ${lang === 'en' ? 'bg-primary-500 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'}`}>
               English
             </button>
@@ -109,12 +137,12 @@ export default function SignUp() {
           </div>
 
           {/* Social buttons */}
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 grid grid-cols-2 gap-3">
             <button
               onClick={handleGoogle}
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-neutral-50 cursor-pointer text-sm text-neutral-700 rounded-lg transition-colors disabled:opacity-60"
-              style={{ border: '1px solid #e0e0e0' }}
+              className="flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-neutral-50 cursor-pointer text-sm font-medium text-neutral-700 rounded-xl transition-colors disabled:opacity-60"
+              style={{ border: '1.5px solid #e0e0e0', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
             >
               <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4" />
               {t('auth_google')}
@@ -122,8 +150,8 @@ export default function SignUp() {
             <button
               onClick={handleFacebook}
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-neutral-50 cursor-pointer text-sm text-neutral-700 rounded-lg transition-colors disabled:opacity-60"
-              style={{ border: '1px solid #e0e0e0' }}
+              className="flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-neutral-50 cursor-pointer text-sm font-medium text-neutral-700 rounded-xl transition-colors disabled:opacity-60"
+              style={{ border: '1.5px solid #e0e0e0', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
             >
               <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" className="w-4 h-4" />
               {t('auth_facebook')}
@@ -132,79 +160,100 @@ export default function SignUp() {
 
           <div className="mt-4 flex items-center gap-3">
             <div className="flex-1 h-px bg-neutral-200" />
-            <span className="text-xs text-neutral-500">{t('auth_or_sign_up')}</span>
+            <span className="text-xs text-neutral-400 font-medium">{t('auth_or_sign_up')}</span>
             <div className="flex-1 h-px bg-neutral-200" />
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-4 space-y-3">
             {error && (
-              <div className="px-4 py-3 rounded-lg text-sm" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
-                {error}
+              <div className="px-4 py-3 rounded-xl text-sm flex items-start gap-2" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
+                <span className="shrink-0">⚠️</span> {error}
               </div>
             )}
+
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">{t('auth_full_name')}</label>
+              <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_full_name')}</label>
               <div className="relative">
-                <User size={16} className="absolute left-3 top-3 text-neutral-400 pointer-events-none" />
+                <User size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => update('name', e.target.value)}
                   placeholder={t('auth_full_name_placeholder')}
                   required
-                  className="w-full pl-9 pr-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all"
+                  style={{ border: '1.5px solid #e0e0e0', backgroundColor: '#fafafa' }}
+                  onFocus={e => e.target.style.borderColor = '#558b2f'}
+                  onBlur={e => e.target.style.borderColor = '#e0e0e0'}
                 />
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">{t('auth_email')}</label>
+              <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_email')}</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-3 text-neutral-400 pointer-events-none" />
+                <Mail size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
                   type="text"
                   value={form.email}
                   onChange={(e) => update('email', e.target.value)}
                   placeholder={t('auth_email_placeholder')}
                   required
-                  className="w-full pl-9 pr-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all"
+                  style={{ border: '1.5px solid #e0e0e0', backgroundColor: '#fafafa' }}
+                  onFocus={e => e.target.style.borderColor = '#558b2f'}
+                  onBlur={e => e.target.style.borderColor = '#e0e0e0'}
                 />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">{t('auth_password')}</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_password')}</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3 top-3 text-neutral-400 pointer-events-none" />
+                  <Lock size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={(e) => update('password', e.target.value)}
                     required
-                    className="w-full pl-9 pr-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    className="w-full pl-9 pr-9 py-2.5 rounded-xl text-sm outline-none transition-all"
+                    style={{ border: '1.5px solid #e0e0e0', backgroundColor: '#fafafa' }}
+                    onFocus={e => e.target.style.borderColor = '#558b2f'}
+                    onBlur={e => e.target.style.borderColor = '#e0e0e0'}
                   />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-2.5 bg-transparent border-none cursor-pointer" style={{ color: '#9e9e9e' }}>
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">{t('auth_confirm_password')}</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_confirm_password')}</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3 top-3 text-neutral-400 pointer-events-none" />
+                  <Lock size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                   <input
-                    type="password"
+                    type={showConfirm ? 'text' : 'password'}
                     value={form.confirm}
                     onChange={(e) => update('confirm', e.target.value)}
                     required
-                    className="w-full pl-9 pr-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    className="w-full pl-9 pr-9 py-2.5 rounded-xl text-sm outline-none transition-all"
+                    style={{ border: '1.5px solid #e0e0e0', backgroundColor: '#fafafa' }}
+                    onFocus={e => e.target.style.borderColor = '#558b2f'}
+                    onBlur={e => e.target.style.borderColor = '#e0e0e0'}
                   />
+                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-2.5 top-2.5 bg-transparent border-none cursor-pointer" style={{ color: '#9e9e9e' }}>
+                    {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
                 </div>
               </div>
             </div>
 
-            <label className="flex items-start gap-2 cursor-pointer">
+            <label className="flex items-start gap-2 cursor-pointer pt-1">
               <input
                 type="checkbox"
                 checked={form.agreed}
                 onChange={(e) => update('agreed', e.target.checked)}
-                className="mt-1 accent-primary-600"
+                className="mt-0.5 accent-primary-600"
               />
               <span className="text-xs text-neutral-600">{t('auth_agree_terms')}</span>
             </label>
@@ -212,16 +261,16 @@ export default function SignUp() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 text-white font-medium rounded-lg border-none cursor-pointer transition-colors disabled:opacity-60"
-              style={{ backgroundColor: '#558b2f' }}
+              className="w-full py-3 text-white font-semibold rounded-xl border-none cursor-pointer transition-opacity disabled:opacity-60 hover:opacity-90"
+              style={{ backgroundColor: '#558b2f', boxShadow: '0 2px 10px rgba(85,139,47,0.30)' }}
             >
               {loading ? t('auth_loading') : `${t('auth_register_btn')} →`}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-neutral-600">
+          <p className="mt-5 text-center text-sm text-neutral-500">
             {t('auth_have_account')}{' '}
-            <Link to="/sign-in" className="text-primary-600 font-medium no-underline hover:underline">
+            <Link to="/sign-in" className="font-semibold no-underline hover:underline" style={{ color: '#558b2f' }}>
               {t('auth_sign_in_link')}
             </Link>
           </p>

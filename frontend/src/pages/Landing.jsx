@@ -383,9 +383,9 @@ export default function Landing() {
 
           <div className="mt-10 flex flex-wrap justify-center gap-6">
             {[
-              { abbr: 'RUPP',  full: t('partner_rupp') },
-              { abbr: 'MAFF',  full: t('partner_maff') },
-              { abbr: 'FAO',   full: t('partner_fao') },
+              { abbr: 'AUPP', full: t('partner_aupp') },
+              { abbr: 'MOA',  full: t('partner_moa') },
+              { abbr: 'ARI',  full: t('partner_ari') },
             ].map((p) => (
               <div key={p.abbr} className="flex items-center gap-4 px-6 py-4 rounded-xl" style={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0', minWidth: '200px' }}>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ backgroundColor: '#f7fbe7', color: '#33691e', border: '2px solid #a8d060' }}>
