@@ -132,3 +132,28 @@
   animation: skeletonPulse 1.4s ease infinite;
   border-radius: 8px;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 0.7s linear infinite;
+}
+
+/* ============================================================
+   PRINT STYLES — triggered by window.print() on Step 3
+   ============================================================ */
+@media print {
+  /* Hide nav, footer, action buttons */
+  nav, footer, .no-print { display: none !important; }
+
+  /* Remove page margins / shadows for clean output */
+  body { background: #fff !important; }
+  * { box-shadow: none !important; }
+
+  /* Ensure result card doesn't get clipped across pages */
+  .rounded-2xl, .rounded-xl { border-radius: 8px !important; }
+
+  /* Force colours to print (browsers suppress bg-colors by default) */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

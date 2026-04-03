@@ -381,19 +381,17 @@ export default function Landing() {
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
           <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
 
-          <div className="mt-10 flex flex-wrap justify-center gap-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="w-40 h-20 rounded-xl flex items-center justify-center text-neutral-400 text-xs font-medium" style={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0' }}>
-                Partner Logo {i}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-x-10 gap-y-3">
-            {[t('partner_1'), t('partner_2'), t('partner_3')].map((p) => (
-              <div key={p} className="flex items-center gap-2">
-                <span style={{ color: '#c5a028' }}>★</span>
-                <span className="text-sm font-medium text-neutral-500">{p}</span>
+          <div className="mt-10 flex flex-wrap justify-center gap-6">
+            {[
+              { abbr: 'RUPP',  full: t('partner_rupp') },
+              { abbr: 'MAFF',  full: t('partner_maff') },
+              { abbr: 'FAO',   full: t('partner_fao') },
+            ].map((p) => (
+              <div key={p.abbr} className="flex items-center gap-4 px-6 py-4 rounded-xl" style={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0', minWidth: '200px' }}>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ backgroundColor: '#f7fbe7', color: '#33691e', border: '2px solid #a8d060' }}>
+                  {p.abbr}
+                </div>
+                <span className="text-sm font-medium text-neutral-700 leading-snug">{p.full}</span>
               </div>
             ))}
           </div>

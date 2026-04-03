@@ -92,6 +92,7 @@ export default function Step2Questions() {
   const { lang, t } = useLanguage()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [apiError, setApiError] = useState(null)
   const [uploadedImages, setUploadedImages] = useState([])
   const [mode, setMode] = useState('hybrid')
 
@@ -139,6 +140,7 @@ export default function Step2Questions() {
   // ─── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     setLoading(true)
+    setApiError(null)
     try {
       const files = window.__detectFiles || []
       let result
@@ -185,30 +187,37 @@ export default function Step2Questions() {
       navigate('/detect/results')
     } catch (err) {
       console.error('Analysis error:', err)
-      // Demo fallback (language-aware)
-      const files = window.__detectFiles || []
-      sessionStorage.setItem('detect_result', JSON.stringify({
-        status: 'assessed',
-        primary_condition: 'ជំងឺប្លាស (Rice Blast)',
-        condition_key: 'blast',
-        confidence_label: t('demo_confidence_label'),
-        confidence_level: 'high',
-        score: 0.84,
-        all_scores: { blast: 0.84, brown_spot: 0.32, bacterial_blight: 0.15, iron_toxicity: 0.0, n_deficiency: 0.05, salt_toxicity: 0.0 },
-        recommendations: {
-          immediate: [t('demo_rec_blast_1'), t('demo_rec_blast_2')],
-          preventive: [t('demo_prev_blast_1'), t('demo_prev_blast_2')],
-          monitoring: t('demo_monitoring_blast'),
-          consult: answers.growth_stage === 'flowering',
-        },
-        secondary_conditions: [],
-        warnings: [],
-        mode_used: mode === 'questionnaire' ? t('demo_mode_questionnaire')
-                 : mode === 'ml'            ? t('demo_mode_ml')
-                 :                            t('demo_mode_hybrid'),
-        disclaimer: t('demo_disclaimer'),
-      }))
-      navigate('/detect/results')
+      const status = err.response?.status
+      const detail = err.response?.data?.detail
+
+      if (status === 422 && detail) {
+        // Real backend error (e.g. OOD rejection, bad image) — surface it to the user
+        setApiError(detail)
+      } else {
+        // Network/server unreachable — fall back to demo result
+        sessionStorage.setItem('detect_result', JSON.stringify({
+          status: 'assessed',
+          primary_condition: 'ជំងឺប្លាស (Rice Blast)',
+          condition_key: 'blast',
+          confidence_label: t('demo_confidence_label'),
+          confidence_level: 'high',
+          score: 0.84,
+          all_scores: { blast: 0.84, brown_spot: 0.32, bacterial_blight: 0.15, iron_toxicity: 0.0, n_deficiency: 0.05, salt_toxicity: 0.0 },
+          recommendations: {
+            immediate: [t('demo_rec_blast_1'), t('demo_rec_blast_2')],
+            preventive: [t('demo_prev_blast_1'), t('demo_prev_blast_2')],
+            monitoring: t('demo_monitoring_blast'),
+            consult: answers.growth_stage === 'flowering',
+          },
+          secondary_conditions: [],
+          warnings: [],
+          mode_used: mode === 'questionnaire' ? t('demo_mode_questionnaire')
+                   : mode === 'ml'            ? t('demo_mode_ml')
+                   :                            t('demo_mode_hybrid'),
+          disclaimer: t('demo_disclaimer'),
+        }))
+        navigate('/detect/results')
+      }
     } finally {
       setLoading(false)
     }
@@ -275,6 +284,24 @@ export default function Step2Questions() {
           <span className="text-xs" style={{ color: '#757575' }}>{t('detect_no_images_note')}</span>
         )}
       </div>
+
+      {/* ── API error banner ────────────────────────────────────────────────── */}
+      {apiError && (
+        <div className="mt-4 flex items-start gap-3 rounded-xl p-4" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5' }}>
+          <span className="text-xl shrink-0">🚫</span>
+          <div className="flex-1">
+            <p className="font-semibold text-sm" style={{ color: '#991b1b' }}>{t('detect_error_title')}</p>
+            <p className="mt-0.5 text-sm leading-relaxed" style={{ color: '#7f1d1d' }}>{apiError}</p>
+            <button
+              onClick={() => { setApiError(null); navigate('/detect') }}
+              className="mt-3 text-xs font-semibold underline bg-transparent border-none cursor-pointer"
+              style={{ color: '#991b1b' }}
+            >
+              ← {t('detect_error_back')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── ML-only mode: skip questionnaire ────────────────────────────────── */}
       {mode === 'ml' && (

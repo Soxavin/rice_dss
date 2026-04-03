@@ -66,6 +66,7 @@ export default function ExpertsPage() {
   const [tab, setTab] = useState('All')
   const [search, setSearch] = useState('')
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
+  const [contactSubmitted, setContactSubmitted] = useState(false)
 
   const bil = (obj) => (typeof obj === 'object' ? obj[lang] || obj.en : obj)
   const expertName = (expert) =>
@@ -432,41 +433,56 @@ export default function ExpertsPage() {
             <div className="p-8 lg:p-10">
               <h3 className="text-xl font-bold text-white">{t('experts_cant_find')}</h3>
               <p className="mt-1 text-sm" style={{ color: '#a8c89a' }}>{t('experts_cant_find_desc')}</p>
-              <form className="mt-5 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder={t('experts_name_placeholder')}
-                    value={contactForm.name}
-                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                    className="px-3 py-2.5 rounded-lg text-sm outline-none text-white placeholder-neutral-400"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
-                  />
-                  <input
-                    type="email"
-                    placeholder={t('experts_email_placeholder')}
-                    value={contactForm.email}
-                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                    className="px-3 py-2.5 rounded-lg text-sm outline-none text-white placeholder-neutral-400"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
-                  />
+              {contactSubmitted ? (
+                <div className="mt-5 flex flex-col items-center justify-center text-center py-8 px-4 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <span className="text-4xl">✅</span>
+                  <p className="mt-3 text-base font-semibold text-white">{t('experts_contact_thanks')}</p>
+                  <button
+                    onClick={() => { setContactSubmitted(false); setContactForm({ name: '', email: '', message: '' }) }}
+                    className="mt-4 text-xs underline cursor-pointer bg-transparent border-none"
+                    style={{ color: '#a8c89a' }}
+                  >
+                    {t('experts_send_another')}
+                  </button>
                 </div>
-                <textarea
-                  placeholder={t('experts_message_placeholder')}
-                  value={contactForm.message}
-                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none text-white placeholder-neutral-400"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
-                />
-                <button
-                  type="button"
-                  className="w-full py-2.5 text-sm font-semibold rounded-lg border-none cursor-pointer transition-opacity hover:opacity-85"
-                  style={{ backgroundColor: '#558b2f', color: '#fff' }}
-                >
-                  {t('experts_submit')}
-                </button>
-              </form>
+              ) : (
+                <form className="mt-5 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder={t('experts_name_placeholder')}
+                      value={contactForm.name}
+                      onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                      className="px-3 py-2.5 rounded-lg text-sm outline-none text-white placeholder-neutral-400"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                    />
+                    <input
+                      type="email"
+                      placeholder={t('experts_email_placeholder')}
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                      className="px-3 py-2.5 rounded-lg text-sm outline-none text-white placeholder-neutral-400"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                    />
+                  </div>
+                  <textarea
+                    placeholder={t('experts_message_placeholder')}
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none text-white placeholder-neutral-400"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { if (contactForm.name || contactForm.email || contactForm.message) setContactSubmitted(true) }}
+                    className="w-full py-2.5 text-sm font-semibold rounded-lg border-none cursor-pointer transition-opacity hover:opacity-85"
+                    style={{ backgroundColor: '#558b2f', color: '#fff' }}
+                  >
+                    {t('experts_submit')}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </section>

@@ -50,6 +50,9 @@ export const translations = {
     partner_1: 'Trusted Collaboration',
     partner_2: 'Growing Together',
     partner_3: 'Quality First',
+    partner_rupp: 'Royal University of Phnom Penh',
+    partner_maff: 'Ministry of Agriculture, Forestry & Fisheries',
+    partner_fao: 'Food & Agriculture Organization (UN)',
 
     // CTA
     cta_title: 'Ready to Protect Your Rice Crops?',
@@ -258,8 +261,11 @@ export const translations = {
     detect_images_ready: 'image(s) ready',
     detect_optional_note: 'All questions are optional — fill in what you know. More detail improves accuracy.',
     detect_no_images_note: 'No images uploaded — questionnaire-only mode. Add a leaf photo in Step 1 for AI hybrid analysis.',
+    detect_continue_questionnaire: 'Continue to Questions',
     detect_filled: 'filled',
     detect_analyzing_btn: 'Analyzing…',
+    detect_error_title: 'Could not process this image',
+    detect_error_back: 'Go back and try a different image',
     detect_mode_badge_hybrid: 'Hybrid Mode',
     detect_mode_badge_ml: 'Image-Only Mode',
     detect_mode_badge_questionnaire: 'Questionnaire Mode',
@@ -273,7 +279,8 @@ export const translations = {
     detect_recommended_products: 'Recommended Treatment Products',
     detect_need_help: 'Need more help?',
     detect_book_call: 'Book a Consultation',
-    detect_save_data: 'Save Results',
+    detect_save_data: 'Save Results (JSON)',
+    detect_print_results: 'Print / Save PDF',
     detect_detected: 'Detected',
 
     // Step 3 detail strings
@@ -411,6 +418,8 @@ export const translations = {
     experts_cant_find: "Can't find what you need?",
     experts_cant_find_desc: 'Submit a direct inquiry to our network of experts. We will match you with the right resource for your specific conditions.',
     experts_submit: 'Submit Message',
+    experts_contact_thanks: "Thank you! We'll be in touch soon.",
+    experts_send_another: 'Send another message',
     experts_join: 'Join as Expert',
     experts_join_desc: 'Are you an agricultural expert or a supplier? Join our directory.',
     experts_apply: 'Apply to List',
@@ -625,6 +634,9 @@ export const translations = {
     partner_1: 'កិច្ចសហការដែលគួរឱ្យទុកចិត្ត',
     partner_2: 'រីកចម្រើនជាមួយគ្នា',
     partner_3: 'គុណភាពជាអាទិភាព',
+    partner_rupp: 'សាកលវិទ្យាល័យភូមិន្ទភ្នំពេញ',
+    partner_maff: 'ក្រសួងកសិកម្ម រុក្ខាប្រមាញ់ និងនេសាទ',
+    partner_fao: 'អង្គការស្បៀងអាហារ និងកសិកម្ម (UN)',
 
     // CTA
     cta_title: 'រួចរាល់ក្នុងការការពារដំណាំស្រូវរបស់អ្នក?',
@@ -833,8 +845,11 @@ export const translations = {
     detect_images_ready: 'រូបភាពរួចរាល់',
     detect_optional_note: 'សំណួរទាំងអស់ស្ម័គ្រចិត្ត — បំពេញអ្វីដែលអ្នកដឹង។ ព័ត៌មានច្រើនកាន់តែច្បាស់',
     detect_no_images_note: 'គ្មានរូបភាព — ប្រើកម្រងសំណួរ។ ដាក់រូបថតស្លឹកក្នុងជំហានទី ១ ដើម្បីប្រើ AI Hybrid',
+    detect_continue_questionnaire: 'បន្តទៅកម្រងសំណួរ',
     detect_filled: 'បានបំពេញ',
     detect_analyzing_btn: 'កំពុងវិភាគ…',
+    detect_error_title: 'មិនអាចដំណើរការរូបភាពនេះបាន',
+    detect_error_back: '← ត្រឡប់ទៅដើម្បីសាកល្បងរូបភាពផ្សេង',
     detect_mode_badge_hybrid: 'ស្ថានភាពរួម',
     detect_mode_badge_ml: 'ម៉ូត AI រូបភាព',
     detect_mode_badge_questionnaire: 'ម៉ូតសំណួរ',
@@ -848,7 +863,8 @@ export const translations = {
     detect_recommended_products: 'ផលិតផលព្យាបាលដែលបានណែនាំ',
     detect_need_help: 'ត្រូវការជំនួយបន្ថែម?',
     detect_book_call: 'ទំនាក់ទំនងអ្នកជំនាញ',
-    detect_save_data: 'រក្សាទុកលទ្ធផល',
+    detect_save_data: 'រក្សាទុក (JSON)',
+    detect_print_results: 'បោះពុម្ព / រក្សា PDF',
     detect_detected: 'រកឃើញ',
 
     // Step 3 detail strings
@@ -969,6 +985,8 @@ export const translations = {
     experts_telegram: 'Telegram',
     experts_cant_find: 'រកមិនឃើញអ្វីដែលអ្នកត្រូវការ?',
     experts_submit: 'ផ្ញើសារ',
+    experts_contact_thanks: 'អរគុណ! យើងនឹងទំនាក់ទំនងឆាប់ៗនេះ។',
+    experts_send_another: 'ផ្ញើសារផ្សេងទៀត',
     experts_join: 'ចូលរួមជាអ្នកជំនាញ',
     experts_apply: 'ដាក់ពាក្យ',
 

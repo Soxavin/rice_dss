@@ -12,6 +12,7 @@ export default function Step1Upload() {
   const [images, setImages] = useState([])
   const [dragOver, setDragOver] = useState(false)
   const [mode, setMode] = useState('hybrid')
+  const [isNavigating, setIsNavigating] = useState(false)
 
   const handleFiles = useCallback((files) => {
     const newImages = Array.from(files)
@@ -43,12 +44,14 @@ export default function Step1Upload() {
   const handleNext = () => {
     const needsImage = mode === 'hybrid' || mode === 'ml'
     if (needsImage && images.length === 0) return
+    if (isNavigating) return
 
+    setIsNavigating(true)
     const imageData = images.map((img) => ({ name: img.name, preview: img.preview }))
     sessionStorage.setItem('detect_images', JSON.stringify(imageData))
     sessionStorage.setItem('detect_mode', mode)
     window.__detectFiles = images.map((img) => img.file)
-    navigate('/detect/questions')
+    setTimeout(() => navigate('/detect/questions'), 120)
   }
 
   const canProceed = mode === 'questionnaire' || images.length > 0
@@ -137,6 +140,21 @@ export default function Step1Upload() {
               <p className="mt-3 text-xs" style={{ color: '#9e9e9e' }}>
                 {t('detect_no_images_note')}
               </p>
+              <button
+                onClick={handleNext}
+                disabled={isNavigating}
+                className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm border-none cursor-pointer transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#7b3f00', color: '#fff' }}
+              >
+                {isNavigating ? (
+                  <>
+                    <span className="inline-block w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    {t('detect_next')}…
+                  </>
+                ) : (
+                  <>{t('detect_continue_questionnaire')} →</>
+                )}
+              </button>
             </div>
           ) : (
             /* Upload zone for hybrid / ml modes */
@@ -240,13 +258,20 @@ export default function Step1Upload() {
         </button>
         <button
           onClick={handleNext}
-          disabled={!canProceed}
+          disabled={!canProceed || isNavigating}
           className="px-6 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 border-none cursor-pointer transition-colors disabled:cursor-not-allowed"
-          style={canProceed
+          style={canProceed && !isNavigating
             ? { backgroundColor: '#558b2f', color: '#fff' }
             : { backgroundColor: '#e0e0e0', color: '#9e9e9e' }}
         >
-          {t('detect_next')} →
+          {isNavigating ? (
+            <>
+              <span className="inline-block w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              {t('detect_next')}…
+            </>
+          ) : (
+            <>{t('detect_next')} →</>
+          )}
         </button>
       </div>
     </div>
