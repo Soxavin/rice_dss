@@ -250,22 +250,32 @@ export default function ExpertsPage() {
                     <div className="mx-5 h-px" style={{ backgroundColor: '#f0f0f0' }} />
 
                     {/* Buttons */}
-                    <div className="p-4 flex gap-2">
+                    <div className="px-4 pb-4 space-y-2">
+                      {/* View Profile */}
                       <button
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 cursor-pointer transition-opacity hover:opacity-85"
-                        style={btnGreen}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 cursor-pointer transition-opacity hover:opacity-85 text-xs font-semibold rounded-lg"
+                        style={{ backgroundColor: '#f7fbe7', color: '#33691e', border: '1px solid #a8d060' }}
                       >
-                        <Phone size={13} /> {t('experts_phone')}
+                        {t('experts_view_profile')}
                       </button>
-                      <a
-                        href={`https://t.me/${expert.telegram}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 no-underline transition-opacity hover:opacity-85"
-                        style={btnTelegram}
-                      >
-                        <Send size={13} /> {t('experts_telegram')}
-                      </a>
+                      {/* Contact buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 cursor-pointer transition-opacity hover:opacity-85"
+                          style={btnGreen}
+                        >
+                          <Phone size={13} /> {t('experts_phone')}
+                        </button>
+                        <a
+                          href={`https://t.me/${expert.telegram}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 no-underline transition-opacity hover:opacity-85"
+                          style={btnTelegram}
+                        >
+                          <Send size={13} /> {t('experts_telegram')}
+                        </a>
+                      </div>
                     </div>
                   </div>
                 ))}

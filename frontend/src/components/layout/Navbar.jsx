@@ -13,8 +13,7 @@ export default function Navbar() {
   const [servicesOpen, setServicesOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const dropdownRef = useRef(null)
-
-  const toggleLang = () => switchLang(lang === 'en' ? 'km' : 'en')
+  const closeTimer = useRef(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -22,6 +21,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -32,17 +32,27 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const openServices = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setServicesOpen(true)
+  }
+  const scheduleClose = () => {
+    closeTimer.current = setTimeout(() => setServicesOpen(false), 120)
+  }
+
   const isActive = (path) => location.pathname === path
+
+  const langLabel = lang === 'en' ? 'English' : 'ភាសាខ្មែរ'
+  const langFlag  = lang === 'en' ? '🇬🇧' : '🇰🇭'
 
   return (
     <nav className={`sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b transition-all duration-300 ${scrolled ? 'border-neutral-200 shadow-sm' : 'border-neutral-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo — gold italic matching Figma */}
-          <Link to="/" className="flex items-center gap-1 no-underline">
-            <span className="font-heading text-2xl font-bold italic" style={{ color: '#c5a028' }}>
-              Sro<span className="text-primary-500">🌾</span>Meas
-            </span>
+
+          {/* Logo */}
+          <Link to="/" className="flex items-center no-underline shrink-0">
+            <img src="/images/logo.png" alt="Srov Meas" className="h-10 w-auto" />
           </Link>
 
           {/* Desktop Nav */}
@@ -56,7 +66,13 @@ export default function Navbar() {
               {t('nav_home')}
             </Link>
 
-            <div className="relative" ref={dropdownRef} onMouseEnter={() => setServicesOpen(true)} onMouseLeave={() => setServicesOpen(false)}>
+            {/* Services dropdown — hover with small delay to prevent glitch */}
+            <div
+              className="relative"
+              ref={dropdownRef}
+              onMouseEnter={openServices}
+              onMouseLeave={scheduleClose}
+            >
               <button
                 onClick={() => setServicesOpen(!servicesOpen)}
                 className="text-sm font-medium text-neutral-700 hover:text-primary-600 flex items-center gap-1 bg-transparent border-none cursor-pointer transition-colors"
@@ -64,8 +80,14 @@ export default function Navbar() {
                 {t('nav_services')}
                 <ChevronDown size={14} className={`transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
               </button>
+
               {servicesOpen && (
-                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl py-2 z-50 animate-in" style={{ border: '1px solid #e0e0e0', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
+                <div
+                  className="absolute top-full left-0 w-56 bg-white rounded-xl py-2 z-50 animate-in"
+                  style={{ marginTop: '0', paddingTop: '10px', border: '1px solid #e0e0e0', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                  onMouseEnter={openServices}
+                  onMouseLeave={scheduleClose}
+                >
                   <Link to="/detect" className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-700 no-underline transition-colors" onClick={() => setServicesOpen(false)}>
                     {t('service_detection')}
                   </Link>
@@ -92,17 +114,23 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Right side */}
+          {/* Right side — desktop */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Language toggle — dark pill matching Figma */}
+            {/* Language toggle — Figma style: light green bg, green border */}
             <button
-              onClick={toggleLang}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium text-white cursor-pointer border-none transition-all hover:opacity-90"
-              style={{ background: '#424242', minWidth: '108px', justifyContent: 'center' }}
+              onClick={() => switchLang(lang === 'en' ? 'km' : 'en')}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer border transition-all hover:opacity-90"
+              style={{
+                backgroundColor: '#f0f7e6',
+                border: '1.5px solid #7cb342',
+                color: '#33691e',
+                minWidth: '130px',
+                justifyContent: 'space-between',
+              }}
             >
-              <span className="text-xs">{lang === 'en' ? '🇬🇧' : '🇰🇭'}</span>
-              <span style={{ minWidth: '52px', textAlign: 'left' }}>{lang === 'en' ? 'English' : 'ខ្មែរ'}</span>
-              <ChevronDown size={12} />
+              <span className="text-base leading-none">{langFlag}</span>
+              <span className="flex-1 text-left px-1.5">{langLabel}</span>
+              <ChevronDown size={13} style={{ color: '#558b2f', flexShrink: 0 }} />
             </button>
 
             {isAuthenticated ? (
@@ -145,13 +173,39 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 text-neutral-600 bg-transparent border-none cursor-pointer"
-          >
-            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile right side: language + sign-in + hamburger */}
+          <div className="md:hidden flex items-center gap-2">
+            {/* Language quick toggle */}
+            <button
+              onClick={() => switchLang(lang === 'en' ? 'km' : 'en')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer border transition-colors"
+              style={{ backgroundColor: '#f0f7e6', border: '1.5px solid #7cb342', color: '#33691e' }}
+            >
+              <span>{langFlag}</span>
+              <span>{lang === 'en' ? 'EN' : 'ខ្មែរ'}</span>
+            </button>
+
+            {!isAuthenticated && (
+              <Link
+                to="/sign-in"
+                className="text-xs font-semibold no-underline px-3 py-1.5 rounded-lg"
+                style={{ border: '1.5px solid #558b2f', color: '#33691e' }}
+              >
+                {t('nav_sign_in')}
+              </Link>
+            )}
+
+            {isAuthenticated && user?.photoURL && (
+              <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full object-cover" referrerPolicy="no-referrer" />
+            )}
+
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="p-2 text-neutral-600 bg-transparent border-none cursor-pointer"
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -174,10 +228,7 @@ export default function Navbar() {
             {t('service_crop')}
           </Link>
           <hr className="border-neutral-100 my-2" />
-          <button onClick={toggleLang} className="w-full text-left text-sm font-medium text-neutral-600 bg-transparent border-none cursor-pointer py-2.5 px-3 rounded-lg hover:bg-neutral-50">
-            {lang === 'en' ? '🇰🇭 Switch to ភាសាខ្មែរ' : '🇬🇧 Switch to English'}
-          </button>
-          <div className="pt-2 space-y-2">
+          <div className="pt-1 space-y-2">
             {isAuthenticated ? (
               <>
                 <Link to="/detect" className="block text-center text-sm font-medium text-white no-underline px-4 py-2.5 rounded-lg" style={{ backgroundColor: '#558b2f' }} onClick={() => setMobileOpen(false)}>
@@ -188,14 +239,9 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <>
-                <Link to="/sign-in" className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
-                  {t('nav_sign_in')}
-                </Link>
-                <Link to="/detect" className="block text-center text-sm font-medium text-white no-underline px-4 py-2.5 rounded-lg bg-primary-600" onClick={() => setMobileOpen(false)}>
-                  {t('nav_start_analysis')}
-                </Link>
-              </>
+              <Link to="/detect" className="block text-center text-sm font-medium text-white no-underline px-4 py-2.5 rounded-lg bg-primary-600" onClick={() => setMobileOpen(false)}>
+                {t('nav_start_analysis')}
+              </Link>
             )}
           </div>
         </div>

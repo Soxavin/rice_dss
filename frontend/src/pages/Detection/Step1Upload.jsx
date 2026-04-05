@@ -162,28 +162,63 @@ export default function Step1Upload() {
               onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
               onDragLeave={() => setDragOver(false)}
               onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFilesWithModeUpgrade(e.dataTransfer.files) }}
-              className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+              className={`border-2 border-dashed rounded-xl transition-colors ${
                 dragOver ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-neutral-50'
               }`}
             >
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary-100 flex items-center justify-center text-primary-500">
-                <Upload size={28} />
-              </div>
-              <h3 className="mt-4 font-semibold text-neutral-900">{t('detect_upload_tap')}</h3>
-              <p className="mt-1 text-sm text-neutral-500">{t('detect_upload_desc')}</p>
+              {/* Drop prompt */}
+              <div className="p-10 text-center">
+                <div className="w-16 h-16 mx-auto rounded-full bg-primary-100 flex items-center justify-center text-primary-500">
+                  <Upload size={28} />
+                </div>
+                <h3 className="mt-4 font-semibold text-neutral-900">{t('detect_upload_tap')}</h3>
+                <p className="mt-1 text-sm text-neutral-500">{t('detect_upload_desc')}</p>
 
-              <div className="mt-6 flex gap-3 justify-center">
-                <label className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors">
-                  <ImageIcon size={16} />
-                  {t('detect_choose_files')}
-                  <input type="file" accept="image/*" multiple onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
-                </label>
-                <label className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors">
-                  <Camera size={16} />
-                  {t('detect_use_camera')}
-                  <input type="file" accept="image/*" capture="environment" onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
-                </label>
+                <div className="mt-6 flex gap-3 justify-center">
+                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors">
+                    <ImageIcon size={16} />
+                    {t('detect_choose_files')}
+                    <input type="file" accept="image/*" multiple onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
+                  </label>
+                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors">
+                    <Camera size={16} />
+                    {t('detect_use_camera')}
+                    <input type="file" accept="image/*" capture="environment" onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
+                  </label>
+                </div>
               </div>
+
+              {/* Uploaded previews — inside the zone */}
+              {images.length > 0 && (
+                <div className="px-6 pb-6 border-t border-dashed border-neutral-300 pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm text-neutral-900">
+                      {t('detect_uploaded')} ({images.length}/5)
+                    </h3>
+                    {images.length < 5 && (
+                      <label className="inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer text-primary-700 hover:text-primary-800">
+                        <ImageIcon size={13} />
+                        {t('detect_add_more')}
+                        <input type="file" accept="image/*" multiple onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                    {images.map((img, i) => (
+                      <div key={i} className="relative group rounded-lg overflow-hidden" style={{ border: '1.5px solid #d4e6a5' }}>
+                        <img src={img.preview} alt={img.name} className="w-full h-24 object-cover" />
+                        <button
+                          onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none"
+                        >
+                          <X size={12} />
+                        </button>
+                        <p className="text-xs text-center text-neutral-600 py-1 truncate px-1">Image {i + 1}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -195,29 +230,6 @@ export default function Step1Upload() {
             >
               <span className="shrink-0">⚠️</span>
               <p style={{ color: '#92400e' }}>{t('detect_rice_leaf_warning')}</p>
-            </div>
-          )}
-
-          {/* Uploaded previews */}
-          {images.length > 0 && (
-            <div className="mt-6">
-              <h3 className="font-semibold text-neutral-900">
-                {t('detect_uploaded')} ({images.length}/5)
-              </h3>
-              <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-3">
-                {images.map((img, i) => (
-                  <div key={i} className="relative group rounded-lg overflow-hidden border border-neutral-200">
-                    <img src={img.preview} alt={img.name} className="w-full h-28 object-cover" />
-                    <button
-                      onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none"
-                    >
-                      <X size={14} />
-                    </button>
-                    <p className="text-xs text-center text-neutral-600 py-1 truncate px-1">Image {i + 1}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>

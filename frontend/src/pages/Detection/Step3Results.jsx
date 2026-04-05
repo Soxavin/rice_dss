@@ -490,19 +490,19 @@ export default function Step3Results() {
       </div>
 
       {/* ── Bottom actions ───────────────────────────────────────────────────── */}
-      <div className="mt-8 flex items-center justify-between border-t pt-6 no-print" style={{ borderColor: '#eeeeee' }}>
-        <button
-          onClick={() => navigate('/detect')}
-          className="text-sm bg-transparent border-none cursor-pointer flex items-center gap-1 hover:underline"
-          style={{ color: '#757575' }}
-        >
-          <ChevronLeft size={14} /> {t('detect_start_new')}
-        </button>
+      <div className="mt-8 flex items-center justify-end gap-3 border-t pt-6 no-print" style={{ borderColor: '#eeeeee' }}>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/detect')}
+            className="px-4 py-2.5 rounded-xl font-semibold text-sm cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#fff', color: '#558b2f', border: '1.5px solid #558b2f' }}
+          >
+            + {t('detect_start_new')}
+          </button>
           <button
             onClick={() => window.print()}
             className="px-4 py-2.5 rounded-xl font-semibold text-sm border cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: '#fff', color: '#558b2f', border: '1.5px solid #558b2f' }}
+            style={{ backgroundColor: '#fff', color: '#616161', border: '1.5px solid #bdbdbd' }}
           >
             <Download size={14} /> {t('detect_print_results')}
           </button>
