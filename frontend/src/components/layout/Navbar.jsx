@@ -56,7 +56,7 @@ export default function Navbar() {
               {t('nav_home')}
             </Link>
 
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={dropdownRef} onMouseEnter={() => setServicesOpen(true)} onMouseLeave={() => setServicesOpen(false)}>
               <button
                 onClick={() => setServicesOpen(!servicesOpen)}
                 className="text-sm font-medium text-neutral-700 hover:text-primary-600 flex items-center gap-1 bg-transparent border-none cursor-pointer transition-colors"
@@ -98,10 +98,10 @@ export default function Navbar() {
             <button
               onClick={toggleLang}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium text-white cursor-pointer border-none transition-all hover:opacity-90"
-              style={{ background: '#424242' }}
+              style={{ background: '#424242', minWidth: '108px', justifyContent: 'center' }}
             >
               <span className="text-xs">{lang === 'en' ? '🇬🇧' : '🇰🇭'}</span>
-              {lang === 'en' ? 'English' : 'ខ្មែរ'}
+              <span style={{ minWidth: '52px', textAlign: 'left' }}>{lang === 'en' ? 'English' : 'ខ្មែរ'}</span>
               <ChevronDown size={12} />
             </button>
 
