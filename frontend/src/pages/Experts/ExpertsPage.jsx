@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock } from 'lucide-react'
@@ -158,6 +158,13 @@ export default function ExpertsPage() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
   const [contactSubmitted, setContactSubmitted] = useState(false)
   const [selectedExpert, setSelectedExpert] = useState(null)
+
+  useEffect(() => {
+    if (!selectedExpert) return
+    const onKey = (e) => { if (e.key === 'Escape') setSelectedExpert(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [selectedExpert])
 
   const bil = (obj) => (typeof obj === 'object' ? obj[lang] || obj.en : obj)
   const expertName = (expert) =>
@@ -590,20 +597,29 @@ export default function ExpertsPage() {
         </section>
       </div>
 
-      {/* ═══════════════ EXPERT PROFILE MODAL ═══════════════ */}
+      {/* ═══════════════ EXPERT PROFILE SLIDE-OVER ═══════════════ */}
       {selectedExpert && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedExpert(null) }}
-        >
+        <>
+          {/* Backdrop */}
           <div
-            className="bg-white w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
-            style={{ maxHeight: '90vh', boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+            onClick={() => setSelectedExpert(null)}
+          />
+
+          {/* Slide-over panel */}
+          <div
+            className="fixed top-0 right-0 h-screen z-50 bg-white flex flex-col"
+            style={{
+              width: 'min(420px, 100vw)',
+              boxShadow: '-8px 0 40px rgba(0,0,0,0.18)',
+              transform: 'translateX(0)',
+              transition: 'transform 0.25s ease',
+            }}
           >
-            {/* Modal header — dark green banner */}
+            {/* Panel header — dark green banner */}
             <div
-              className="relative p-6 pb-5"
+              className="relative p-6 pb-5 shrink-0"
               style={{ background: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a1e 100%)' }}
             >
               <button
@@ -615,7 +631,6 @@ export default function ExpertsPage() {
               </button>
 
               <div className="flex items-start gap-4">
-                {/* Avatar */}
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0"
                   style={{ background: 'linear-gradient(135deg, #f7fbe7, #eef5d3)', border: '2px solid #a8d060' }}
@@ -662,8 +677,6 @@ export default function ExpertsPage() {
 
             {/* Scrollable body */}
             <div className="overflow-y-auto flex-1 p-6 space-y-5">
-
-              {/* Bio */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
                   <BookOpen size={13} /> {t('experts_profile_about')}
@@ -671,7 +684,6 @@ export default function ExpertsPage() {
                 <p className="text-sm text-neutral-600 leading-relaxed">{bil(selectedExpert.bio)}</p>
               </div>
 
-              {/* Specializations */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
                   {t('experts_profile_specializations')}
@@ -686,7 +698,6 @@ export default function ExpertsPage() {
                 </div>
               </div>
 
-              {/* Education */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
                   <Star size={13} /> {t('experts_profile_education')}
@@ -694,7 +705,6 @@ export default function ExpertsPage() {
                 <p className="text-sm text-neutral-700">{selectedExpert.education}</p>
               </div>
 
-              {/* Languages + Availability */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
@@ -711,8 +721,8 @@ export default function ExpertsPage() {
               </div>
             </div>
 
-            {/* Footer actions */}
-            <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #f0f0f0' }}>
+            {/* Pinned footer actions */}
+            <div className="px-6 py-4 flex gap-3 shrink-0" style={{ borderTop: '1px solid #f0f0f0' }}>
               <button
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl cursor-pointer border-none transition-opacity hover:opacity-85"
                 style={{ backgroundColor: '#558b2f', color: '#fff' }}
@@ -730,14 +740,14 @@ export default function ExpertsPage() {
               </a>
               <button
                 onClick={() => setSelectedExpert(null)}
-                className="px-4 py-2.5 text-sm font-medium rounded-xl cursor-pointer border transition-colors hover:bg-neutral-50"
+                className="px-4 py-2.5 text-sm font-medium rounded-xl cursor-pointer transition-colors hover:bg-neutral-50"
                 style={{ border: '1.5px solid #e0e0e0', color: '#616161', backgroundColor: '#fff' }}
               >
                 {t('experts_profile_close')}
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

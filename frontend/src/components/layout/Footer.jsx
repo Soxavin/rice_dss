@@ -12,9 +12,12 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <Link to="/" className="no-underline">
-              <span className="font-heading text-2xl font-bold italic" style={{ color: '#c5a028' }}>
-                Sro<span className="text-primary-300">🌾</span>Meas
-              </span>
+              <img
+                src="/images/logo.png"
+                alt="Srov Meas"
+                className="h-9 w-auto"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
             </Link>
             <p className="mt-3 text-sm text-footer-text leading-relaxed">
               {t('footer_tagline')}
