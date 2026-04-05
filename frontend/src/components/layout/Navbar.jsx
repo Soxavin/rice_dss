@@ -11,9 +11,12 @@ export default function Navbar() {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [servicesOpen, setServicesOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const dropdownRef = useRef(null)
+  const langDropdownRef = useRef(null)
   const closeTimer = useRef(null)
+  const langCloseTimer = useRef(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -21,11 +24,14 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setServicesOpen(false)
+      }
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target)) {
+        setLangOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -40,6 +46,14 @@ export default function Navbar() {
     closeTimer.current = setTimeout(() => setServicesOpen(false), 120)
   }
 
+  const openLang = () => {
+    if (langCloseTimer.current) clearTimeout(langCloseTimer.current)
+    setLangOpen(true)
+  }
+  const scheduleLangClose = () => {
+    langCloseTimer.current = setTimeout(() => setLangOpen(false), 120)
+  }
+
   const isActive = (path) => location.pathname === path
 
   const langLabel = lang === 'en' ? 'English' : 'ភាសាខ្មែរ'
@@ -52,7 +66,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center no-underline shrink-0">
-            <img src="/images/logo.png" alt="Srov Meas" className="h-10 w-auto" />
+            <img src="/images/logo.png" alt="Srov Meas" className="h-8 w-auto" />
           </Link>
 
           {/* Desktop Nav */}
@@ -116,22 +130,56 @@ export default function Navbar() {
 
           {/* Right side — desktop */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Language toggle — Figma style: light green bg, green border */}
-            <button
-              onClick={() => switchLang(lang === 'en' ? 'km' : 'en')}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer border transition-all hover:opacity-90"
-              style={{
-                backgroundColor: '#f0f7e6',
-                border: '1.5px solid #7cb342',
-                color: '#33691e',
-                minWidth: '130px',
-                justifyContent: 'space-between',
-              }}
+            {/* Language dropdown — hover+click, active language highlighted */}
+            <div
+              className="relative"
+              ref={langDropdownRef}
+              onMouseEnter={openLang}
+              onMouseLeave={scheduleLangClose}
             >
-              <span className="text-base leading-none">{langFlag}</span>
-              <span className="flex-1 text-left px-1.5">{langLabel}</span>
-              <ChevronDown size={13} style={{ color: '#558b2f', flexShrink: 0 }} />
-            </button>
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all hover:opacity-90"
+                style={{
+                  backgroundColor: '#f0f7e6',
+                  border: '1.5px solid #7cb342',
+                  color: '#33691e',
+                  minWidth: '140px',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span className="text-base leading-none">{langFlag}</span>
+                <span className="flex-1 text-left px-1.5">{langLabel}</span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${langOpen ? 'rotate-180' : ''}`} style={{ color: '#558b2f', flexShrink: 0 }} />
+              </button>
+
+              {langOpen && (
+                <div
+                  className="absolute top-full right-0 w-44 bg-white rounded-xl py-1 z-50"
+                  style={{ marginTop: '0', paddingTop: '8px', border: '1px solid #e0e0e0', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                  onMouseEnter={openLang}
+                  onMouseLeave={scheduleLangClose}
+                >
+                  {[
+                    { code: 'en', flag: '🇬🇧', label: 'English' },
+                    { code: 'km', flag: '🇰🇭', label: 'ភាសាខ្មែរ' },
+                  ].map(({ code, flag, label }) => (
+                    <button
+                      key={code}
+                      onClick={() => { switchLang(code); setLangOpen(false) }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium cursor-pointer border-none transition-colors text-left"
+                      style={lang === code
+                        ? { backgroundColor: '#f0f7e6', color: '#33691e' }
+                        : { backgroundColor: 'transparent', color: '#424242' }}
+                    >
+                      <span className="text-base leading-none">{flag}</span>
+                      <span>{label}</span>
+                      {lang === code && <span className="ml-auto text-xs" style={{ color: '#7cb342' }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">

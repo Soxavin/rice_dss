@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
-import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star } from 'lucide-react'
+import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock } from 'lucide-react'
 
 /* Shared inline styles — matches site-wide design language */
 const cardStyle = {
@@ -27,12 +27,102 @@ const btnTelegram = {
 }
 
 const EXPERTS_DATA = [
-  { id: 1, name: 'Dr. Som Sopheap', nameKm: 'ដុក្តូរ សំ សុភ័ព', titleKey: 'expert_role_agricultural_scientist', location: { en: 'Phnom Penh, Cambodia', km: 'ភ្នំពេញ, កម្ពុជា' }, img: '👨‍🔬', telegram: 'dr_sopheap', online: true },
-  { id: 2, name: 'Eng Chantrea', nameKm: 'អ៊ែង ច័ន្រ្ទា', titleKey: 'expert_role_rice_pathology', location: { en: 'Battambang Region', km: 'តំបន់បាត់ដំបង' }, img: '👨‍🌾', telegram: 'eng_chantrea', online: true },
-  { id: 3, name: 'Dr. Ly Rottanak', nameKm: 'ដុក្តូរ លី រដ្ឋណាក់', titleKey: 'expert_role_soil_science', location: { en: 'Siem Reap Region', km: 'តំបន់សៀមរាប' }, img: '👩‍🔬', telegram: 'ly_rottanak', online: false },
-  { id: 4, name: 'Nhem Sokha', nameKm: 'ញ៉ែម សុខា', titleKey: 'expert_role_agricultural_consultant', location: { en: 'Kampong Cham', km: 'កំពង់ចាម' }, img: '👨‍🏫', telegram: 'nhem_sokha', online: true },
-  { id: 5, name: 'Chan Dara', nameKm: 'ចាន់ ដារ៉ា', titleKey: 'expert_role_rice_breeding', location: { en: 'Prey Veng', km: 'ព្រៃវែង' }, img: '👩‍🌾', telegram: 'chan_dara', online: false },
-  { id: 6, name: 'Sok Visal', nameKm: 'សុក វិសាល', titleKey: 'expert_role_pest_management', location: { en: 'Takeo', km: 'តាកែវ' }, img: '👨‍🔬', telegram: 'sok_visal', online: true },
+  {
+    id: 1, name: 'Dr. Som Sopheap', nameKm: 'ដុក្តូរ សំ សុភ័ព',
+    titleKey: 'expert_role_agricultural_scientist',
+    location: { en: 'Phnom Penh, Cambodia', km: 'ភ្នំពេញ, កម្ពុជា' },
+    img: '👨‍🔬', telegram: 'dr_sopheap', online: true,
+    phone: '+855 12 345 678',
+    experience: 14, rating: 4.9, reviews: 38,
+    bio: {
+      en: 'Dr. Sopheap is a leading agricultural scientist specializing in rice disease management across Southeast Asia. He has advised the Ministry of Agriculture on disease outbreak protocols and authored several peer-reviewed studies on fungal pathogens in Cambodian rice fields.',
+      km: 'ដុក្តូរ សុភ័ព គឺជាអ្នកវិទ្យាសាស្ត្រកសិកម្មឈានមុខ ដែលមានជំនាញខាងការគ្រប់គ្រងជំងឺស្រូវក្នុងអាស៊ីអាគ្នេយ៍។ លោកបានផ្តល់យោបល់ដល់ក្រសួងកសិកម្មលើពិធីការជំងឺ ហើយបានសរសេរការសិក្សាវិទ្យាសាស្ត្រជាច្រើនអំពីបណ្តេញជំងឺផ្សិតក្នុងស្រែស្រូវកម្ពុជា។',
+    },
+    specializations: ['Rice Blast', 'Brown Spot', 'Fungal Pathology', 'Disease Management'],
+    education: 'Ph.D. Plant Pathology, Kasetsart University (Thailand)',
+    languages: ['Khmer', 'English', 'Thai'],
+    availability: 'Mon–Fri, 8:00–17:00',
+  },
+  {
+    id: 2, name: 'Eng Chantrea', nameKm: 'អ៊ែង ច័ន្រ្ទា',
+    titleKey: 'expert_role_rice_pathology',
+    location: { en: 'Battambang Region', km: 'តំបន់បាត់ដំបង' },
+    img: '👨‍🌾', telegram: 'eng_chantrea', online: true,
+    phone: '+855 17 234 567',
+    experience: 9, rating: 4.7, reviews: 21,
+    bio: {
+      en: 'Chantrea is a rice pathologist with nearly a decade of fieldwork in the Battambang rice belt. He focuses on early detection of bacterial blight and brown spot, and regularly conducts farmer training workshops on integrated pest management.',
+      km: 'ច័ន្រ្ទា គឺជាអ្នកឯកទេសជំងឺស្រូវវ ដែលមានបទពិសោធន៍ជិតមួយទសវត្សនៅក្នុងវាលស្រូវបាត់ដំបង។ គាត់ផ្តោតលើការរកឃើញជំងឺ Bacterial Blight និង Brown Spot ។',
+    },
+    specializations: ['Bacterial Blight', 'Brown Spot', 'IPM', 'Farmer Training'],
+    education: 'M.Sc. Plant Science, Royal University of Agriculture (Cambodia)',
+    languages: ['Khmer', 'English'],
+    availability: 'Mon–Sat, 7:00–16:00',
+  },
+  {
+    id: 3, name: 'Dr. Ly Rottanak', nameKm: 'ដុក្តូរ លី រដ្ឋណាក់',
+    titleKey: 'expert_role_soil_science',
+    location: { en: 'Siem Reap Region', km: 'តំបន់សៀមរាប' },
+    img: '👩‍🔬', telegram: 'ly_rottanak', online: false,
+    phone: '+855 89 456 789',
+    experience: 11, rating: 4.8, reviews: 29,
+    bio: {
+      en: 'Dr. Rottanak specializes in soil science and nutrient management for paddy fields in the Tonle Sap basin. Her research focuses on how soil composition affects susceptibility to root and leaf diseases, and she provides consulting services to large-scale rice farms.',
+      km: 'ដុក្តូរ រដ្ឋណាក់ មានជំនាញខាងវិទ្យាសាស្ត្រដី និងការគ្រប់គ្រងជីជាតិសម្រាប់វាលស្រែក្នុងអាងទន្លេសាប។',
+    },
+    specializations: ['Soil Nutrition', 'Root Disease', 'Paddy Soil Management', 'Water Management'],
+    education: 'Ph.D. Soil Science, Wageningen University (Netherlands)',
+    languages: ['Khmer', 'English', 'French'],
+    availability: 'Tue, Thu, Sat, 9:00–15:00',
+  },
+  {
+    id: 4, name: 'Nhem Sokha', nameKm: 'ញ៉ែម សុខា',
+    titleKey: 'expert_role_agricultural_consultant',
+    location: { en: 'Kampong Cham', km: 'កំពង់ចាម' },
+    img: '👨‍🏫', telegram: 'nhem_sokha', online: true,
+    phone: '+855 77 890 123',
+    experience: 7, rating: 4.6, reviews: 17,
+    bio: {
+      en: 'Sokha is an agricultural consultant who works directly with smallholder farmers in Kampong Cham. He focuses on practical, low-cost solutions for crop protection and has helped over 200 farming households improve their yield through better disease management.',
+      km: 'សុខា គឺជាអ្នកប្រឹក្សាកសិកម្ម ដែលធ្វើការដោយផ្ទាល់ជាមួយកសិករក្នុងកំពង់ចាម។ គាត់ផ្តោតលើដំណោះស្រាយការពារដំណាំដែលមានតម្លៃទាប។',
+    },
+    specializations: ['Crop Protection', 'Smallholder Advisory', 'Disease Scouting', 'Cost Management'],
+    education: 'B.Sc. Agriculture, National University of Battambang (Cambodia)',
+    languages: ['Khmer', 'English'],
+    availability: 'Mon–Fri, 7:00–18:00',
+  },
+  {
+    id: 5, name: 'Chan Dara', nameKm: 'ចាន់ ដារ៉ា',
+    titleKey: 'expert_role_rice_breeding',
+    location: { en: 'Prey Veng', km: 'ព្រៃវែង' },
+    img: '👩‍🌾', telegram: 'chan_dara', online: false,
+    phone: '+855 96 567 890',
+    experience: 12, rating: 4.7, reviews: 24,
+    bio: {
+      en: 'Dara is a rice breeding specialist at the Cambodian Agricultural Research and Development Institute. She works on developing disease-resistant rice varieties adapted to Cambodian growing conditions, and has contributed to the release of three certified local varieties.',
+      km: 'ដារ៉ា គឺជាអ្នកឯកទេសការបន្តពូជស្រូវ នៅវិទ្យាស្ថានស្រាវជ្រាវ និងអភិវឌ្ឍន៍កសិកម្មកម្ពុជា ហើយបានរួមចំណែករំលេចពូជស្រូវ ៣ ប្រភេទ។',
+    },
+    specializations: ['Rice Breeding', 'Disease Resistance', 'Seed Systems', 'Varietal Selection'],
+    education: 'M.Sc. Plant Breeding, IRRI – Los Baños (Philippines)',
+    languages: ['Khmer', 'English'],
+    availability: 'Mon–Wed, 8:00–17:00',
+  },
+  {
+    id: 6, name: 'Sok Visal', nameKm: 'សុក វិសាល',
+    titleKey: 'expert_role_pest_management',
+    location: { en: 'Takeo', km: 'តាកែវ' },
+    img: '👨‍🔬', telegram: 'sok_visal', online: true,
+    phone: '+855 10 678 901',
+    experience: 8, rating: 4.5, reviews: 14,
+    bio: {
+      en: 'Visal is a pest and disease management expert based in Takeo province. He specialises in integrated approaches combining chemical and biological controls, with particular expertise in diagnosing complex multi-pest infestations common to lowland rice.',
+      km: 'វិសាល គឺជាអ្នកជំនាញការគ្រប់គ្រងជំងឺ និងសត្វល្អិតនៅខេត្តតាកែវ ដែលមានជំនាញពិសេសក្នុងការធ្វើរោគវិនិច្ឆ័យ។',
+    },
+    specializations: ['Pest Management', 'Biological Control', 'Multi-pest Diagnosis', 'Lowland Rice'],
+    education: 'B.Sc. Agricultural Science, Royal University of Agriculture (Cambodia)',
+    languages: ['Khmer', 'English'],
+    availability: 'Mon–Sat, 6:30–15:00',
+  },
 ]
 
 const PRODUCTS = [
@@ -67,6 +157,7 @@ export default function ExpertsPage() {
   const [search, setSearch] = useState('')
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
   const [contactSubmitted, setContactSubmitted] = useState(false)
+  const [selectedExpert, setSelectedExpert] = useState(null)
 
   const bil = (obj) => (typeof obj === 'object' ? obj[lang] || obj.en : obj)
   const expertName = (expert) =>
@@ -253,6 +344,7 @@ export default function ExpertsPage() {
                     <div className="px-4 pb-4 space-y-2">
                       {/* View Profile */}
                       <button
+                        onClick={() => setSelectedExpert(expert)}
                         className="w-full flex items-center justify-center gap-1.5 py-2 cursor-pointer transition-opacity hover:opacity-85 text-xs font-semibold rounded-lg"
                         style={{ backgroundColor: '#f7fbe7', color: '#33691e', border: '1px solid #a8d060' }}
                       >
@@ -497,6 +589,156 @@ export default function ExpertsPage() {
           </div>
         </section>
       </div>
+
+      {/* ═══════════════ EXPERT PROFILE MODAL ═══════════════ */}
+      {selectedExpert && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedExpert(null) }}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
+            style={{ maxHeight: '90vh', boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}
+          >
+            {/* Modal header — dark green banner */}
+            <div
+              className="relative p-6 pb-5"
+              style={{ background: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a1e 100%)' }}
+            >
+              <button
+                onClick={() => setSelectedExpert(null)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none transition-colors"
+                style={{ backgroundColor: 'rgba(255,255,255,0.12)', color: '#fff' }}
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #f7fbe7, #eef5d3)', border: '2px solid #a8d060' }}
+                >
+                  {selectedExpert.img}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#8bc34a' }}>
+                      {t(selectedExpert.titleKey)}
+                    </p>
+                    {selectedExpert.online ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
+                        style={{ backgroundColor: 'rgba(34,197,94,0.2)', color: '#86efac', border: '1px solid rgba(34,197,94,0.3)' }}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /> Online
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.12)' }}>
+                        Offline
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="mt-0.5 text-lg font-bold text-white leading-snug">{expertName(selectedExpert)}</h2>
+                  <p className="mt-1 text-xs flex items-center gap-1" style={{ color: '#a8c89a' }}>
+                    <MapPin size={11} /> {bil(selectedExpert.location)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Stats strip */}
+              <div className="mt-4 flex gap-4">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-white">{selectedExpert.experience}</p>
+                  <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{t('experts_profile_years_exp')}</p>
+                </div>
+                <div className="w-px" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
+                <div className="text-center">
+                  <p className="text-lg font-bold text-white">{selectedExpert.rating} ⭐</p>
+                  <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{selectedExpert.reviews} {t('experts_profile_reviews')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+
+              {/* Bio */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                  <BookOpen size={13} /> {t('experts_profile_about')}
+                </h3>
+                <p className="text-sm text-neutral-600 leading-relaxed">{bil(selectedExpert.bio)}</p>
+              </div>
+
+              {/* Specializations */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
+                  {t('experts_profile_specializations')}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedExpert.specializations.map((s) => (
+                    <span key={s} className="text-xs font-medium px-2.5 py-1 rounded-full"
+                      style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Education */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                  <Star size={13} /> {t('experts_profile_education')}
+                </h3>
+                <p className="text-sm text-neutral-700">{selectedExpert.education}</p>
+              </div>
+
+              {/* Languages + Availability */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                    <Globe size={13} /> {t('experts_profile_languages')}
+                  </h3>
+                  <p className="text-sm text-neutral-700">{selectedExpert.languages.join(', ')}</p>
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                    <Clock size={13} /> {t('experts_profile_availability')}
+                  </h3>
+                  <p className="text-sm text-neutral-700">{selectedExpert.availability}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #f0f0f0' }}>
+              <button
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl cursor-pointer border-none transition-opacity hover:opacity-85"
+                style={{ backgroundColor: '#558b2f', color: '#fff' }}
+              >
+                <Phone size={14} /> {t('experts_phone')}
+              </button>
+              <a
+                href={`https://t.me/${selectedExpert.telegram}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl no-underline transition-opacity hover:opacity-85"
+                style={{ backgroundColor: '#0088cc', color: '#fff' }}
+              >
+                <Send size={14} /> {t('experts_telegram')}
+              </a>
+              <button
+                onClick={() => setSelectedExpert(null)}
+                className="px-4 py-2.5 text-sm font-medium rounded-xl cursor-pointer border transition-colors hover:bg-neutral-50"
+                style={{ border: '1.5px solid #e0e0e0', color: '#616161', backgroundColor: '#fff' }}
+              >
+                {t('experts_profile_close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
