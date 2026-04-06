@@ -11,13 +11,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <Link to="/" className="no-underline inline-block" style={{ userSelect: 'none' }}>
+            <Link
+              to="/"
+              className="no-underline inline-block"
+              onMouseDown={(e) => e.preventDefault()}
+            >
               <img
                 src="/images/logo.png"
                 alt="Srov Meas"
                 className="h-9 w-auto"
                 draggable="false"
-                style={{ filter: 'brightness(0) invert(1)', userSelect: 'none', WebkitUserDrag: 'none' }}
+                onDragStart={(e) => e.preventDefault()}
               />
             </Link>
             <p className="mt-3 text-sm text-footer-text leading-relaxed">

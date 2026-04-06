@@ -65,8 +65,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center no-underline shrink-0">
-            <img src="/images/logo.png" alt="Srov Meas" className="h-8 w-auto" draggable="false" style={{ userSelect: 'none', WebkitUserDrag: 'none' }} />
+          <Link to="/" className="flex items-center no-underline shrink-0" onMouseDown={(e) => e.preventDefault()}>
+            <img src="/images/logo.png" alt="Srov Meas" className="h-8 w-auto" draggable="false" onDragStart={(e) => e.preventDefault()} />
           </Link>
 
           {/* Desktop Nav */}
