@@ -66,7 +66,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center no-underline shrink-0">
-            <img src="/images/logo.png" alt="Srov Meas" className="h-8 w-auto" />
+            <img src="/images/logo.png" alt="Srov Meas" className="h-8 w-auto" draggable="false" style={{ userSelect: 'none', WebkitUserDrag: 'none' }} />
           </Link>
 
           {/* Desktop Nav */}
