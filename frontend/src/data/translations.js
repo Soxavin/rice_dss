@@ -602,7 +602,7 @@ export const translations = {
     nav_home: 'ទំព័រដើម',
     nav_services: 'សេវាកម្ម',
     nav_contact: 'អ្នកជំនាញ & ជំនួយ',
-    nav_sign_in: 'ចូល',
+    nav_sign_in: 'ចូលគណនី',
     nav_start_analysis: 'ចាប់ផ្តើមវិភាគ',
     nav_language: 'ភាសាខ្មែរ',
 

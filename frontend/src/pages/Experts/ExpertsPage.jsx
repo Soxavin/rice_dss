@@ -597,7 +597,7 @@ export default function ExpertsPage() {
         </section>
       </div>
 
-      {/* ═══════════════ EXPERT PROFILE SLIDE-OVER ═══════════════ */}
+      {/* ═══════════════ EXPERT PROFILE BOTTOM SHEET ═══════════════ */}
       {selectedExpert && (
         <>
           {/* Backdrop */}
@@ -607,19 +607,25 @@ export default function ExpertsPage() {
             onClick={() => setSelectedExpert(null)}
           />
 
-          {/* Slide-over panel */}
+          {/* Bottom sheet */}
           <div
-            className="fixed top-0 right-0 h-screen z-50 bg-white flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white flex flex-col"
             style={{
-              width: 'min(420px, 100vw)',
-              boxShadow: '-8px 0 40px rgba(0,0,0,0.18)',
-              transform: 'translateX(0)',
-              transition: 'transform 0.25s ease',
+              maxHeight: '78vh',
+              borderRadius: '20px 20px 0 0',
+              boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+              transform: 'translateY(0)',
+              transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
             }}
           >
-            {/* Panel header — dark green banner */}
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 rounded-full" style={{ backgroundColor: '#d4d4d4' }} />
+            </div>
+
+            {/* Sheet header — dark green banner */}
             <div
-              className="relative p-6 pb-5 shrink-0"
+              className="relative px-6 py-4 shrink-0"
               style={{ background: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a1e 100%)' }}
             >
               <button
@@ -630,9 +636,9 @@ export default function ExpertsPage() {
                 <X size={16} />
               </button>
 
-              <div className="flex items-start gap-4">
+              <div className="flex items-center gap-4">
                 <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
                   style={{ background: 'linear-gradient(135deg, #f7fbe7, #eef5d3)', border: '2px solid #a8d060' }}
                 >
                   {selectedExpert.img}
@@ -654,69 +660,70 @@ export default function ExpertsPage() {
                       </span>
                     )}
                   </div>
-                  <h2 className="mt-0.5 text-lg font-bold text-white leading-snug">{expertName(selectedExpert)}</h2>
-                  <p className="mt-1 text-xs flex items-center gap-1" style={{ color: '#a8c89a' }}>
+                  <h2 className="mt-0.5 text-base font-bold text-white leading-snug">{expertName(selectedExpert)}</h2>
+                  <p className="mt-0.5 text-xs flex items-center gap-1" style={{ color: '#a8c89a' }}>
                     <MapPin size={11} /> {bil(selectedExpert.location)}
                   </p>
                 </div>
-              </div>
 
-              {/* Stats strip */}
-              <div className="mt-4 flex gap-4">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-white">{selectedExpert.experience}</p>
-                  <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{t('experts_profile_years_exp')}</p>
-                </div>
-                <div className="w-px" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
-                <div className="text-center">
-                  <p className="text-lg font-bold text-white">{selectedExpert.rating} ⭐</p>
-                  <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{selectedExpert.reviews} {t('experts_profile_reviews')}</p>
+                {/* Stats inline */}
+                <div className="shrink-0 flex gap-4 pl-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.15)' }}>
+                  <div className="text-center">
+                    <p className="text-base font-bold text-white">{selectedExpert.experience}</p>
+                    <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{t('experts_profile_years_exp')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-base font-bold text-white">{selectedExpert.rating} ⭐</p>
+                    <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{selectedExpert.reviews} {t('experts_profile_reviews')}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Scrollable body */}
-            <div className="overflow-y-auto flex-1 p-6 space-y-5">
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
-                  <BookOpen size={13} /> {t('experts_profile_about')}
-                </h3>
-                <p className="text-sm text-neutral-600 leading-relaxed">{bil(selectedExpert.bio)}</p>
-              </div>
-
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
-                  {t('experts_profile_specializations')}
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {selectedExpert.specializations.map((s) => (
-                    <span key={s} className="text-xs font-medium px-2.5 py-1 rounded-full"
-                      style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
-                      {s}
-                    </span>
-                  ))}
+            {/* Scrollable body — two-column layout on wide screens */}
+            <div className="overflow-y-auto flex-1 p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                <div className="sm:col-span-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                    <BookOpen size={13} /> {t('experts_profile_about')}
+                  </h3>
+                  <p className="text-sm text-neutral-600 leading-relaxed">{bil(selectedExpert.bio)}</p>
                 </div>
-              </div>
 
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
-                  <Star size={13} /> {t('experts_profile_education')}
-                </h3>
-                <p className="text-sm text-neutral-700">{selectedExpert.education}</p>
-              </div>
+                <div className="sm:col-span-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
+                    {t('experts_profile_specializations')}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedExpert.specializations.map((s) => (
+                      <span key={s} className="text-xs font-medium px-2.5 py-1 rounded-full"
+                        style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
-                    <Globe size={13} /> {t('experts_profile_languages')}
+                    <Star size={13} /> {t('experts_profile_education')}
                   </h3>
-                  <p className="text-sm text-neutral-700">{selectedExpert.languages.join(', ')}</p>
+                  <p className="text-sm text-neutral-700">{selectedExpert.education}</p>
                 </div>
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
-                    <Clock size={13} /> {t('experts_profile_availability')}
-                  </h3>
-                  <p className="text-sm text-neutral-700">{selectedExpert.availability}</p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                      <Globe size={13} /> {t('experts_profile_languages')}
+                    </h3>
+                    <p className="text-sm text-neutral-700">{selectedExpert.languages.join(', ')}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                      <Clock size={13} /> {t('experts_profile_availability')}
+                    </h3>
+                    <p className="text-sm text-neutral-700">{selectedExpert.availability}</p>
+                  </div>
                 </div>
               </div>
             </div>
