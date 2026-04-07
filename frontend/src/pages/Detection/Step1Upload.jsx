@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize } from 'lucide-react'
+import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 
 // Analysis modes
@@ -13,6 +13,15 @@ export default function Step1Upload() {
   const [dragOver, setDragOver] = useState(false)
   const [mode, setMode] = useState('hybrid')
   const [isNavigating, setIsNavigating] = useState(false)
+
+  // Camera modal state
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraError, setCameraError] = useState(null)
+  const [cameraFacing, setCameraFacing] = useState('environment')
+  const [cameraReady, setCameraReady] = useState(false)
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
+  const canvasRef = useRef(null)
 
   const handleFiles = useCallback((files) => {
     const newImages = Array.from(files)
@@ -34,6 +43,80 @@ export default function Step1Upload() {
     setDragOver(false)
     handleFiles(e.dataTransfer.files)
   }
+
+  // ── Camera helpers ──────────────────────────────────────────────────────────
+  const startStream = useCallback(async (facing) => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(tr => tr.stop())
+      streamRef.current = null
+    }
+    setCameraReady(false)
+    setCameraError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+    } catch (err) {
+      setCameraError(
+        err.name === 'NotAllowedError'
+          ? t('camera_error_permission')
+          : t('camera_error_generic')
+      )
+    }
+  }, [t])
+
+  const openCamera = useCallback(() => {
+    setCameraOpen(true)
+    setCameraError(null)
+    setCameraReady(false)
+    startStream(cameraFacing)
+  }, [cameraFacing, startStream])
+
+  const closeCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(tr => tr.stop())
+      streamRef.current = null
+    }
+    setCameraOpen(false)
+    setCameraError(null)
+    setCameraReady(false)
+  }, [])
+
+  const flipCamera = useCallback(() => {
+    const next = cameraFacing === 'environment' ? 'user' : 'environment'
+    setCameraFacing(next)
+    startStream(next)
+  }, [cameraFacing, startStream])
+
+  const capturePhoto = useCallback(() => {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d').drawImage(video, 0, 0)
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const fileName = `camera-${Date.now()}.jpg`
+      const file = new File([blob], fileName, { type: 'image/jpeg' })
+      const preview = URL.createObjectURL(blob)
+      setImages(prev => [...prev, { file, preview, name: fileName }].slice(0, 5))
+      if (mode === 'questionnaire') setMode('hybrid')
+      closeCamera()
+    }, 'image/jpeg', 0.92)
+  }, [mode, closeCamera])
+
+  // Escape key closes camera
+  useEffect(() => {
+    if (!cameraOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') closeCamera() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [cameraOpen, closeCamera])
 
   // When images are added, auto-upgrade from questionnaire to hybrid
   const handleFilesWithModeUpgrade = useCallback((files) => {
@@ -180,11 +263,14 @@ export default function Step1Upload() {
                     {t('detect_choose_files')}
                     <input type="file" accept="image/*" multiple onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
                   </label>
-                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors">
+                  <button
+                    type="button"
+                    onClick={openCamera}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors border-none"
+                  >
                     <Camera size={16} />
                     {t('detect_use_camera')}
-                    <input type="file" accept="image/*" capture="environment" onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
-                  </label>
+                  </button>
                 </div>
               </div>
 
@@ -259,6 +345,77 @@ export default function Step1Upload() {
           </div>
         </div>
       </div>
+
+      {/* Camera modal */}
+      {cameraOpen && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          {/* Header bar */}
+          <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
+            <span className="text-white font-semibold text-sm">{t('camera_title')}</span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={flipCamera}
+                className="text-white bg-transparent border-none cursor-pointer p-1 opacity-80 hover:opacity-100"
+                title="Flip camera"
+              >
+                <SwitchCamera size={20} />
+              </button>
+              <button type="button" onClick={closeCamera} className="text-white bg-transparent border-none cursor-pointer p-1">
+                <X size={22} />
+              </button>
+            </div>
+          </div>
+
+          {cameraError ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
+              <Camera size={48} style={{ color: 'rgba(255,255,255,0.3)' }} />
+              <p className="text-white text-sm leading-relaxed max-w-xs">{cameraError}</p>
+              <button
+                type="button"
+                onClick={closeCamera}
+                className="px-5 py-2.5 rounded-lg bg-white text-neutral-900 font-semibold text-sm border-none cursor-pointer"
+              >
+                {t('camera_close')}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Video preview */}
+              <div className="flex-1 relative overflow-hidden bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  onCanPlay={() => setCameraReady(true)}
+                  className="w-full h-full object-cover"
+                  style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
+                />
+                {!cameraReady && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="inline-block w-8 h-8 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {/* Capture bar */}
+              <div className="shrink-0 flex items-center justify-center py-8" style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  disabled={!cameraReady}
+                  className="w-16 h-16 rounded-full bg-white flex items-center justify-center border-none cursor-pointer disabled:opacity-40"
+                  style={{ boxShadow: '0 0 0 4px rgba(255,255,255,0.3)', transition: 'opacity 0.2s' }}
+                >
+                  <Camera size={26} style={{ color: '#222' }} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      <canvas ref={canvasRef} className="hidden" />
 
       {/* Bottom actions */}
       <div className="mt-8 flex items-center justify-between border-t border-neutral-200 pt-6">

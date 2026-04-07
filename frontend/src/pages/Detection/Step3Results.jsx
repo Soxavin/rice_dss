@@ -494,8 +494,8 @@ export default function Step3Results() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/detect')}
-            className="px-4 py-2.5 rounded-xl font-semibold text-sm cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: '#fff', color: '#558b2f', border: '1.5px solid #558b2f' }}
+            className="px-5 py-3 rounded-xl font-bold text-sm cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity border-none"
+            style={{ backgroundColor: '#558b2f', color: '#fff', boxShadow: '0 3px 12px rgba(85,139,47,0.35)' }}
           >
             + {t('detect_start_new')}
           </button>
@@ -522,6 +522,17 @@ export default function Step3Results() {
             <Download size={14} /> {t('detect_save_data')}
           </button>
         </div>
+      </div>
+
+      {/* ── Sticky floating CTA ─────────────────────────────────────────────────── */}
+      <div className="fixed bottom-6 right-6 z-30 no-print">
+        <button
+          onClick={() => navigate('/detect')}
+          className="flex items-center gap-2 px-5 py-3 rounded-full font-bold text-sm text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: '#558b2f', boxShadow: '0 4px 20px rgba(85,139,47,0.5)' }}
+        >
+          + {t('detect_start_new')}
+        </button>
       </div>
     </div>
   )
