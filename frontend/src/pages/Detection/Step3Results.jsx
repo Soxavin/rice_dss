@@ -524,16 +524,6 @@ export default function Step3Results() {
         </div>
       </div>
 
-      {/* ── Sticky floating CTA ─────────────────────────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-30 no-print">
-        <button
-          onClick={() => navigate('/detect')}
-          className="flex items-center gap-2 px-5 py-3 rounded-full font-bold text-sm text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: '#558b2f', boxShadow: '0 4px 20px rgba(85,139,47,0.5)' }}
-        >
-          + {t('detect_start_new')}
-        </button>
-      </div>
     </div>
   )
 }
