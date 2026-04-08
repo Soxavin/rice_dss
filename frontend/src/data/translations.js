@@ -2,6 +2,7 @@ export const translations = {
   en: {
     // Nav
     nav_home: 'Home',
+    nav_menu_toggle: 'Toggle navigation menu',
     nav_services: 'Our Services',
     nav_contact: 'Experts & Support',
     nav_sign_in: 'Sign In',
@@ -130,6 +131,7 @@ export const translations = {
     camera_close: 'Close Camera',
     camera_error_permission: 'Camera access was denied. Please allow camera access in your browser settings and try again.',
     camera_error_generic: 'Unable to access camera. Please use "Choose Files" instead.',
+    camera_flip: 'Flip camera',
     detect_uploaded: 'Uploaded Photos',
     detect_add_more: 'Add more',
     detect_guidance_title: 'Photo Guidance',
@@ -309,6 +311,9 @@ export const translations = {
     detect_your_photo: 'Your Photo',
     detect_ai_analysis: 'AI Analysis',
     detect_no_result: 'No results found. Please start a new analysis.',
+    detect_image_label: 'Image',
+    detect_remove: 'Remove',
+    detect_demo_banner: 'Demo result — unable to reach the server. This is example data and does not reflect your crop. Please try again with an internet connection.',
     detect_tab_photo: '📷 Your Photo',
     detect_tab_gradcam: '🔬 AI Analysis',
 
@@ -604,6 +609,7 @@ export const translations = {
   km: {
     // Nav
     nav_home: 'ទំព័រដើម',
+    nav_menu_toggle: 'បើក/បិទម៉ឺនុយ',
     nav_services: 'សេវាកម្ម',
     nav_contact: 'អ្នកជំនាញ & ជំនួយ',
     nav_sign_in: 'ចូលគណនី',
@@ -732,6 +738,7 @@ export const translations = {
     camera_close: 'បិទកាមេរ៉ា',
     camera_error_permission: 'ការចូលប្រើកាមេរ៉ាត្រូវបានបដិសេធ។ សូមអនុញ្ញាតការចូលប្រើកាមេរ៉ានៅក្នុងការកំណត់កម្មវិធីរុករករបស់អ្នក ហើយព្យាយាមម្ដងទៀត។',
     camera_error_generic: 'មិនអាចចូលប្រើកាមេរ៉ាបានទេ។ សូមប្រើ "ជ្រើសរើសឯកសារ" ជំនួស។',
+    camera_flip: 'ត្រឡប់កាមេរ៉ា',
     detect_uploaded: 'រូបថតដែលបានបង្ហោះ',
     detect_add_more: 'បន្ថែមទៀត',
     detect_guidance_title: 'ការណែនាំថតរូប',
@@ -911,6 +918,9 @@ export const translations = {
     detect_your_photo: 'រូបភាពរបស់អ្នក',
     detect_ai_analysis: 'ការវិភាគ AI',
     detect_no_result: 'រកមិនឃើញលទ្ធផល។ សូមចាប់ផ្តើមវិភាគថ្មី។',
+    detect_image_label: 'រូបភាព',
+    detect_remove: 'លុប',
+    detect_demo_banner: 'លទ្ធផលសាកល្បង — មិនអាចទំនាក់ទំនងម៉ាស៊ីនមេបានទេ។ នេះជាទិន្នន័យឧទាហរណ៍ ហើយមិនឆ្លុះបញ្ចាំងស្រែរបស់អ្នកទេ។ សូមព្យាយាមម្ដងទៀតនៅពេលភ្ជាប់អ៊ីនធឺណិត។',
     detect_tab_photo: '📷 រូបភាពរបស់អ្នក',
     detect_tab_gradcam: '🔬 ការវិភាគ AI',
 

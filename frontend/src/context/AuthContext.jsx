@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -17,13 +17,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // W4: if Firebase doesn't respond in 6s (bad network, missing config), unblock the app
+    const timeout = setTimeout(() => setLoading(false), 6000)
     // Firebase calls this once immediately with the persisted user (or null),
     // then again any time the user signs in or out.
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      clearTimeout(timeout)
       setUser(firebaseUser)
       setLoading(false)
     })
-    return unsubscribe
+    return () => { unsubscribe(); clearTimeout(timeout) }
   }, [])
 
   const loginWithGoogle   = () => signInWithPopup(auth, googleProvider)

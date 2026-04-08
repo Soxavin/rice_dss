@@ -89,6 +89,7 @@ export default function Navbar() {
             >
               <button
                 onClick={() => setServicesOpen(!servicesOpen)}
+                aria-expanded={servicesOpen}
                 className="text-sm font-medium text-neutral-700 hover:text-primary-600 flex items-center gap-1 bg-transparent border-none cursor-pointer transition-colors"
               >
                 {t('nav_services')}
@@ -139,6 +140,8 @@ export default function Navbar() {
             >
               <button
                 onClick={() => setLangOpen(!langOpen)}
+                aria-expanded={langOpen}
+                aria-label={langLabel}
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all hover:opacity-90"
                 style={{
                   backgroundColor: '#f0f7e6',
@@ -249,6 +252,8 @@ export default function Navbar() {
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label={t('nav_menu_toggle')}
+              aria-expanded={mobileOpen}
               className="p-2 text-neutral-600 bg-transparent border-none cursor-pointer"
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}

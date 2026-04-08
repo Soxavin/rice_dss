@@ -1,21 +1,23 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/layout/Layout'
-import Landing from './pages/Landing'
-import SignIn from './pages/SignIn'
-import SignUp from './pages/SignUp'
-import SearchResults from './pages/SearchResults'
-import Step1Upload from './pages/Detection/Step1Upload'
-import Step2Questions from './pages/Detection/Step2Questions'
-import Step3Results from './pages/Detection/Step3Results'
-import ResourcesList from './pages/Learning/ResourcesList'
-import ArticleDetail from './pages/Learning/ArticleDetail'
-import VideoDetail from './pages/Learning/VideoDetail'
-import ExpertsPage from './pages/Experts/ExpertsPage'
-import CropIntegration from './pages/CropIntegration'
-import NotFound from './pages/NotFound'
+
+// C9: route-level code splitting — each page chunk is loaded only when first visited
+const Landing        = lazy(() => import('./pages/Landing'))
+const SignIn         = lazy(() => import('./pages/SignIn'))
+const SignUp         = lazy(() => import('./pages/SignUp'))
+const SearchResults  = lazy(() => import('./pages/SearchResults'))
+const Step1Upload    = lazy(() => import('./pages/Detection/Step1Upload'))
+const Step2Questions = lazy(() => import('./pages/Detection/Step2Questions'))
+const Step3Results   = lazy(() => import('./pages/Detection/Step3Results'))
+const ResourcesList  = lazy(() => import('./pages/Learning/ResourcesList'))
+const ArticleDetail  = lazy(() => import('./pages/Learning/ArticleDetail'))
+const VideoDetail    = lazy(() => import('./pages/Learning/VideoDetail'))
+const ExpertsPage    = lazy(() => import('./pages/Experts/ExpertsPage'))
+const CropIntegration = lazy(() => import('./pages/CropIntegration'))
+const NotFound       = lazy(() => import('./pages/NotFound'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -29,24 +31,26 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <ScrollToTop />
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Landing />} />
-              <Route path="/search" element={<SearchResults />} />
-              <Route path="/detect" element={<Step1Upload />} />
-              <Route path="/detect/questions" element={<Step2Questions />} />
-              <Route path="/detect/results" element={<Step3Results />} />
-              <Route path="/learn" element={<ResourcesList />} />
-              <Route path="/learn/article/:id" element={<ArticleDetail />} />
-              <Route path="/learn/video/:id" element={<VideoDetail />} />
-              <Route path="/experts" element={<ExpertsPage />} />
-              <Route path="/crop-integration" element={<CropIntegration />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-            {/* Auth pages — no navbar/footer layout */}
-            <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/sign-up" element={<SignUp />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Landing />} />
+                <Route path="/search" element={<SearchResults />} />
+                <Route path="/detect" element={<Step1Upload />} />
+                <Route path="/detect/questions" element={<Step2Questions />} />
+                <Route path="/detect/results" element={<Step3Results />} />
+                <Route path="/learn" element={<ResourcesList />} />
+                <Route path="/learn/article/:id" element={<ArticleDetail />} />
+                <Route path="/learn/video/:id" element={<VideoDetail />} />
+                <Route path="/experts" element={<ExpertsPage />} />
+                <Route path="/crop-integration" element={<CropIntegration />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+              {/* Auth pages — no navbar/footer layout */}
+              <Route path="/sign-in" element={<SignIn />} />
+              <Route path="/sign-up" element={<SignUp />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>

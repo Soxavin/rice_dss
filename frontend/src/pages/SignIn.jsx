@@ -164,17 +164,18 @@ export default function SignIn() {
             <div className="flex-1 h-px bg-neutral-200" />
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4" aria-describedby={error ? 'signin-error' : undefined}>
             {error && (
-              <div className="px-4 py-3 rounded-xl text-sm flex items-start gap-2" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
+              <div id="signin-error" role="alert" className="px-4 py-3 rounded-xl text-sm flex items-start gap-2" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
                 <span className="shrink-0">⚠️</span> {error}
               </div>
             )}
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_email')}</label>
+              <label htmlFor="signin-email" className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_email')}</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
+                  id="signin-email"
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -188,10 +189,11 @@ export default function SignIn() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_password')}</label>
+              <label htmlFor="signin-password" className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_password')}</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
+                  id="signin-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

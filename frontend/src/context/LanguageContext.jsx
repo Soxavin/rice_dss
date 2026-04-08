@@ -17,11 +17,14 @@ export function LanguageProvider({ children }) {
     setTimeout(() => {
       setLang(newLang)
       setIsTransitioning(false)
+      // C7: keep HTML lang attribute in sync for screen readers (WCAG 3.1.1)
+      document.documentElement.lang = newLang === 'km' ? 'km' : 'en'
     }, 130)
   }
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, switchLang, isTransitioning, t }}>
+    // W2: setLang intentionally omitted — always use switchLang for the fade transition
+    <LanguageContext.Provider value={{ lang, switchLang, isTransitioning, t }}>
       {children}
     </LanguageContext.Provider>
   )

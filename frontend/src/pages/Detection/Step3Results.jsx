@@ -32,11 +32,16 @@ export default function Step3Results() {
   const [activeTab, setActiveTab] = useState('photo') // 'photo' | 'gradcam'
 
   useEffect(() => {
-    const r = sessionStorage.getItem('detect_result')
-    if (r) setResult(JSON.parse(r))
-    const imgs = sessionStorage.getItem('detect_images')
-    if (imgs) setUploadedImages(JSON.parse(imgs))
-  }, [])
+    // C4: wrap in try-catch so malformed JSON doesn't crash the page
+    try {
+      const r = sessionStorage.getItem('detect_result')
+      if (r) setResult(JSON.parse(r))
+    } catch { /* malformed — leave result null, skeleton will show fallback link */ }
+    try {
+      const imgs = sessionStorage.getItem('detect_images')
+      if (imgs) setUploadedImages(JSON.parse(imgs))
+    } catch { /* ignore */ }
+  }, []) // W3: empty dep array — only read sessionStorage once on mount
 
   if (!result) {
     // Check if we're still loading from sessionStorage (brief flash) or genuinely no result
@@ -180,6 +185,14 @@ export default function Step3Results() {
           </button>
         </div>
       </div>
+
+      {/* ── Demo result banner (C2) ─────────────────────────────────────────── */}
+      {result.is_demo && (
+        <div className="mt-5 rounded-xl p-4 flex gap-3" style={{ backgroundColor: '#fff7ed', border: '1px solid #fdba74' }}>
+          <TriangleAlert size={18} className="shrink-0 mt-0.5" style={{ color: '#ea580c' }} />
+          <p className="text-sm" style={{ color: '#9a3412' }}>{t('detect_demo_banner')}</p>
+        </div>
+      )}
 
       {/* ── Warnings banner ──────────────────────────────────────────────────── */}
       {hasWarnings && (

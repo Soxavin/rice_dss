@@ -24,10 +24,16 @@ export default function Step1Upload() {
   const canvasRef = useRef(null)
 
   const handleFiles = useCallback((files) => {
+    const MAX_SIZE = 10 * 1024 * 1024 // W6: 10 MB limit
     const newImages = Array.from(files)
-      .filter((f) => f.type.startsWith('image/'))
+      .filter((f) => f.type.startsWith('image/') && f.size <= MAX_SIZE)
       .slice(0, 5 - images.length)
       .map((f) => ({ file: f, preview: URL.createObjectURL(f), name: f.name }))
+    const oversized = Array.from(files).filter(f => f.type.startsWith('image/') && f.size > MAX_SIZE)
+    if (oversized.length > 0) {
+      // Surface oversized file warning via alert (simple, no extra state)
+      alert(`${oversized.map(f => f.name).join(', ')}: file too large (max 10 MB)`)
+    }
     setImages((prev) => [...prev, ...newImages].slice(0, 5))
   }, [images.length])
 
@@ -295,11 +301,12 @@ export default function Step1Upload() {
                         <img src={img.preview} alt={img.name} className="w-full h-24 object-cover" />
                         <button
                           onClick={() => removeImage(i)}
+                          aria-label={`${t('detect_image_label')} ${i + 1} ${t('detect_remove')}`}
                           className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none"
                         >
                           <X size={12} />
                         </button>
-                        <p className="text-xs text-center text-neutral-600 py-1 truncate px-1">Image {i + 1}</p>
+                        <p className="text-xs text-center text-neutral-600 py-1 truncate px-1">{t('detect_image_label')} {i + 1}</p>
                       </div>
                     ))}
                   </div>
@@ -356,12 +363,12 @@ export default function Step1Upload() {
               <button
                 type="button"
                 onClick={flipCamera}
+                aria-label={t('camera_flip')}
                 className="text-white bg-transparent border-none cursor-pointer p-1 opacity-80 hover:opacity-100"
-                title="Flip camera"
               >
                 <SwitchCamera size={20} />
               </button>
-              <button type="button" onClick={closeCamera} className="text-white bg-transparent border-none cursor-pointer p-1">
+              <button type="button" onClick={closeCamera} aria-label={t('camera_close')} className="text-white bg-transparent border-none cursor-pointer p-1">
                 <X size={22} />
               </button>
             </div>

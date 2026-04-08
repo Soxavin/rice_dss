@@ -164,18 +164,19 @@ export default function SignUp() {
             <div className="flex-1 h-px bg-neutral-200" />
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <form onSubmit={handleSubmit} className="mt-4 space-y-3" aria-describedby={error ? 'signup-error' : undefined}>
             {error && (
-              <div className="px-4 py-3 rounded-xl text-sm flex items-start gap-2" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
+              <div id="signup-error" role="alert" className="px-4 py-3 rounded-xl text-sm flex items-start gap-2" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
                 <span className="shrink-0">⚠️</span> {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_full_name')}</label>
+              <label htmlFor="signup-name" className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_full_name')}</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
+                  id="signup-name"
                   type="text"
                   value={form.name}
                   onChange={(e) => update('name', e.target.value)}
@@ -190,10 +191,11 @@ export default function SignUp() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_email')}</label>
+              <label htmlFor="signup-email" className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_email')}</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
+                  id="signup-email"
                   type="text"
                   value={form.email}
                   onChange={(e) => update('email', e.target.value)}
@@ -209,10 +211,11 @@ export default function SignUp() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_password')}</label>
+                <label htmlFor="signup-password" className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_password')}</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                   <input
+                    id="signup-password"
                     type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={(e) => update('password', e.target.value)}
@@ -228,10 +231,11 @@ export default function SignUp() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_confirm_password')}</label>
+                <label htmlFor="signup-confirm" className="block text-sm font-semibold text-neutral-700 mb-1.5">{t('auth_confirm_password')}</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                   <input
+                    id="signup-confirm"
                     type={showConfirm ? 'text' : 'password'}
                     value={form.confirm}
                     onChange={(e) => update('confirm', e.target.value)}

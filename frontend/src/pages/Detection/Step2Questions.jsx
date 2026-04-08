@@ -115,13 +115,20 @@ export default function Step2Questions() {
   useEffect(() => {
     mountedRef.current = true
     const savedMode = sessionStorage.getItem('detect_mode')
-    if (!savedMode) {
+    if (!savedMode || !['hybrid', 'ml', 'questionnaire'].includes(savedMode)) {
+      navigate('/detect', { replace: true })
+      return
+    }
+    // C1: if mode requires images but window.__detectFiles is gone (e.g. page refresh), go back
+    if (savedMode !== 'questionnaire' && !window.__detectFiles?.length) {
       navigate('/detect', { replace: true })
       return
     }
     setMode(savedMode)
     const stored = sessionStorage.getItem('detect_images')
-    if (stored) setUploadedImages(JSON.parse(stored))
+    if (stored) {
+      try { setUploadedImages(JSON.parse(stored)) } catch { /* ignore */ }
+    }
     return () => { mountedRef.current = false }
   }, [navigate])
 
@@ -199,7 +206,9 @@ export default function Step2Questions() {
         setApiError(detail)
       } else {
         // Network/server unreachable — fall back to demo result
+        // C2: tag with is_demo so Step3 can show a warning banner
         sessionStorage.setItem('detect_result', JSON.stringify({
+          is_demo: true,
           status: 'assessed',
           primary_condition: 'ជំងឺប្លាស (Rice Blast)',
           condition_key: 'blast',
