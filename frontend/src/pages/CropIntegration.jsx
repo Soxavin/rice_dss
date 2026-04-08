@@ -72,6 +72,7 @@ export default function CropIntegration() {
   const { lang, t } = useLanguage()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [validationError, setValidationError] = useState(false)
 
   const [answers, setAnswers] = useState({
     growth_stage: null, symptoms: [], symptom_location: [], symptom_origin: null,
@@ -81,7 +82,10 @@ export default function CropIntegration() {
     previous_crop: null, soil_type: null, soil_cracking: null, additional_symptoms: [],
   })
 
-  const update = (field, value) => setAnswers((a) => ({ ...a, [field]: value }))
+  const update = (field, value) => {
+    setAnswers((a) => ({ ...a, [field]: value }))
+    if (field === 'growth_stage' || field === 'symptoms') setValidationError(false)
+  }
 
   // ── Chip label lookup helpers (all use t()) ──────────────────────────────
   const gsLabel   = (v) => ({ seedling: t('gs_seedling'), tillering: t('gs_tillering'), elongation: t('gs_elongation'), flowering: t('gs_flowering'), grain_filling: t('gs_grain_filling') }[v] || v)
@@ -104,6 +108,11 @@ export default function CropIntegration() {
   const addlLabel       = (v) => ({ purple_roots: t('addl_purple_roots'), reduced_tillers: t('addl_reduced_tillers'), stunted_growth: t('addl_stunted_growth'), morning_ooze: t('addl_morning_ooze'), none: t('addl_none') }[v] || v)
 
   const handleSubmit = async () => {
+    if (!answers.growth_stage || answers.symptoms.length === 0) {
+      setValidationError(true)
+      return
+    }
+    setValidationError(false)
     setLoading(true)
     try {
       const res = await diagnoseQuestionnaire(answers, lang)
@@ -111,6 +120,7 @@ export default function CropIntegration() {
       navigate('/detect/results')
     } catch {
       sessionStorage.setItem('detect_result', JSON.stringify({
+        is_demo: true,
         status: 'assessed', primary_condition: 'Brown Spot', condition_key: 'brown_spot',
         confidence_label: 'Medium Confidence', confidence_level: 'medium', score: 0.62,
         all_scores: { blast: 0.25, brown_spot: 0.62, bacterial_blight: 0.18, iron_toxicity: 0.0, n_deficiency: 0.35, salt_toxicity: 0.0 },
@@ -125,15 +135,15 @@ export default function CropIntegration() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900 italic">{t('crop_title')}</h1>
-          <p className="mt-2 text-neutral-600">{t('crop_subtitle')}</p>
-        </div>
-        <div className="hidden sm:block text-right">
-          <span className="text-sm font-medium text-primary-600">Step 1 {t('step_of')} 3</span>
-        </div>
+      <div>
+        <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('crop_title')}</h1>
+        <p className="mt-2 text-neutral-600">{t('crop_subtitle')}</p>
       </div>
+      {validationError && (
+        <div className="mt-4 rounded-xl px-4 py-3 text-sm flex items-center gap-2" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
+          <span>⚠</span> {t('crop_validation_msg')}
+        </div>
+      )}
 
       <div className="mt-8 space-y-6">
 

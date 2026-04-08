@@ -546,7 +546,8 @@ export const translations = {
 
     // Crop Integration
     crop_title: 'Crop Data Integration',
-    crop_subtitle: 'Here is the result and recommendation products for your rice crop.',
+    crop_subtitle: 'Complete all sections for the most accurate diagnosis of your rice crop.',
+    crop_validation_msg: 'Please select a growth stage and at least one symptom to continue.',
     crop_info: 'Crop Information',
     crop_symptoms: 'Symptoms',
     crop_farming: 'Farming Inputs',
@@ -1184,7 +1185,8 @@ export const translations = {
 
     // Crop Integration
     crop_title: 'ការរួមបញ្ចូលទិន្នន័យដំណាំ',
-    crop_subtitle: 'នេះគឺជាលទ្ធផល និងផលិតផលអនុសាសន៍សម្រាប់ដំណាំស្រូវរបស់អ្នក។',
+    crop_subtitle: 'បំពេញគ្រប់ផ្នែកសម្រាប់ការធ្វើរោគវិនិច្ឆ័យត្រឹមត្រូវបំផុតចំពោះដំណាំស្រូវរបស់អ្នក។',
+    crop_validation_msg: 'សូមជ្រើសរើសដំណាក់កាលការដំណើរ និងរោគសញ្ញាយ៉ាងហោចណាស់មួយដើម្បីបន្ត។',
     crop_info: 'ព័ត៌មានដំណាំ',
     crop_symptoms: 'រោគសញ្ញា',
     crop_farming: 'ធាតុចូលកសិកម្ម',
