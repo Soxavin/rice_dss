@@ -73,6 +73,7 @@ export default function CropIntegration() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [validationError, setValidationError] = useState(false)
+  const [step, setStep] = useState(1)
 
   const [answers, setAnswers] = useState({
     growth_stage: null, symptoms: [], symptom_location: [], symptom_origin: null,
@@ -107,12 +108,17 @@ export default function CropIntegration() {
   const crackLabel      = (v) => ({ large_cracks: t('crack_large'), small_cracks: t('crack_small'), no_cracks: t('crack_none') }[v] || v)
   const addlLabel       = (v) => ({ purple_roots: t('addl_purple_roots'), reduced_tillers: t('addl_reduced_tillers'), stunted_growth: t('addl_stunted_growth'), morning_ooze: t('addl_morning_ooze'), none: t('addl_none') }[v] || v)
 
-  const handleSubmit = async () => {
+  const handleReview = () => {
     if (!answers.growth_stage || answers.symptoms.length === 0) {
       setValidationError(true)
       return
     }
     setValidationError(false)
+    setStep(2)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleSubmit = async () => {
     setLoading(true)
     try {
       const res = await diagnoseQuestionnaire(answers, lang)
@@ -133,7 +139,8 @@ export default function CropIntegration() {
     }
   }
 
-  return (
+  /* ── Step 1: Form screen ───────────────────────────────────────── */
+  const FormScreen = (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div>
         <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('crop_title')}</h1>
@@ -272,14 +279,121 @@ export default function CropIntegration() {
           {t('detect_cancel')}
         </button>
         <button
+          onClick={handleReview}
+          className="px-6 py-2.5 rounded-lg font-medium text-sm text-white border-none cursor-pointer transition-colors flex items-center gap-2"
+          style={{ backgroundColor: '#558b2f' }}
+        >
+          {t('crop_review_answers')} →
+        </button>
+      </div>
+    </div>
+  )
+
+  /* ── Step 2: Review screen ─────────────────────────────────────── */
+  const none = t('crop_not_provided')
+  const tag = (label) => (
+    <span key={label} className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium mr-1.5 mb-1" style={{ backgroundColor: '#eef5d3', color: '#33691e' }}>
+      {label}
+    </span>
+  )
+  const row = (label, value) => value ? (
+    <div key={label} className="flex gap-3 py-2 border-b border-neutral-100 last:border-0">
+      <span className="text-xs text-neutral-500 w-36 shrink-0">{label}</span>
+      <span className="text-xs text-neutral-800 font-medium">{value}</span>
+    </div>
+  ) : null
+
+  const ReviewScreen = (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex items-center gap-3 mb-1">
+        <button onClick={() => setStep(1)} className="text-sm font-medium bg-transparent border-none cursor-pointer" style={{ color: '#558b2f' }}>
+          {t('crop_edit')}
+        </button>
+        <span className="text-neutral-300">|</span>
+        <h1 className="font-heading text-2xl font-bold text-neutral-900">{t('crop_review_title')}</h1>
+      </div>
+      <p className="text-sm text-neutral-500 mb-8">{t('crop_review_subtitle')}</p>
+
+      <div className="space-y-5">
+
+        {/* Crop Info */}
+        <div className="bg-white rounded-xl p-5" style={{ border: '1px solid #e0e0e0' }}>
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">{t('crop_info')}</h3>
+          {row(t('crop_growth_stage'), answers.growth_stage ? gsLabel(answers.growth_stage) : null) || row(t('crop_growth_stage'), none)}
+        </div>
+
+        {/* Symptoms */}
+        <div className="bg-white rounded-xl p-5" style={{ border: '1px solid #e0e0e0' }}>
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">{t('crop_symptoms')}</h3>
+          <div className="flex gap-3 py-2 border-b border-neutral-100">
+            <span className="text-xs text-neutral-500 w-36 shrink-0">{t('crop_observed_symptoms')}</span>
+            <div>{answers.symptoms.length > 0 ? answers.symptoms.map((s) => tag(symLabel(s))) : <span className="text-xs text-neutral-400">{none}</span>}</div>
+          </div>
+          <div className="flex gap-3 py-2 border-b border-neutral-100">
+            <span className="text-xs text-neutral-500 w-36 shrink-0">{t('crop_affected_part')}</span>
+            <div>{answers.symptom_location.length > 0 ? answers.symptom_location.map((s) => tag(locLabel(s))) : <span className="text-xs text-neutral-400">{none}</span>}</div>
+          </div>
+          {row(t('crop_where_started'), answers.symptom_origin ? origLabel(answers.symptom_origin) : null)}
+          {row(t('crop_confidence'), answers.farmer_confidence ? confLabel(answers.farmer_confidence) : null)}
+        </div>
+
+        {/* Farming Inputs */}
+        <div className="bg-white rounded-xl p-5" style={{ border: '1px solid #e0e0e0' }}>
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">{t('crop_farming')}</h3>
+          {row(t('crop_fertilizer_applied'), answers.fertilizer_applied === null ? none : answers.fertilizer_applied ? t('crop_yes') : t('crop_no'))}
+          {answers.fertilizer_applied && row(t('crop_fert_timing'), answers.fertilizer_timing ? fertTimingLabel(answers.fertilizer_timing) : null)}
+          {answers.fertilizer_applied && row(t('crop_fert_type'), answers.fertilizer_type ? fertTypeLabel(answers.fertilizer_type) : null)}
+          {answers.fertilizer_applied && row(t('crop_fert_amount'), answers.fertilizer_amount ? fertAmtLabel(answers.fertilizer_amount) : null)}
+        </div>
+
+        {/* Environment */}
+        <div className="bg-white rounded-xl p-5" style={{ border: '1px solid #e0e0e0' }}>
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">{t('crop_environment')}</h3>
+          {row(t('crop_recent_weather'), answers.weather ? wxLabel(answers.weather) : null)}
+          {row(t('crop_water_condition'), answers.water_condition ? waterLabel(answers.water_condition) : null)}
+        </div>
+
+        {/* Spread & Timing */}
+        <div className="bg-white rounded-xl p-5" style={{ border: '1px solid #e0e0e0' }}>
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">{t('crop_spread_timing')}</h3>
+          {row(t('crop_spread_pattern'), answers.spread_pattern ? spreadLabel(answers.spread_pattern) : null)}
+          {row(t('crop_symptom_timing'), answers.symptom_timing ? symTimingLabel(answers.symptom_timing) : null)}
+          {row(t('crop_onset_speed'), answers.onset_speed ? onsetLabel(answers.onset_speed) : null)}
+        </div>
+
+        {/* Field History */}
+        <div className="bg-white rounded-xl p-5" style={{ border: '1px solid #e0e0e0' }}>
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">{t('crop_field_history')}</h3>
+          {row(t('crop_prev_disease'), answers.previous_disease ? prevDiseaseLabel(answers.previous_disease) : null)}
+          {row(t('crop_prev_crop'), answers.previous_crop ? prevCropLabel(answers.previous_crop) : null)}
+          {row(t('crop_soil_type'), answers.soil_type ? soilLabel(answers.soil_type) : null)}
+          {row(t('crop_soil_cracking'), answers.soil_cracking ? crackLabel(answers.soil_cracking) : null)}
+        </div>
+
+        {/* Additional Symptoms */}
+        {answers.additional_symptoms.length > 0 && (
+          <div className="bg-white rounded-xl p-5" style={{ border: '1px solid #e0e0e0' }}>
+            <h3 className="text-sm font-semibold text-neutral-700 mb-3">{t('crop_additional')}</h3>
+            <div>{answers.additional_symptoms.map((s) => tag(addlLabel(s)))}</div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8 flex items-center justify-between">
+        <button onClick={() => setStep(1)} className="text-sm text-neutral-600 hover:text-neutral-800 bg-transparent border-none cursor-pointer">
+          {t('crop_edit')}
+        </button>
+        <button
           onClick={handleSubmit}
           disabled={loading}
           className="px-6 py-2.5 rounded-lg font-medium text-sm text-white border-none cursor-pointer transition-colors flex items-center gap-2 disabled:opacity-50"
           style={{ backgroundColor: '#558b2f' }}
         >
-          {loading ? t('crop_analyzing') : t('detect_start_analysis')} →
+          {loading ? t('crop_analyzing') : t('crop_confirm_analyze')} →
         </button>
       </div>
     </div>
   )
+
+  return step === 1 ? FormScreen : ReviewScreen
 }
