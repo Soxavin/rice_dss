@@ -16,6 +16,9 @@ export const translations = {
     hero_badge: 'Good Production Starts Here!',
     hero_cta: 'Start Analysis Now',
     hero_learn_more: 'Learn More',
+    hero_card_detected: 'Rice crop detected',
+    hero_card_match: '95% Match',
+    hero_card_complete: 'AI analysis complete — no disease detected',
 
     // Services
     services_title: 'Comprehensive Rice Crop Supports',
@@ -30,6 +33,16 @@ export const translations = {
     service_learning_desc: 'Access educational materials on rice diseases, prevention & crop management.',
     service_suppliers: 'Suppliers Support',
     service_suppliers_desc: 'Connect with verified suppliers for quality fertilizers, pesticides & farming tools.',
+    service_detection_b1: 'Real-time image processing',
+    service_detection_b2: 'Disease pattern recognition',
+    service_crop_b1: 'Variety & planting date tracking',
+    service_crop_b2: 'Fertilizer & pesticide logs',
+    service_expert_b1: 'Live consultation',
+    service_expert_b2: 'Follow-up support',
+    service_learning_b1: 'Khmer-first content',
+    service_learning_b2: 'Video tutorials',
+    service_suppliers_b1: 'Verified suppliers',
+    service_suppliers_b2: 'Price comparison',
 
     // How it works
     how_title: 'How Srov Meas Works',
@@ -38,13 +51,45 @@ export const translations = {
     how_step2: 'Provide Details',
     how_step3: 'AI Analysis',
     how_step4: 'Get Solutions',
+    how_step1_desc: 'Take clear photos of affected rice plants or field areas showing symptoms.',
+    how_step2_desc: 'Provide simple questions about weather, soil conditions, and farming practices.',
+    how_step3_desc: 'Our AI analyzes images and cross-references against known diseases instantly.',
+    how_step4_desc: 'Receive targeted recommendations for treatment, prevention, and expert support.',
 
     // Visual analysis
     visual_title: 'AI-Powered Visual Analysis',
+    visual_subtitle: 'Our advanced computer vision technology can identify various rice crop stress factors including:',
+    visual_item1: 'Root Damage',
+    visual_item2: 'Disease Detection',
+    visual_item3: 'Nutrient Deficiency',
+    visual_item4: 'Environmental Stress',
+    visual_cta: 'Try Analysis Now',
+    visual_card_label: 'Analysis Results',
+    visual_card_disease: 'Nitrogen Deficiency Detected',
+    visual_card_confidence: 'Confidence: 89%',
+    visual_card_recs: 'Recommendations:',
+    visual_card_rec1: 'Apply nitrogen fertilizer (20-30 kg/ha)',
+    visual_card_rec2: 'Monitor plant response in 7-10 days',
+    visual_card_rec3: 'Contact local agricultural expert',
 
     // Educational
     edu_title: 'Educational Resources',
     edu_subtitle: 'Learn how to protect your rice crops from common diseases',
+    edu_art1_title: '10 Ways to Prevent Rice Blast Diseases',
+    edu_art1_desc: 'Essential preventive measures every farmer should know.',
+    edu_art1_cat: 'Disease Prevention',
+    edu_art2_title: 'Proper Fertilizer Application',
+    edu_art2_desc: 'Step-by-step video guide on fertilizing rice crops.',
+    edu_art2_cat: 'Fertilizer',
+    edu_art3_title: 'Water Management Guide',
+    edu_art3_desc: 'Optimize irrigation for healthy rice growth.',
+    edu_art3_cat: 'Irrigation',
+    edu_art4_title: 'Early Disease Detection',
+    edu_art4_desc: 'Learn to spot disease symptoms before it spreads.',
+    edu_art4_cat: 'Disease',
+    edu_watch_video: 'Watch Video',
+    edu_read_article: 'Read Article',
+    edu_view_all: 'View All Resources',
 
     // Partners
     partners_title: 'Our Partners',
@@ -58,6 +103,8 @@ export const translations = {
     // CTA
     cta_title: 'Ready to Protect Your Rice Crops?',
     cta_button: 'Start Free Analysis',
+    cta_subtitle: 'Start detecting diseases early and get expert recommendations today.',
+    cta_experts: 'Contact Expert',
 
     // Footer
     footer_tagline: 'AI-powered rice disease detection platform for Cambodian farmers.',
@@ -623,6 +670,9 @@ export const translations = {
     hero_badge: 'ផលិតកម្មល្អចាប់ផ្តើមពីទីនេះ!',
     hero_cta: 'ចាប់ផ្តើមវិភាគឥឡូវនេះ',
     hero_learn_more: 'ស្វែងយល់បន្ថែម',
+    hero_card_detected: 'រកឃើញដំណាំស្រូវ',
+    hero_card_match: '95% ត្រូវគ្នា',
+    hero_card_complete: 'ការវិភាគ AI រួចរាល់ — គ្មានជំងឺត្រូវបានរកឃើញ',
 
     // Services
     services_title: 'ការគាំទ្រដំណាំស្រូវទូលំទូលាយ',
@@ -637,6 +687,16 @@ export const translations = {
     service_learning_desc: 'ទទួលបានសម្ភារៈអប់រំអំពីជំងឺស្រូវ ការបង្ការ និងការគ្រប់គ្រងដំណាំ។',
     service_suppliers: 'ការគាំទ្រអ្នកផ្គត់ផ្គង់',
     service_suppliers_desc: 'ភ្ជាប់ជាមួយអ្នកផ្គត់ផ្គង់ដែលបានផ្ទៀងផ្ទាត់សម្រាប់ជី ថ្នាំសម្លាប់សត្វល្អិត និងឧបករណ៍កសិកម្មដែលមានគុណភាព។',
+    service_detection_b1: 'ដំណើរការរូបភាពភ្លាមៗ',
+    service_detection_b2: 'ការស្គាល់គំរូជំងឺ',
+    service_crop_b1: 'តាមដានពូជ និងកាលបរិច្ឆេទដាំដុះ',
+    service_crop_b2: 'កំណត់ហេតុជី និងថ្នាំ',
+    service_expert_b1: 'ការប្រឹក្សាផ្ទាល់',
+    service_expert_b2: 'ការគាំទ្របន្ត',
+    service_learning_b1: 'មាតិកាខ្មែរជាអាទិភាព',
+    service_learning_b2: 'វីដេអូបង្រៀន',
+    service_suppliers_b1: 'អ្នកផ្គត់ផ្គង់ដែលបានផ្ទៀងផ្ទាត់',
+    service_suppliers_b2: 'ការប្រៀបធៀបតម្លៃ',
 
     // How it works
     how_title: 'របៀបដែល Srov Meas ដំណើរការ',
@@ -645,13 +705,45 @@ export const translations = {
     how_step2: 'ផ្តល់ព័ត៌មាន',
     how_step3: 'វិភាគ AI',
     how_step4: 'ទទួលដំណោះស្រាយ',
+    how_step1_desc: 'ថតរូបច្បាស់នៃដំណាំស្រូវដែលរងផលប៉ះពាល់ ឬតំបន់ស្រែដែលបង្ហាញរោគសញ្ញា។',
+    how_step2_desc: 'ផ្តល់ចម្លើយសំណួរសាមញ្ញអំពីអាកាសធាតុ ស្ថានភាពដីធ្លី និងការអនុវត្តកសិកម្ម។',
+    how_step3_desc: 'AI របស់យើងវិភាគរូបភាព និងប្រៀបធៀបជំងឺដែលស្គាល់ភ្លាមៗ។',
+    how_step4_desc: 'ទទួលបានអនុសាសន៍ជាក់លាក់សម្រាប់ការព្យាបាល ការបង្ការ និងការគាំទ្រពីអ្នកជំនាញ។',
 
     // Visual analysis
     visual_title: 'ការវិភាគរូបភាពដោយ AI',
+    visual_subtitle: 'បច្ចេកវិទ្យាចក្ខុវិស័យកុំព្យូទ័រកម្រិតខ្ពស់របស់យើងអាចកំណត់អត្តសញ្ញាណកត្តាស្ត្រេសសម្រាប់ដំណាំស្រូវ រួមមាន:',
+    visual_item1: 'ការខូចខាតឫស',
+    visual_item2: 'ការរកឃើញជំងឺ',
+    visual_item3: 'ការខ្វះខាតជីជាតិ',
+    visual_item4: 'ស្ត្រេសបរិស្ថាន',
+    visual_cta: 'សាកល្បងវិភាគឥឡូវ',
+    visual_card_label: 'លទ្ធផលវិភាគ',
+    visual_card_disease: 'រកឃើញការខ្វះខាតអាសូត',
+    visual_card_confidence: 'ភាពជឿជាក់: 89%',
+    visual_card_recs: 'អនុសាសន៍:',
+    visual_card_rec1: 'ប្រើជីអាសូត (20-30 គីឡូក្រាម/ហ.ដ)',
+    visual_card_rec2: 'តាមដានការឆ្លើយតបនៃរុក្ខជាតិក្នុង 7-10 ថ្ងៃ',
+    visual_card_rec3: 'ទំនាក់ទំនងអ្នកជំនាញកសិកម្មក្នុងស្រុក',
 
     // Educational
     edu_title: 'ធនធានអប់រំ',
     edu_subtitle: 'រៀនពីរបៀបការពារដំណាំស្រូវរបស់អ្នកពីជំងឺទូទៅ',
+    edu_art1_title: 'វិធី 10 ក្នុងការការពារជំងឺ Rice Blast',
+    edu_art1_desc: 'វិធានការបង្ការចាំបាច់ដែលកសិករគ្រប់រូបគួរដឹង។',
+    edu_art1_cat: 'ការបង្ការជំងឺ',
+    edu_art2_title: 'ការប្រើប្រាស់ជីត្រឹមត្រូវ',
+    edu_art2_desc: 'មគ្គុទ្ទេសក៍វីដេអូជំហានម្តងៗអំពីការបំបែងជីដំណាំស្រូវ។',
+    edu_art2_cat: 'ជី',
+    edu_art3_title: 'មគ្គុទ្ទេសក៍គ្រប់គ្រងទឹក',
+    edu_art3_desc: 'បង្កើនប្រសិទ្ធភាពការស្រោចស្រពសម្រាប់ការដុះលូតលាស់ស្រូវ។',
+    edu_art3_cat: 'ការស្រោចស្រព',
+    edu_art4_title: 'ការរកឃើញជំងឺមុនដំណាក់កាល',
+    edu_art4_desc: 'រៀនកំណត់រោគសញ្ញាជំងឺមុនពេលរាតត្បាត។',
+    edu_art4_cat: 'ជំងឺ',
+    edu_watch_video: 'មើលវីដេអូ',
+    edu_read_article: 'អានអត្ថបទ',
+    edu_view_all: 'មើលធនធានទាំងអស់',
 
     // Partners
     partners_title: 'ដៃគូរបស់យើង',
@@ -665,6 +757,8 @@ export const translations = {
     // CTA
     cta_title: 'រួចរាល់ក្នុងការការពារដំណាំស្រូវរបស់អ្នក?',
     cta_button: 'ចាប់ផ្តើមវិភាគឥតគិតថ្លៃ',
+    cta_subtitle: 'ចាប់ផ្តើមរកឃើញជំងឺមុនដំណាក់កាល ហើយទទួលបានអនុសាសន៍ពីអ្នកជំនាញនៅថ្ងៃនេះ។',
+    cta_experts: 'ទំនាក់ទំនងអ្នកជំនាញ',
 
     // Footer
     footer_tagline: 'វេទិការកឃើញជំងឺស្រូវដោយ AI សម្រាប់កសិករកម្ពុជា។',

@@ -56,47 +56,47 @@ export default function Landing() {
     {
       icon: Search, title: t('service_detection'),
       desc: t('service_detection_desc'),
-      bullets: ['Real-time image processing', 'Disease pattern recognition'],
+      bullets: [t('service_detection_b1'), t('service_detection_b2')],
       link: '/detect', iconBg: '#dcfce7', iconColor: '#16a34a',
     },
     {
       icon: Leaf, title: t('service_crop'),
       desc: t('service_crop_desc'),
-      bullets: ['Variety & planting date tracking', 'Fertilizer & pesticide logs'],
+      bullets: [t('service_crop_b1'), t('service_crop_b2')],
       link: '/crop-integration', iconBg: '#d1fae5', iconColor: '#059669',
     },
     {
       icon: Users, title: t('service_expert'),
       desc: t('service_expert_desc'),
-      bullets: ['Live consultation', 'Follow-up support'],
+      bullets: [t('service_expert_b1'), t('service_expert_b2')],
       link: '/experts', iconBg: '#dbeafe', iconColor: '#2563eb',
     },
     {
       icon: BookOpen, title: t('service_learning'),
       desc: t('service_learning_desc'),
-      bullets: ['Khmer-first content', 'Video tutorials'],
+      bullets: [t('service_learning_b1'), t('service_learning_b2')],
       link: '/learn', iconBg: '#fef3c7', iconColor: '#d97706',
     },
     {
       icon: ShoppingBag, title: t('service_suppliers'),
       desc: t('service_suppliers_desc'),
-      bullets: ['Verified suppliers', 'Price comparison'],
+      bullets: [t('service_suppliers_b1'), t('service_suppliers_b2')],
       link: '/experts?tab=suppliers', iconBg: '#f3e8ff', iconColor: '#9333ea',
     },
   ]
 
   const steps = [
-    { icon: Camera, label: t('how_step1'), desc: 'Take clear photos of affected rice plants or field areas showing symptoms.' },
-    { icon: FileText, label: t('how_step2'), desc: 'Provide simple questions about weather, soil conditions, and farming practices.' },
-    { icon: Cpu, label: t('how_step3'), desc: 'Our AI analyzes images and cross-references against known diseases instantly.' },
-    { icon: Lightbulb, label: t('how_step4'), desc: 'Receive targeted recommendations for treatment, prevention, and expert support.' },
+    { icon: Camera, label: t('how_step1'), desc: t('how_step1_desc') },
+    { icon: FileText, label: t('how_step2'), desc: t('how_step2_desc') },
+    { icon: Cpu, label: t('how_step3'), desc: t('how_step3_desc') },
+    { icon: Lightbulb, label: t('how_step4'), desc: t('how_step4_desc') },
   ]
 
   const articles = [
-    { title: '10 Ways to Prevent Rice Blast Diseases', desc: 'Essential preventive measures every farmer should know.', category: 'Disease Prevention', catBg: '#fef2f2', catColor: '#dc2626', type: 'article', img: '/images/article1.jpg' },
-    { title: 'Proper Fertilizer Application', desc: 'Step-by-step video guide on fertilizing rice crops.', category: 'Fertilizer', catBg: '#fffbeb', catColor: '#d97706', type: 'video', img: '/images/article2.jpg' },
-    { title: 'Water Management Guide', desc: 'Optimize irrigation for healthy rice growth.', category: 'Irrigation', catBg: '#eff6ff', catColor: '#2563eb', type: 'article', img: '/images/article3.jpg' },
-    { title: 'Early Disease Detection', desc: 'Learn to spot disease symptoms before it spreads.', category: 'Disease', catBg: '#f0fdf4', catColor: '#16a34a', type: 'video', img: '/images/article4.jpg' },
+    { title: t('edu_art1_title'), desc: t('edu_art1_desc'), category: t('edu_art1_cat'), catBg: '#fef2f2', catColor: '#dc2626', type: 'article', img: '/images/article1.jpg' },
+    { title: t('edu_art2_title'), desc: t('edu_art2_desc'), category: t('edu_art2_cat'), catBg: '#fffbeb', catColor: '#d97706', type: 'video', img: '/images/article2.jpg' },
+    { title: t('edu_art3_title'), desc: t('edu_art3_desc'), category: t('edu_art3_cat'), catBg: '#eff6ff', catColor: '#2563eb', type: 'article', img: '/images/article3.jpg' },
+    { title: t('edu_art4_title'), desc: t('edu_art4_desc'), category: t('edu_art4_cat'), catBg: '#f0fdf4', catColor: '#16a34a', type: 'video', img: '/images/article4.jpg' },
   ]
 
   /* Reusable service card renderer */
@@ -192,14 +192,14 @@ export default function Landing() {
                   <div className="absolute bottom-3 left-3 right-3 px-3 py-2 rounded-lg flex items-center justify-between" style={{ backgroundColor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)' }}>
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#6b9f37' }} />
-                      <span className="text-xs font-medium" style={{ color: '#424242' }}>Rice crop detected</span>
+                      <span className="text-xs font-medium" style={{ color: '#424242' }}>{t('hero_card_detected')}</span>
                     </div>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#eef5d3', color: '#33691e' }}>95% Match</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#eef5d3', color: '#33691e' }}>{t('hero_card_match')}</span>
                   </div>
                 </div>
                 <div className="mt-3 px-1 pb-1 flex items-center gap-2">
                   <CheckCircle2 size={14} style={{ color: '#558b2f' }} />
-                  <span className="text-xs text-neutral-500">AI analysis complete — no disease detected</span>
+                  <span className="text-xs text-neutral-500">{t('hero_card_complete')}</span>
                 </div>
               </div>
             </div>
@@ -272,14 +272,14 @@ export default function Landing() {
                 {t('visual_title')}
               </h2>
               <p className="mt-4 text-neutral-600 text-sm leading-relaxed">
-                Our advanced computer vision technology can identify various rice crop stress factors including:
+                {t('visual_subtitle')}
               </p>
               <div className="mt-6 grid grid-cols-2 gap-4">
                 {[
-                  { label: 'Root Damage', icon: '🌱' },
-                  { label: 'Disease Detection', icon: '🔬' },
-                  { label: 'Nutrient Deficiency', icon: '🧪' },
-                  { label: 'Environmental Stress', icon: '🌡️' },
+                  { label: t('visual_item1'), icon: '🌱' },
+                  { label: t('visual_item2'), icon: '🔬' },
+                  { label: t('visual_item3'), icon: '🧪' },
+                  { label: t('visual_item4'), icon: '🌡️' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: '#f7fbe7', border: '1px solid #d4e6a5' }}>
                     <span className="text-lg">{item.icon}</span>
@@ -292,25 +292,25 @@ export default function Landing() {
                 className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg no-underline text-sm transition-all"
                 style={{ boxShadow: '0 2px 8px rgba(85,139,47,0.3)' }}
               >
-                Try Analysis Now <ArrowRight size={16} />
+                {t('visual_cta')} <ArrowRight size={16} />
               </Link>
             </div>
 
             {/* Analysis card */}
             <div className="p-6" style={floatingCard}>
-              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Analysis Results</p>
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('visual_card_label')}</p>
               <div className="flex items-center gap-2 mt-3">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
-                <span className="text-sm font-semibold text-neutral-900">Nitrogen Deficiency Detected</span>
+                <span className="text-sm font-semibold text-neutral-900">{t('visual_card_disease')}</span>
               </div>
-              <span className="text-xs text-neutral-500 ml-5">Confidence: 89%</span>
+              <span className="text-xs text-neutral-500 ml-5">{t('visual_card_confidence')}</span>
               <div className="mt-4 w-full h-44 rounded-xl overflow-hidden">
                 <img src={ANALYSIS_IMG} alt="Analysis" className="w-full h-full object-cover" />
               </div>
               <div className="mt-4">
-                <p className="text-xs font-semibold text-neutral-700">Recommendations:</p>
+                <p className="text-xs font-semibold text-neutral-700">{t('visual_card_recs')}</p>
                 <ul className="mt-2 space-y-1.5 list-none">
-                  {['Apply nitrogen fertilizer (20-30 kg/ha)', 'Monitor plant response in 7-10 days', 'Contact local agricultural expert'].map((r) => (
+                  {[t('visual_card_rec1'), t('visual_card_rec2'), t('visual_card_rec3')].map((r) => (
                     <li key={r} className="flex items-start gap-2 text-xs text-neutral-500">
                       <CheckCircle2 size={13} className="text-primary-500 shrink-0 mt-0.5" />
                       {r}
@@ -356,7 +356,7 @@ export default function Landing() {
                   </h4>
                   <p className="mt-2 text-xs text-neutral-500 leading-relaxed">{a.desc}</p>
                   <span className="mt-3 text-xs text-primary-600 font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
-                    {a.type === 'video' ? 'Watch Video' : 'Read Article'} <ArrowRight size={12} />
+                    {a.type === 'video' ? t('edu_watch_video') : t('edu_read_article')} <ArrowRight size={12} />
                   </span>
                 </div>
               </Link>
@@ -369,7 +369,7 @@ export default function Landing() {
               className="inline-flex items-center gap-2 no-underline transition-colors hover:bg-primary-50"
               style={btnGreenOutline}
             >
-              View All Resources <ArrowRight size={16} />
+              {t('edu_view_all')} <ArrowRight size={16} />
             </Link>
           </div>
         </div>
@@ -405,7 +405,7 @@ export default function Landing() {
             {t('cta_title')}
           </h2>
           <p className="mt-3 text-sm max-w-md mx-auto" style={{ color: '#a8c89a' }}>
-            Start detecting diseases early and get expert recommendations today.
+            {t('cta_subtitle')}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
@@ -420,7 +420,7 @@ export default function Landing() {
               className="inline-flex items-center gap-2 no-underline transition-colors text-white hover:bg-white/10 font-semibold text-sm"
               style={btnWhiteOutline}
             >
-              Contact Expert
+              {t('cta_experts')}
             </Link>
           </div>
         </div>
