@@ -147,7 +147,7 @@ export default function Landing() {
               <h1 className="font-heading text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-neutral-900 leading-[1.15] tracking-tight">
                 {t('hero_title_1')}{' '}
                 <br className="hidden sm:block" />
-                <span className="accent-underline italic text-primary-700">{t('hero_title_2')}</span>
+                <span className="text-primary-700">{t('hero_title_2')}</span>
               </h1>
               <p className="mt-5 text-neutral-600 text-base leading-relaxed max-w-lg">
                 {t('hero_subtitle')}
@@ -168,8 +168,8 @@ export default function Landing() {
                   {t('hero_learn_more')}
                 </Link>
               </div>
-              {/* Social proof */}
-              <div className="mt-6 flex flex-wrap items-center gap-5">
+              {/* Social proof — hidden until real data is available */}
+              <div className="mt-6 flex flex-wrap items-center gap-5 invisible">
                 {[
                   { val: '1,200+', label: 'Farmers Helped' },
                   { val: '4', label: 'Diseases Detected' },

@@ -73,10 +73,13 @@
   body.lang-km {
     font-family: var(--font-khmer);
   }
+  /* Also cover the [lang="km"] path set by LanguageContext (C7 fix) */
+  [lang="km"] body .font-heading,
   body.lang-km .font-heading,
   .lang-km .font-heading {
     font-family: var(--font-khmer);
     font-weight: 700;
+    font-style: normal; /* Kantumruy Pro has no italic — prevent synthetic slant */
   }
 
   .bg-gradient-green {
