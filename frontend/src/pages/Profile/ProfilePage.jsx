@@ -221,6 +221,10 @@ export default function ProfilePage() {
   const [clearModal, setClearModal] = useState(false)
   const [clearing, setClearing] = useState(false)
 
+  // Filter state
+  const [filterMode, setFilterMode] = useState('all')
+  const [filterCondition, setFilterCondition] = useState('all')
+
   // Auth guard
   useEffect(() => {
     if (!isAuthenticated) navigate('/sign-in')
@@ -277,6 +281,8 @@ export default function ProfilePage() {
     try {
       await clearAllAnalyses(user.uid)
       setAnalyses([])
+      setFilterMode('all')
+      setFilterCondition('all')
       setClearModal(false)
     } catch {
       setHistoryError(t('profile_history_error'))
@@ -285,7 +291,7 @@ export default function ProfilePage() {
     }
   }
 
-  // Summary stats computed from history
+  // Summary stats computed from full history
   const stats = useMemo(() => {
     if (!analyses.length) return null
     const counts = {}
@@ -300,6 +306,26 @@ export default function ProfilePage() {
       lastDate: formatDate(analyses[0].createdAt),
     }
   }, [analyses])
+
+  // Unique conditions for dropdown (only shown when >1 distinct condition)
+  const uniqueConditions = useMemo(() =>
+    [...new Set(analyses.map(a => a.primary_condition || a.condition_key).filter(Boolean))].sort(),
+    [analyses]
+  )
+
+  // Mode counts for tab badges
+  const modeCounts = useMemo(() => {
+    const counts = { all: analyses.length, ml: 0, hybrid: 0, questionnaire: 0 }
+    analyses.forEach(a => { if (a.mode in counts) counts[a.mode]++ })
+    return counts
+  }, [analyses])
+
+  // Filtered list
+  const filteredAnalyses = useMemo(() => analyses.filter(a => {
+    if (filterMode !== 'all' && a.mode !== filterMode) return false
+    if (filterCondition !== 'all' && (a.primary_condition || a.condition_key) !== filterCondition) return false
+    return true
+  }), [analyses, filterMode, filterCondition])
 
   if (!isAuthenticated) return null
 
@@ -452,6 +478,57 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* Filters — only shown once history is loaded and non-empty */}
+        {!historyLoading && analyses.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            {/* Mode tabs */}
+            <div className="flex rounded-lg overflow-hidden shrink-0" style={{ border: '1px solid #e0e0e0' }}>
+              {[
+                { key: 'all',           label: 'All' },
+                { key: 'ml',            label: 'Image-Only' },
+                { key: 'hybrid',        label: 'Hybrid' },
+                { key: 'questionnaire', label: 'Questionnaire' },
+              ].filter(tab => tab.key === 'all' || modeCounts[tab.key] > 0).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setFilterMode(tab.key)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-none cursor-pointer transition-colors"
+                  style={{
+                    backgroundColor: filterMode === tab.key ? '#558b2f' : '#fff',
+                    color: filterMode === tab.key ? '#fff' : '#616161',
+                  }}
+                >
+                  {tab.label}
+                  <span
+                    className="text-xs rounded-full px-1.5 py-0.5 font-semibold"
+                    style={{
+                      backgroundColor: filterMode === tab.key ? 'rgba(255,255,255,0.25)' : '#f0f0f0',
+                      color: filterMode === tab.key ? '#fff' : '#757575',
+                    }}
+                  >
+                    {tab.key === 'all' ? modeCounts.all : modeCounts[tab.key]}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Condition dropdown — only shown when >1 unique condition exists */}
+            {uniqueConditions.length > 1 && (
+              <select
+                value={filterCondition}
+                onChange={e => setFilterCondition(e.target.value)}
+                className="text-xs px-3 py-1.5 rounded-lg border cursor-pointer outline-none transition-colors"
+                style={{ borderColor: '#e0e0e0', color: '#616161', backgroundColor: '#fff' }}
+              >
+                <option value="all">All conditions</option>
+                {uniqueConditions.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
         {/* History error */}
         {historyError && (
           <div className="mb-4 px-4 py-3 rounded-xl flex items-start gap-2 text-sm" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
@@ -476,9 +553,20 @@ export default function ProfilePage() {
               {t('nav_start_analysis')}
             </Link>
           </div>
+        ) : filteredAnalyses.length === 0 ? (
+          <div className="rounded-2xl p-6 text-center bg-white" style={{ border: '1px solid #e0e0e0' }}>
+            <p className="text-sm text-neutral-500">No analyses match this filter.</p>
+            <button
+              onClick={() => { setFilterMode('all'); setFilterCondition('all') }}
+              className="mt-3 text-xs font-semibold border-none bg-transparent cursor-pointer hover:underline"
+              style={{ color: '#558b2f' }}
+            >
+              Clear filters
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
-            {analyses.map(item => (
+            {filteredAnalyses.map(item => (
               <HistoryCard key={item.id} item={item} t={t} onDelete={handleDeleteAnalysis} />
             ))}
           </div>
