@@ -935,9 +935,9 @@ export const translations = {
     detect_q_additional: 'រោគសញ្ញាបន្ថែម / ជាក់លាក់',
     detect_q_additional_hint: 'ទាំងនេះជាសញ្ញាវិភាគសំខាន់ — ជ្រើសរើសអ្វីដែលត្រូវ',
     detect_q_additional_tip: 'ចំណាំ: ទឹករំអិលលឿងពេលព្រឹកជារោគសញ្ញាពិសេសសម្រាប់ Bacterial Blight',
-    detect_q_onset: 'រោគសញ្ញាចេញប្រើ?',
+    detect_q_onset: 'រោគសញ្ញាលេចឡើងលឿនប៉ុណ្ណា?',
     detect_q_weather: 'ស្ថានភាពអាកាសធាតុថ្មីៗ',
-    detect_q_water: 'ស្ថានភាពទឹក / ការស្ស',
+    detect_q_water: 'ស្ថានភាពទឹក / ការស្រោចស្រព',
     detect_q_spread: 'រោគសញ្ញារាតត្បាតឆ្ងាយប៉ុណ្ណាក្នុងស្រែ?',
     detect_q_fertilizer: 'តើអ្នកបានប្រើជីពេលថ្មីៗ?',
     detect_q_fertilizer_amount: 'ប្រើជីប៉ុន្មាន?',
@@ -950,7 +950,7 @@ export const translations = {
     gs_tillering: '🌿 ការបណ្ដុះ',
     gs_elongation: '📏 ការលូតខ្ពស់',
     gs_flowering: '🌸 ចេញផ្កា / ចេញក្បាល',
-    gs_grain_filling: '🌾 បំពេញ និងស익는',
+    gs_grain_filling: '🌾 ការបំពេញគ្រាប់ / ការទុំ',
 
     // Symptom location chips
     loc_leaf_blade: '🍃 ស្លឹក',
@@ -1012,7 +1012,7 @@ export const translations = {
     // Confidence chips
     conf_very_sure: '✅ ប្រាកដណាស់ — បានសង្កេត និងបញ្ជាក់',
     conf_somewhat_sure: '🤔 ប្រហែលជា — ពាក់កណ្ដាលប្រាកដ',
-    conf_not_sure: '❓ មិនប្រាកដ — គ្រាន់តែទស្សន',
+    conf_not_sure: '❓ មិនប្រាកដ — គ្រាន់តែស្មានប៉ុណ្ណោះ',
 
     // Step 2 UI strings
     detect_analyzing_label: 'កំពុងវិភាគ:',
@@ -1282,7 +1282,7 @@ export const translations = {
     fert_timing_30_days: '30 ថ្ងៃក្រោយ',
     fert_timing_flowering: 'នៅពេលផ្កា',
     fert_timing_other: 'ផ្សេងទៀត',
-    fert_type_high_nitrogen: 'ជីអ៊ីតូតខ្ពស់',
+    fert_type_high_nitrogen: 'ជីអាសូតខ្ពស់',
     fert_type_balanced_npk: 'NPK ស្មើ',
     fert_type_potassium: 'ច្រើនប៉ូតាស្យូម',
     fert_type_organic: 'ជីសរីរាង្គ',
@@ -1299,7 +1299,7 @@ export const translations = {
     soil_kbal_po: 'ក្បាលពោ',
     soil_krakor: 'ក្រគរ',
     soil_toul_samroung: 'ទួលសំរោង',
-    crack_large: 'បែករំ',
+    crack_large: 'ស្នាមបែកធំ',
     crack_small: 'បែកតូច',
     crack_none: 'គ្មានការបែក',
     sym_timing_transplant: 'ភ្លាមបន្ទាប់ពីដាំ',
@@ -1334,7 +1334,7 @@ export const translations = {
     cond_name_brown_spot: 'ចំណុចត្នោត',
     cond_name_bacterial_blight: 'ជំងឺបាក់តេរីស្លឹក',
     cond_name_iron_toxicity: 'ជាតិដែករំលាយ',
-    cond_name_n_deficiency: 'ខ្វះជីអ៊ីយ៉ូត N',
+    cond_name_n_deficiency: 'ខ្វះជីអាសូត',
     cond_name_salt_toxicity: 'ជាតិអំបិលក្នុងដី',
 
     // Demo fallback strings (shown when backend offline)
