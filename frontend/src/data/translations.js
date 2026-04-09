@@ -493,6 +493,15 @@ export const translations = {
     experts_join: 'Join as Expert',
     experts_join_desc: 'Are you an agricultural expert or a supplier? Join our directory.',
     experts_apply: 'Apply to List',
+    experts_online: 'Online',
+    experts_offline: 'Offline',
+    experts_verified: 'Verified',
+    experts_no_results: 'No experts found matching your search.',
+    experts_price_on_request: 'Price on request',
+    experts_tag_fungicide: 'Fungicide',
+    experts_tag_pesticide: 'Pesticide',
+    experts_tag_bactericide: 'Bactericide',
+    experts_tag_nutrient: 'Nutrient',
 
     // Suppliers & Products
     suppliers_title: 'Suppliers & Products',
@@ -1137,6 +1146,15 @@ export const translations = {
     experts_send_another: 'ផ្ញើសារផ្សេងទៀត',
     experts_join: 'ចូលរួមជាអ្នកជំនាញ',
     experts_apply: 'ដាក់ពាក្យ',
+    experts_online: 'អនឡាញ',
+    experts_offline: 'អូហ្វឡាញ',
+    experts_verified: 'បានផ្ទៀងផ្ទាត់',
+    experts_no_results: 'រកមិនឃើញអ្នកជំនាញដែលត្រូវជាមួយការស្វែងរករបស់អ្នក។',
+    experts_price_on_request: 'តម្លៃតាមការស្នើសុំ',
+    experts_tag_fungicide: 'ថ្នាំប្រឆាំងផ្សិត',
+    experts_tag_pesticide: 'ថ្នាំសម្លាប់សត្វល្អិត',
+    experts_tag_bactericide: 'ថ្នាំប្រឆាំងបាក់តេរី',
+    experts_tag_nutrient: 'ជីជាតិ',
 
     // Suppliers
     suppliers_title: 'អ្នកផ្គត់ផ្គង់ និងផលិតផល',

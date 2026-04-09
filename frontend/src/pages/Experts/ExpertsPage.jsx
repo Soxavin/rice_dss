@@ -126,10 +126,10 @@ const EXPERTS_DATA = [
 ]
 
 const PRODUCTS = [
-  { id: 1, name: 'BlastGuard Pro',      price: '$42.00', img: '🧪', supplier: 'GreenGrowth', telegram: 'greengrowth_supply', tag: 'Fungicide',    tagColor: '#dc2626', tagBg: '#fef2f2' },
-  { id: 2, name: 'Emamid Shield',       price: '$38.50', img: '🧴', supplier: 'AgriTech',    telegram: 'agritech_kh',        tag: 'Pesticide',    tagColor: '#d97706', tagBg: '#fffbeb' },
-  { id: 3, name: 'Tenebricola Resist',  price: '$55.00', img: '💊', supplier: 'CropCare',    telegram: 'cropcare_kh',        tag: 'Bactericide',  tagColor: '#7c3aed', tagBg: '#f5f3ff' },
-  { id: 4, name: 'Lithos Mineral Mix',  price: null,     img: '📦', supplier: 'GreenGrowth', telegram: 'greengrowth_supply', tag: 'Nutrient',     tagColor: '#059669', tagBg: '#ecfdf5' },
+  { id: 1, name: 'BlastGuard Pro',      price: '$42.00', img: '🧪', supplier: 'GreenGrowth', telegram: 'greengrowth_supply', tagKey: 'experts_tag_fungicide',    tagColor: '#dc2626', tagBg: '#fef2f2' },
+  { id: 2, name: 'Emamid Shield',       price: '$38.50', img: '🧴', supplier: 'AgriTech',    telegram: 'agritech_kh',        tagKey: 'experts_tag_pesticide',    tagColor: '#d97706', tagBg: '#fffbeb' },
+  { id: 3, name: 'Tenebricola Resist',  price: '$55.00', img: '💊', supplier: 'CropCare',    telegram: 'cropcare_kh',        tagKey: 'experts_tag_bactericide',  tagColor: '#7c3aed', tagBg: '#f5f3ff' },
+  { id: 4, name: 'Lithos Mineral Mix',  price: null,     img: '📦', supplier: 'GreenGrowth', telegram: 'greengrowth_supply', tagKey: 'experts_tag_nutrient',     tagColor: '#059669', tagBg: '#ecfdf5' },
 ]
 
 const FEATURED_SUPPLIERS = [
@@ -291,7 +291,7 @@ export default function ExpertsPage() {
             <div className="h-px mb-8" style={{ background: 'linear-gradient(to right, #558b2f, #c5a028, transparent)' }} />
 
             {filteredExperts.length === 0 ? (
-              <p className="text-neutral-400 text-sm py-10 text-center">No experts found matching your search.</p>
+              <p className="text-neutral-400 text-sm py-10 text-center">{t('experts_no_results')}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredExperts.map((expert) => (
@@ -319,14 +319,14 @@ export default function ExpertsPage() {
                             style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                            Online
+                            {t('experts_online')}
                           </span>
                         ) : (
                           <span
                             className="text-[10px] font-medium px-2 py-0.5 rounded-full"
                             style={{ backgroundColor: '#f9fafb', color: '#9ca3af', border: '1px solid #e5e7eb' }}
                           >
-                            Offline
+                            {t('experts_offline')}
                           </span>
                         )}
                       </div>
@@ -426,7 +426,7 @@ export default function ExpertsPage() {
                         className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
                         style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
                       >
-                        ✓ {s.badge}
+                        ✓ {t('experts_verified')}
                       </span>
                     </div>
                     <p className="mt-4 text-sm text-neutral-600 leading-relaxed">{bil(s.desc)}</p>
@@ -482,7 +482,7 @@ export default function ExpertsPage() {
                         className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-md"
                         style={{ backgroundColor: p.tagBg, color: p.tagColor }}
                       >
-                        {p.tag}
+                        {t(p.tagKey)}
                       </span>
                     </div>
 
@@ -492,7 +492,7 @@ export default function ExpertsPage() {
                       <p className="text-xs text-neutral-400 mt-0.5">{p.supplier}</p>
                       {p.price
                         ? <p className="mt-2 font-bold text-xl" style={{ color: '#558b2f' }}>{p.price}</p>
-                        : <p className="mt-2 text-xs text-neutral-400 italic">Price on request</p>
+                        : <p className="mt-2 text-xs text-neutral-400 italic">{t('experts_price_on_request')}</p>
                       }
                       <a
                         href={`https://t.me/${p.telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${p.name}. Please send me details and pricing.`)}`}
@@ -651,12 +651,12 @@ export default function ExpertsPage() {
                     {selectedExpert.online ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
                         style={{ backgroundColor: 'rgba(34,197,94,0.2)', color: '#86efac', border: '1px solid rgba(34,197,94,0.3)' }}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /> Online
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /> {t('experts_online')}
                       </span>
                     ) : (
                       <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
                         style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.12)' }}>
-                        Offline
+                        {t('experts_offline')}
                       </span>
                     )}
                   </div>
