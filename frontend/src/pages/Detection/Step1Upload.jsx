@@ -261,10 +261,10 @@ export default function Step1Upload() {
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={`mt-6 grid grid-cols-1 ${mode !== 'questionnaire' ? 'lg:grid-cols-3' : ''} gap-8`}>
 
-        {/* Upload area — 2 columns */}
-        <div className="lg:col-span-2">
+        {/* Upload area — 2 columns (full-width for questionnaire) */}
+        <div className={mode !== 'questionnaire' ? 'lg:col-span-2' : ''}>
 
           {mode === 'questionnaire' ? (
             /* Questionnaire-only — soft message, no upload required */
@@ -375,8 +375,8 @@ export default function Step1Upload() {
           )}
         </div>
 
-        {/* Guidance panel */}
-        <div className="space-y-6">
+        {/* Guidance panel — only for hybrid / ml */}
+        {mode !== 'questionnaire' && <div className="space-y-6">
           <div className="bg-primary-50 border border-primary-200 rounded-xl p-6">
             <h3 className="font-semibold text-primary-800 flex items-center gap-2">
               📸 {t('detect_guidance_title')}
@@ -398,7 +398,7 @@ export default function Step1Upload() {
               <span className="text-sm text-neutral-500">📹 {t('detect_watch_demo')}</span>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Camera modal */}

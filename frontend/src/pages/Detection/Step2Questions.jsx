@@ -248,6 +248,7 @@ export default function Step2Questions() {
   const { lang, t } = useLanguage()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [progressWidth, setProgressWidth] = useState(0)
   const [apiError, setApiError] = useState(null)
   const [uploadedImages, setUploadedImages] = useState([])
   const [mode, setMode] = useState('hybrid')
@@ -255,6 +256,7 @@ export default function Step2Questions() {
   const [stepError, setStepError] = useState(false)
   const mountedRef = useRef(true)
   const questionRef = useRef(null)
+  const autoSubmittedRef = useRef(false)
 
   const [answers, setAnswers] = useState({
     growth_stage:        null,
@@ -296,6 +298,22 @@ export default function Step2Questions() {
     }
     return () => { mountedRef.current = false }
   }, [navigate])
+
+  // Auto-submit for ml mode — fires once after mode resolves, no manual button needed
+  useEffect(() => {
+    if (mode !== 'ml' || autoSubmittedRef.current) return
+    autoSubmittedRef.current = true
+    const timer = setTimeout(() => { handleSubmit() }, 300)
+    return () => clearTimeout(timer)
+  }, [mode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Simulated progress bar — fills 0→80% over ~4s while loading, resets on done
+  useEffect(() => {
+    if (!loading) { setProgressWidth(0); return }
+    setProgressWidth(0)
+    const tick = setTimeout(() => setProgressWidth(80), 60)
+    return () => clearTimeout(tick)
+  }, [loading])
 
   // Depth: hybrid always gets full 18-field set; questionnaire respects stored depth
   const depth = sessionStorage.getItem('questionnaire_depth') || 'quick'
@@ -409,6 +427,7 @@ export default function Step2Questions() {
       }
 
       sessionStorage.setItem('detect_result', JSON.stringify(result))
+      setProgressWidth(100)
       if (mountedRef.current) navigate('/detect/results')
     } catch (err) {
       console.error('Analysis error:', err)
@@ -529,25 +548,60 @@ export default function Step2Questions() {
 
       {/* ── ML-only mode ─────────────────────────────────────────────────────── */}
       {mode === 'ml' && (
-        <div className="mt-5 rounded-xl p-6 text-center" style={{ backgroundColor: '#eff6ff', border: '1px solid #93c5fd' }}>
-          <div className="text-3xl mb-3">🤖</div>
-          <h3 className="font-semibold text-neutral-900">{t('detect_ml_mode_notice')}</h3>
-          <p className="mt-1.5 text-sm" style={{ color: '#757575' }}>{t('detect_ml_mode_desc')}</p>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="mt-5 px-8 py-3 rounded-xl font-semibold text-sm text-white border-none cursor-pointer disabled:opacity-60 transition-opacity"
-            style={{ backgroundColor: '#1d4ed8' }}
-          >
-            {loading ? t('detect_analyzing_btn') : t('detect_ml_run')}
-          </button>
-          <button
-            onClick={() => navigate('/detect')}
-            className="mt-3 block mx-auto text-xs bg-transparent border-none cursor-pointer hover:underline"
-            style={{ color: '#9e9e9e' }}
-          >
-            ← {t('detect_cancel')}
-          </button>
+        <div className="mt-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #bfdbfe', backgroundColor: '#eff6ff' }}>
+          {/* Icon + heading */}
+          <div className="px-6 pt-6 pb-4 text-center">
+            <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: '#dbeafe' }}>
+              🤖
+            </div>
+            <h3 className="font-semibold text-neutral-900 text-lg">{t('detect_ml_mode_notice')}</h3>
+            <p className="mt-1 text-sm" style={{ color: '#4b5563' }}>
+              {loading ? t('detect_analyzing_hint') : t('detect_ml_mode_desc')}
+            </p>
+          </div>
+
+          {/* Progress / button section */}
+          <div className="px-6 pb-6">
+            {loading ? (
+              <>
+                <div className="w-full rounded-full overflow-hidden mt-2" style={{ height: '8px', backgroundColor: '#bfdbfe' }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${progressWidth}%`,
+                      backgroundColor: '#1d4ed8',
+                      transition: progressWidth === 0 ? 'none' : 'width 4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  />
+                </div>
+                <p className="mt-3 text-center text-sm font-medium" style={{ color: '#1d4ed8' }}>
+                  <span className="inline-block animate-spin mr-2">⏳</span>
+                  {t('detect_analyzing_btn')}
+                </p>
+              </>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full mt-2 py-3 rounded-xl font-semibold text-sm text-white border-none cursor-pointer disabled:opacity-60 transition-opacity"
+                style={{ backgroundColor: '#1d4ed8' }}
+              >
+                {t('detect_ml_run')}
+              </button>
+            )}
+          </div>
+
+          {!loading && (
+            <div className="px-6 pb-5 text-center">
+              <button
+                onClick={() => navigate('/detect')}
+                className="text-xs bg-transparent border-none cursor-pointer hover:underline"
+                style={{ color: '#9e9e9e' }}
+              >
+                ← {t('detect_cancel')}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

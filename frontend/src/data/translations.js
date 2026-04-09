@@ -211,6 +211,7 @@ export const translations = {
     detect_ml_mode_notice: 'Image-Only Mode — No questions needed',
     detect_ml_mode_desc: 'The AI will analyse your uploaded photo directly. Click below to run the analysis.',
     detect_ml_run: 'Run AI Analysis',
+    detect_analyzing_hint: 'AI is analysing your photo — this usually takes a few seconds.',
 
     // Sections
     detect_section_plant: 'About the Plant',
@@ -934,6 +935,7 @@ export const translations = {
     detect_ml_mode_notice: 'របៀបរូបភាពតែប៉ុណ្ណោះ — មិនត្រូវការសំណួរ',
     detect_ml_mode_desc: 'AI នឹងវិភាគរូបភាពដែលបង្ហោះរបស់អ្នកដោយផ្ទាល់។ ចុចខាងក្រោម ដើម្បីវិភាគ។',
     detect_ml_run: 'ដំណើរការ AI',
+    detect_analyzing_hint: 'AI កំពុងវិភាគរូបថតរបស់អ្នក — ជាធម្មតាចំណាយពេលតែប៉ុន្មានវិនាទី។',
 
     // Sections
     detect_section_plant: 'អំពីដំណាំ',
