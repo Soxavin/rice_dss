@@ -76,15 +76,15 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex">
+    <div className="min-h-screen flex">
 
       {/* Left — Image panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col">
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col min-h-screen">
         <img src={AUTH_BG} alt="" className="w-full h-full object-cover absolute inset-0" />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(26,46,26,0.55) 0%, rgba(26,46,26,0.75) 100%)' }} />
 
         <div className="relative z-10 flex flex-col h-full p-10">
-          <img src="/images/logo.png" alt="Srov Meas" className="h-10 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
+          <img src="/images/logo.png" alt="Srov Meas" className="h-10 w-auto max-w-[160px]" style={{ filter: 'brightness(0) invert(1)' }} />
 
           <div className="flex-1 flex flex-col justify-center">
             <h2 className="font-heading text-4xl font-bold text-white italic leading-snug">
@@ -106,14 +106,7 @@ export default function SignUp() {
             </div>
           </div>
 
-          <div>
-            <div className="flex gap-2">
-              <span className="w-8 h-2 rounded-full bg-primary-400" />
-              <span className="w-2 h-2 rounded-full bg-white/40" />
-              <span className="w-2 h-2 rounded-full bg-white/40" />
-            </div>
-            <p className="mt-3 text-xs text-white/45">600+ {t('auth_farmers_joined')}</p>
-          </div>
+          <div />
         </div>
       </div>
 
@@ -196,7 +189,7 @@ export default function SignUp() {
                 <Mail size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
                   id="signup-email"
-                  type="text"
+                  type="email"
                   value={form.email}
                   onChange={(e) => update('email', e.target.value)}
                   placeholder={t('auth_email_placeholder')}
