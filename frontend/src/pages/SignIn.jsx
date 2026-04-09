@@ -169,7 +169,11 @@ export default function SignIn() {
                 <Mail size={16} className="absolute left-3 top-3 pointer-events-none" style={{ color: '#9e9e9e' }} />
                 <input
                   id="signin-email"
-                  type="email"
+                  type="text"
+                  autoComplete="username"
+                  inputMode="email"
+                  pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}|\+?[\d\s\-\(\)]{7,15}"
+                  title={t('auth_email_or_phone_hint')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('auth_email_placeholder')}
