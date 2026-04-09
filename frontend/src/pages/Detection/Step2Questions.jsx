@@ -307,12 +307,14 @@ export default function Step2Questions() {
     return () => clearTimeout(timer)
   }, [mode]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Simulated progress bar — fills 0→80% over ~4s while loading, resets on done
+  // Simulated progress bar — multi-stage fill so bar is still moving when API responds
   useEffect(() => {
     if (!loading) { setProgressWidth(0); return }
     setProgressWidth(0)
-    const tick = setTimeout(() => setProgressWidth(80), 60)
-    return () => clearTimeout(tick)
+    const t1 = setTimeout(() => setProgressWidth(22), 500)
+    const t2 = setTimeout(() => setProgressWidth(48), 6000)
+    const t3 = setTimeout(() => setProgressWidth(68), 14000)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [loading])
 
   // Depth: hybrid always gets full 18-field set; questionnaire respects stored depth
@@ -570,7 +572,7 @@ export default function Step2Questions() {
                     style={{
                       width: `${progressWidth}%`,
                       backgroundColor: '#1d4ed8',
-                      transition: progressWidth === 0 ? 'none' : 'width 4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transition: progressWidth === 0 ? 'none' : 'width 2s ease-out',
                     }}
                   />
                 </div>

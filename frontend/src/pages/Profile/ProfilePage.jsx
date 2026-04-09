@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp, Leaf, FlaskConical, ClipboardList, User } from 'lucide-react'
+import { ChevronDown, ChevronUp, Leaf, FlaskConical, ClipboardList, User, Trash2, AlertCircle } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
-import { getFarmProfile, saveFarmProfile, getAnalyses } from '../../lib/firestore'
+import { getFarmProfile, saveFarmProfile, getAnalyses, deleteAnalysis, clearAllAnalyses } from '../../lib/firestore'
 
 // Reuse same confidence colours as Step3Results
 const CONF_STYLE = {
@@ -18,43 +18,99 @@ const MODE_LABEL = { ml: 'Image Only (AI)', questionnaire: 'Questionnaire', hybr
 
 function formatDate(ts) {
   if (!ts) return '—'
-  // Firestore Timestamp has .toDate(), plain Date objects also work
   const d = ts.toDate ? ts.toDate() : new Date(ts)
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // ── Analysis history card ─────────────────────────────────────────────────────
-function HistoryCard({ item, t }) {
+function HistoryCard({ item, t, onDelete }) {
   const [open, setOpen] = useState(false)
+  const [deleteState, setDeleteState] = useState('idle') // 'idle' | 'confirming' | 'deleting'
   const conf = CONF_STYLE[item.confidence_level] || CONF_STYLE.ml_only
+
+  const handleTrashClick = (e) => {
+    e.stopPropagation()
+    setDeleteState('confirming')
+  }
+
+  const handleConfirmDelete = async (e) => {
+    e.stopPropagation()
+    setDeleteState('deleting')
+    await onDelete(item.id)
+  }
+
+  const handleCancelDelete = (e) => {
+    e.stopPropagation()
+    setDeleteState('idle')
+  }
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #e0e0e0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <button
-        className="w-full text-left px-5 py-4 bg-white flex items-center gap-4 border-none cursor-pointer hover:bg-neutral-50 transition-colors"
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-      >
-        {/* Condition badge */}
-        <div
-          className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ backgroundColor: conf.bg, border: `1px solid ${conf.border}`, color: conf.text }}
+      <div className="w-full text-left px-5 py-4 bg-white flex items-center gap-4">
+        {/* Clickable area for expand/collapse */}
+        <button
+          className="flex items-center gap-4 flex-1 min-w-0 border-none bg-transparent cursor-pointer text-left hover:bg-neutral-50 transition-colors rounded-xl -mx-1 px-1"
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
         >
-          {item.primary_condition || item.condition_key || '—'}
-        </div>
+          {/* Condition badge */}
+          <div
+            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold"
+            style={{ backgroundColor: conf.bg, border: `1px solid ${conf.border}`, color: conf.text }}
+          >
+            {item.primary_condition || item.condition_key || '—'}
+          </div>
 
-        {/* Meta */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-neutral-800 truncate">
-            {item.confidence_label || item.confidence_level}
-          </p>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            {formatDate(item.createdAt)} · {MODE_LABEL[item.mode] || item.mode}
-          </p>
-        </div>
+          {/* Meta */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-neutral-800 truncate">
+              {item.confidence_label || item.confidence_level}
+            </p>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {formatDate(item.createdAt)} · {MODE_LABEL[item.mode] || item.mode}
+            </p>
+          </div>
 
-        {open ? <ChevronUp size={16} className="text-neutral-400 shrink-0" /> : <ChevronDown size={16} className="text-neutral-400 shrink-0" />}
-      </button>
+          {open ? <ChevronUp size={16} className="text-neutral-400 shrink-0" /> : <ChevronDown size={16} className="text-neutral-400 shrink-0" />}
+        </button>
+
+        {/* Delete controls */}
+        <div className="shrink-0 flex items-center gap-2">
+          {deleteState === 'idle' && (
+            <button
+              onClick={handleTrashClick}
+              aria-label={t('profile_delete_entry')}
+              className="p-1.5 rounded-lg border-none bg-transparent cursor-pointer hover:bg-red-50 transition-colors"
+              style={{ color: '#bdbdbd' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+              onMouseLeave={e => e.currentTarget.style.color = '#bdbdbd'}
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+          {deleteState === 'confirming' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500">{t('profile_delete_confirm')}</span>
+              <button
+                onClick={handleConfirmDelete}
+                className="text-xs font-semibold px-2.5 py-1 rounded-lg border-none cursor-pointer transition-colors"
+                style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}
+              >
+                {t('profile_delete_entry')}
+              </button>
+              <button
+                onClick={handleCancelDelete}
+                className="text-xs font-semibold px-2.5 py-1 rounded-lg border-none cursor-pointer bg-neutral-100 hover:bg-neutral-200 transition-colors text-neutral-600"
+              >
+                {t('profile_cancel')}
+              </button>
+            </div>
+          )}
+          {deleteState === 'deleting' && (
+            <span className="text-xs text-neutral-400">…</span>
+          )}
+        </div>
+      </div>
 
       {open && (
         <div className="px-5 py-4 bg-neutral-50 border-t border-neutral-100 space-y-4">
@@ -106,6 +162,42 @@ function HistoryCard({ item, t }) {
   )
 }
 
+// ── Confirm modal ─────────────────────────────────────────────────────────────
+function ClearAllModal({ count, t, onConfirm, onCancel, loading }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+      <div className="bg-white rounded-2xl p-6 max-w-sm w-full" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: '#fef2f2' }}>
+          <Trash2 size={20} style={{ color: '#dc2626' }} />
+        </div>
+        <h3 className="font-bold text-neutral-900 text-lg">{t('profile_clear_confirm_title')}</h3>
+        <p className="text-sm text-neutral-500 mt-2 leading-relaxed">{t('profile_clear_confirm_body')}</p>
+        <p className="text-sm font-semibold mt-1" style={{ color: '#dc2626' }}>
+          {count} {count === 1 ? 'entry' : 'entries'} will be deleted.
+        </p>
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border cursor-pointer hover:bg-neutral-50 transition-colors disabled:opacity-60"
+            style={{ borderColor: '#e0e0e0', color: '#616161', backgroundColor: '#fff' }}
+          >
+            {t('profile_cancel')}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-60"
+            style={{ backgroundColor: '#dc2626' }}
+          >
+            {loading ? '…' : t('profile_clear_confirm_btn')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const { t } = useLanguage()
@@ -117,10 +209,17 @@ export default function ProfilePage() {
   const [formLoading, setFormLoading] = useState(true)
   const [formSaving, setFormSaving] = useState(false)
   const [formSaved, setFormSaved] = useState(false)
+  const [farmError, setFarmError] = useState(null)
+  const [saveError, setSaveError] = useState(null)
 
   // Analysis history state
   const [analyses, setAnalyses] = useState([])
   const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyError, setHistoryError] = useState(null)
+
+  // Clear all state
+  const [clearModal, setClearModal] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   // Auth guard
   useEffect(() => {
@@ -132,35 +231,75 @@ export default function ProfilePage() {
     if (!user) return
     getFarmProfile(user.uid)
       .then(data => { if (data) setForm(f => ({ ...f, ...data })) })
+      .catch(() => setFarmError(t('profile_farm_error')))
       .finally(() => setFormLoading(false))
-  }, [user])
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load analysis history
   useEffect(() => {
     if (!user) return
     getAnalyses(user.uid)
       .then(setAnalyses)
+      .catch(() => setHistoryError(t('profile_history_error')))
       .finally(() => setHistoryLoading(false))
-  }, [user])
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
     setForm(f => ({ ...f, [name]: value }))
     setFormSaved(false)
+    setSaveError(null)
   }
 
   const handleSave = async (e) => {
     e.preventDefault()
     if (!user) return
     setFormSaving(true)
+    setSaveError(null)
     try {
       await saveFarmProfile(user.uid, form)
       setFormSaved(true)
       setTimeout(() => setFormSaved(false), 2500)
+    } catch {
+      setSaveError(t('profile_save_error'))
     } finally {
       setFormSaving(false)
     }
   }
+
+  const handleDeleteAnalysis = async (id) => {
+    await deleteAnalysis(user.uid, id)
+    setAnalyses(prev => prev.filter(a => a.id !== id))
+  }
+
+  const handleClearAll = async () => {
+    setClearing(true)
+    try {
+      await clearAllAnalyses(user.uid)
+      setAnalyses([])
+      setClearModal(false)
+    } catch {
+      setHistoryError(t('profile_history_error'))
+    } finally {
+      setClearing(false)
+    }
+  }
+
+  // Summary stats computed from history
+  const stats = useMemo(() => {
+    if (!analyses.length) return null
+    const counts = {}
+    analyses.forEach(a => {
+      const k = a.primary_condition || a.condition_key || 'Unknown'
+      counts[k] = (counts[k] || 0) + 1
+    })
+    const [mostCommon] = Object.entries(counts).sort((a, b) => b[1] - a[1])
+    return {
+      total: analyses.length,
+      mostCommon: mostCommon[0],
+      lastDate: formatDate(analyses[0].createdAt),
+    }
+  }, [analyses])
 
   if (!isAuthenticated) return null
 
@@ -191,6 +330,14 @@ export default function ProfilePage() {
           <Leaf size={18} style={{ color: '#558b2f' }} />
           <h2 className="font-heading text-lg font-bold text-neutral-800">{t('profile_farm_section')}</h2>
         </div>
+
+        {/* Farm load error */}
+        {farmError && (
+          <div className="mb-4 px-4 py-3 rounded-xl flex items-start gap-2 text-sm" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            {farmError}
+          </div>
+        )}
 
         {formLoading ? (
           <div className="rounded-2xl p-6 space-y-4" style={{ border: '1px solid #e0e0e0' }}>
@@ -257,6 +404,11 @@ export default function ProfilePage() {
               {formSaved && (
                 <span className="text-sm font-medium" style={{ color: '#558b2f' }}>{t('profile_saved')}</span>
               )}
+              {saveError && (
+                <span className="text-sm flex items-center gap-1.5" style={{ color: '#dc2626' }}>
+                  <AlertCircle size={14} /> {saveError}
+                </span>
+              )}
             </div>
           </form>
         )}
@@ -264,19 +416,49 @@ export default function ProfilePage() {
 
       {/* ── Analysis History ──────────────────────────────────────────────────── */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <ClipboardList size={18} style={{ color: '#558b2f' }} />
             <h2 className="font-heading text-lg font-bold text-neutral-800">{t('profile_history_section')}</h2>
           </div>
-          <Link
-            to="/detect"
-            className="text-sm font-semibold no-underline px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: '#558b2f', color: '#fff', boxShadow: '0 2px 6px rgba(85,139,47,0.3)' }}
-          >
-            + New Analysis
-          </Link>
+          <div className="flex items-center gap-2">
+            {analyses.length > 0 && (
+              <button
+                onClick={() => setClearModal(true)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:bg-red-50 transition-colors"
+                style={{ color: '#dc2626', backgroundColor: '#fef2f2' }}
+              >
+                {t('profile_clear_all')}
+              </button>
+            )}
+            <Link
+              to="/detect"
+              className="text-sm font-semibold no-underline px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: '#558b2f', color: '#fff', boxShadow: '0 2px 6px rgba(85,139,47,0.3)' }}
+            >
+              + New Analysis
+            </Link>
+          </div>
         </div>
+
+        {/* Summary stats bar */}
+        {stats && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 text-xs" style={{ color: '#757575' }}>
+            <span><strong className="text-neutral-800">{stats.total}</strong> {stats.total === 1 ? 'analysis' : 'analyses'}</span>
+            <span>·</span>
+            <span>Most common: <strong className="text-neutral-800">{stats.mostCommon}</strong></span>
+            <span>·</span>
+            <span>Last: <strong className="text-neutral-800">{stats.lastDate}</strong></span>
+          </div>
+        )}
+
+        {/* History error */}
+        {historyError && (
+          <div className="mb-4 px-4 py-3 rounded-xl flex items-start gap-2 text-sm" style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            {historyError}
+          </div>
+        )}
 
         {historyLoading ? (
           <div className="space-y-3">
@@ -297,11 +479,22 @@ export default function ProfilePage() {
         ) : (
           <div className="space-y-3">
             {analyses.map(item => (
-              <HistoryCard key={item.id} item={item} t={t} />
+              <HistoryCard key={item.id} item={item} t={t} onDelete={handleDeleteAnalysis} />
             ))}
           </div>
         )}
       </section>
+
+      {/* ── Clear all confirmation modal ──────────────────────────────────────── */}
+      {clearModal && (
+        <ClearAllModal
+          count={analyses.length}
+          t={t}
+          loading={clearing}
+          onConfirm={handleClearAll}
+          onCancel={() => setClearModal(false)}
+        />
+      )}
     </div>
   )
 }

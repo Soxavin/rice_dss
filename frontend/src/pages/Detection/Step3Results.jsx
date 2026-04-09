@@ -192,6 +192,13 @@ export default function Step3Results() {
         <div>
           <h1 className="font-heading text-3xl font-bold text-neutral-900">{t('detect_step3_title')}</h1>
           <p className="mt-1 text-sm" style={{ color: '#757575' }}>{t('detect_step3_subtitle')}</p>
+          <button
+            onClick={() => navigate('/detect')}
+            className="sm:hidden mt-3 px-4 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#558b2f', color: '#fff' }}
+          >
+            + {t('detect_start_new')}
+          </button>
         </div>
         <div className="hidden sm:flex flex-col items-end shrink-0 gap-1">
           <span className="text-sm font-medium" style={{ color: '#558b2f' }}>{t('step_label')} 3 {t('step_of')} 3</span>
@@ -202,8 +209,8 @@ export default function Step3Results() {
           </div>
           <button
             onClick={() => navigate('/detect')}
-            className="mt-1 text-xs font-medium border-none cursor-pointer hover:underline bg-transparent"
-            style={{ color: '#558b2f' }}
+            className="mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#558b2f', color: '#fff' }}
           >
             + {t('detect_start_new')}
           </button>

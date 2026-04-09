@@ -1,7 +1,7 @@
 import { db } from '../firebase'
 import {
   collection, addDoc, getDocs, query, orderBy, limit,
-  serverTimestamp, doc, getDoc, setDoc,
+  serverTimestamp, doc, getDoc, setDoc, deleteDoc, writeBatch,
 } from 'firebase/firestore'
 
 // ── Analysis history ──────────────────────────────────────────────────────────
@@ -32,4 +32,17 @@ export async function getFarmProfile(uid) {
 
 export async function saveFarmProfile(uid, data) {
   return setDoc(doc(db, 'users', uid, 'profile', 'farm'), data, { merge: true })
+}
+
+// ── History management ────────────────────────────────────────────────────────
+
+export async function deleteAnalysis(uid, docId) {
+  return deleteDoc(doc(db, 'users', uid, 'analyses', docId))
+}
+
+export async function clearAllAnalyses(uid) {
+  const snap = await getDocs(collection(db, 'users', uid, 'analyses'))
+  const batch = writeBatch(db)
+  snap.docs.forEach(d => batch.delete(d.ref))
+  return batch.commit()
 }
