@@ -216,6 +216,12 @@ export default function ProfilePage() {
   const [analyses, setAnalyses] = useState([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [historyError, setHistoryError] = useState(null)
+  const [lastDoc, setLastDoc] = useState(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Undo-delete state
+  const [undoPending, setUndoPending] = useState(null) // { item, snapshot, timerId }
 
   // Clear all state
   const [clearModal, setClearModal] = useState(false)
@@ -239,11 +245,15 @@ export default function ProfilePage() {
       .finally(() => setFormLoading(false))
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load analysis history
+  // Load analysis history (first page)
   useEffect(() => {
     if (!user) return
     getAnalyses(user.uid)
-      .then(setAnalyses)
+      .then(({ items, lastDoc: ld, hasMore: hm }) => {
+        setAnalyses(items)
+        setLastDoc(ld)
+        setHasMore(hm)
+      })
       .catch(() => setHistoryError(t('profile_history_error')))
       .finally(() => setHistoryLoading(false))
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -295,16 +305,56 @@ export default function ProfilePage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleDeleteAnalysis = async (id) => {
-    await deleteAnalysis(user.uid, id)
+  const handleLoadMore = async () => {
+    setLoadingMore(true)
+    try {
+      const { items, lastDoc: ld, hasMore: hm } = await getAnalyses(user.uid, lastDoc)
+      setAnalyses(prev => [...prev, ...items])
+      setLastDoc(ld)
+      setHasMore(hm)
+    } catch {
+      setHistoryError(t('profile_history_error'))
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const handleDeleteAnalysis = (id) => {
+    // Commit any already-pending delete before starting a new one
+    if (undoPending) {
+      clearTimeout(undoPending.timerId)
+      deleteAnalysis(user.uid, undoPending.item.id).catch(() => {})
+      setUndoPending(null)
+    }
+    const snapshot = analyses
     setAnalyses(prev => prev.filter(a => a.id !== id))
+    const timerId = setTimeout(() => {
+      deleteAnalysis(user.uid, id).catch(() => setHistoryError(t('profile_history_error')))
+      setUndoPending(null)
+    }, 5000)
+    setUndoPending({ id, snapshot, timerId })
+  }
+
+  const handleUndoDelete = () => {
+    if (!undoPending) return
+    clearTimeout(undoPending.timerId)
+    setAnalyses(undoPending.snapshot)
+    setUndoPending(null)
   }
 
   const handleClearAll = async () => {
+    // Commit any pending delete first
+    if (undoPending) {
+      clearTimeout(undoPending.timerId)
+      await deleteAnalysis(user.uid, undoPending.item?.id).catch(() => {})
+      setUndoPending(null)
+    }
     setClearing(true)
     try {
       await clearAllAnalyses(user.uid)
       setAnalyses([])
+      setLastDoc(null)
+      setHasMore(false)
       setFilterMode('all')
       setFilterCondition('all')
       setClearModal(false)
@@ -598,13 +648,43 @@ export default function ProfilePage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredAnalyses.map(item => (
-              <HistoryCard key={item.id} item={item} t={t} onDelete={handleDeleteAnalysis} />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {filteredAnalyses.map(item => (
+                <HistoryCard key={item.id} item={item} t={t} onDelete={handleDeleteAnalysis} />
+              ))}
+            </div>
+
+            {/* Load more — only shown when no filters active (cursor-based) */}
+            {hasMore && filterMode === 'all' && filterCondition === 'all' && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-5 py-2 rounded-xl text-sm font-semibold border cursor-pointer hover:bg-neutral-50 transition-colors disabled:opacity-60"
+                  style={{ borderColor: '#e0e0e0', color: '#558b2f', backgroundColor: '#fff' }}
+                >
+                  {loadingMore ? '…' : 'Load more'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
+
+      {/* ── Undo delete toast ─────────────────────────────────────────────────── */}
+      {undoPending && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-medium shadow-2xl" style={{ backgroundColor: '#1c1c1e', color: '#fff', whiteSpace: 'nowrap' }}>
+          <span>Entry deleted</span>
+          <button
+            onClick={handleUndoDelete}
+            className="font-bold border-none bg-transparent cursor-pointer hover:underline"
+            style={{ color: '#a8d060' }}
+          >
+            Undo
+          </button>
+        </div>
+      )}
 
       {/* ── Clear all confirmation modal ──────────────────────────────────────── */}
       {clearModal && (

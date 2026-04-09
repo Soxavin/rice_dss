@@ -1,6 +1,6 @@
 import { db } from '../firebase'
 import {
-  collection, addDoc, getDocs, query, orderBy, limit,
+  collection, addDoc, getDocs, query, orderBy, limit, startAfter,
   serverTimestamp, doc, getDoc, setDoc, deleteDoc, writeBatch,
 } from 'firebase/firestore'
 
@@ -13,14 +13,17 @@ export async function saveAnalysis(uid, data) {
   })
 }
 
-export async function getAnalyses(uid) {
-  const q = query(
-    collection(db, 'users', uid, 'analyses'),
-    orderBy('createdAt', 'desc'),
-    limit(30),
-  )
-  const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+const PAGE_SIZE = 15
+
+export async function getAnalyses(uid, cursor = null) {
+  const constraints = [orderBy('createdAt', 'desc'), limit(PAGE_SIZE)]
+  if (cursor) constraints.push(startAfter(cursor))
+  const snap = await getDocs(query(collection(db, 'users', uid, 'analyses'), ...constraints))
+  return {
+    items: snap.docs.map(d => ({ id: d.id, ...d.data() })),
+    lastDoc: snap.docs[snap.docs.length - 1] ?? null,
+    hasMore: snap.docs.length === PAGE_SIZE,
+  }
 }
 
 // ── Farm profile ──────────────────────────────────────────────────────────────
