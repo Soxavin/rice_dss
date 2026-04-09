@@ -84,7 +84,7 @@ export default function SignUp() {
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(26,46,26,0.55) 0%, rgba(26,46,26,0.75) 100%)' }} />
 
         <div className="relative z-10 flex flex-col h-full p-10">
-          <img src="/images/logo.png" alt="Srov Meas" className="h-10 w-auto max-w-[160px]" style={{ filter: 'brightness(0) invert(1)' }} />
+          <img src="/images/logo.png" alt="Srov Meas" className="h-10 w-auto max-w-[160px]" />
 
           <div className="flex-1 flex flex-col justify-center">
             <h2 className="font-heading text-4xl font-bold text-white italic leading-snug">
