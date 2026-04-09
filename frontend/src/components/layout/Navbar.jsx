@@ -112,7 +112,7 @@ export default function Navbar() {
                   <Link to="/experts" className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-700 no-underline transition-colors" onClick={() => setServicesOpen(false)}>
                     {t('service_expert')}
                   </Link>
-                  <Link to="/detect" className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-700 no-underline transition-colors" onClick={() => setServicesOpen(false)}>
+                  <Link to={isAuthenticated ? '/profile' : '/sign-in'} className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-700 no-underline transition-colors" onClick={() => setServicesOpen(false)}>
                     {t('service_crop')}
                   </Link>
                 </div>
@@ -277,7 +277,7 @@ export default function Navbar() {
           <Link to="/experts" className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
             {t('service_expert')}
           </Link>
-          <Link to="/detect" className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
+          <Link to={isAuthenticated ? '/profile' : '/sign-in'} className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
             {t('service_crop')}
           </Link>
           <hr className="border-neutral-100 my-2" />

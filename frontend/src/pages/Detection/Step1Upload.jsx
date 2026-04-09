@@ -125,6 +125,16 @@ export default function Step1Upload() {
     return () => document.removeEventListener('keydown', onKey)
   }, [cameraOpen, closeCamera])
 
+  // Stop camera stream on component unmount (e.g. user navigates away while camera is open)
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(tr => tr.stop())
+        streamRef.current = null
+      }
+    }
+  }, [])
+
   // When images are added, auto-upgrade from questionnaire to hybrid
   const handleFilesWithModeUpgrade = useCallback((files) => {
     handleFiles(files)

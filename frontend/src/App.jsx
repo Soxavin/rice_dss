@@ -16,6 +16,7 @@ const ResourcesList  = lazy(() => import('./pages/Learning/ResourcesList'))
 const ArticleDetail  = lazy(() => import('./pages/Learning/ArticleDetail'))
 const VideoDetail    = lazy(() => import('./pages/Learning/VideoDetail'))
 const ExpertsPage    = lazy(() => import('./pages/Experts/ExpertsPage'))
+const ProfilePage    = lazy(() => import('./pages/Profile/ProfilePage'))
 const NotFound       = lazy(() => import('./pages/NotFound'))
 
 function ScrollToTop() {
@@ -42,6 +43,7 @@ export default function App() {
                 <Route path="/learn/article/:id" element={<ArticleDetail />} />
                 <Route path="/learn/video/:id" element={<VideoDetail />} />
                 <Route path="/experts" element={<ExpertsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
               {/* Auth pages — no navbar/footer layout */}

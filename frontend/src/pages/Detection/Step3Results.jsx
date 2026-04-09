@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
+import { useAuth } from '../../context/AuthContext'
+import { saveAnalysis } from '../../lib/firestore'
 import { AlertCircle, CheckCircle, Leaf, Phone, ArrowRight, Download, TriangleAlert, Info, ChevronLeft } from 'lucide-react'
 
 // ─── Confidence level colours ─────────────────────────────────────────────────
@@ -26,22 +28,44 @@ const FALLBACK_IMG = '/images/analysis-leaf.jpg'
 export default function Step3Results() {
   const { t } = useLanguage()
   const navigate = useNavigate()
+  const { isAuthenticated, user } = useAuth()
   const [result, setResult] = useState(null)
   const [uploadedImages, setUploadedImages] = useState([])
   const [activeImg, setActiveImg] = useState(0)
   const [activeTab, setActiveTab] = useState('photo') // 'photo' | 'gradcam'
+  const [saved, setSaved] = useState(false)
+  const savedRef = useRef(false) // guard against StrictMode double-fire
 
   useEffect(() => {
     // C4: wrap in try-catch so malformed JSON doesn't crash the page
+    let parsed = null
     try {
       const r = sessionStorage.getItem('detect_result')
-      if (r) setResult(JSON.parse(r))
+      if (r) { parsed = JSON.parse(r); setResult(parsed) }
     } catch { /* malformed — leave result null, skeleton will show fallback link */ }
     try {
       const imgs = sessionStorage.getItem('detect_images')
       if (imgs) setUploadedImages(JSON.parse(imgs))
     } catch { /* ignore */ }
-  }, []) // W3: empty dep array — only read sessionStorage once on mount
+
+    // Auto-save to Firestore if user is authenticated and result is not a demo
+    if (parsed && !parsed.is_demo && isAuthenticated && user && !savedRef.current) {
+      savedRef.current = true
+      saveAnalysis(user.uid, {
+        mode: sessionStorage.getItem('detect_mode') || 'unknown',
+        condition_key: parsed.condition_key,
+        primary_condition: parsed.primary_condition,
+        confidence_level: parsed.confidence_level,
+        confidence_label: parsed.confidence_label,
+        score: parsed.score,
+        secondary_conditions: parsed.secondary_conditions || [],
+        recommendations: {
+          immediate: parsed.recommendations?.immediate || [],
+          preventive: parsed.recommendations?.preventive || [],
+        },
+      }).then(() => setSaved(true)).catch(() => { /* fire-and-forget — never block the UI */ })
+    }
+  }, [isAuthenticated, user]) // W3: only run once on mount (isAuthenticated/user stable refs)
 
   if (!result) {
     // Check if we're still loading from sessionStorage (brief flash) or genuinely no result
@@ -183,6 +207,11 @@ export default function Step3Results() {
           >
             + {t('detect_start_new')}
           </button>
+          {saved && (
+            <span className="mt-1 text-xs font-medium flex items-center gap-1" style={{ color: '#558b2f' }}>
+              <CheckCircle size={12} /> {t('result_saved')}
+            </span>
+          )}
         </div>
       </div>
 

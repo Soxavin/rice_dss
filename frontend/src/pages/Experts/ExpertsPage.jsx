@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock } from 'lucide-react'
@@ -158,6 +158,8 @@ export default function ExpertsPage() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
   const [contactSubmitted, setContactSubmitted] = useState(false)
   const [selectedExpert, setSelectedExpert] = useState(null)
+  const panelRef = useRef(null)
+  const panelCloseRef = useRef(null)
 
   useEffect(() => {
     if (!selectedExpert) return
@@ -165,6 +167,28 @@ export default function ExpertsPage() {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [selectedExpert])
+
+  useEffect(() => {
+    if (selectedExpert) {
+      const t = setTimeout(() => panelCloseRef.current?.focus(), 60)
+      return () => clearTimeout(t)
+    }
+  }, [selectedExpert])
+
+  const handlePanelKeyDown = (e) => {
+    if (e.key !== 'Tab' || !panelRef.current) return
+    const focusable = Array.from(panelRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )).filter(el => !el.disabled)
+    if (!focusable.length) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus() }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+  }
 
   const bil = (obj) => (typeof obj === 'object' ? obj[lang] || obj.en : obj)
   const expertName = (expert) =>
@@ -609,6 +633,11 @@ export default function ExpertsPage() {
 
           {/* Bottom sheet */}
           <div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="expert-panel-name"
+            onKeyDown={handlePanelKeyDown}
             className="fixed bottom-0 left-0 right-0 z-50 bg-white flex flex-col"
             style={{
               maxHeight: '78vh',
@@ -629,7 +658,9 @@ export default function ExpertsPage() {
               style={{ background: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a1e 100%)' }}
             >
               <button
+                ref={panelCloseRef}
                 onClick={() => setSelectedExpert(null)}
+                aria-label="Close"
                 className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none transition-colors"
                 style={{ backgroundColor: 'rgba(255,255,255,0.12)', color: '#fff' }}
               >
@@ -660,7 +691,7 @@ export default function ExpertsPage() {
                       </span>
                     )}
                   </div>
-                  <h2 className="mt-0.5 text-base font-bold text-white leading-snug">{expertName(selectedExpert)}</h2>
+                  <h2 id="expert-panel-name" className="mt-0.5 text-base font-bold text-white leading-snug">{expertName(selectedExpert)}</h2>
                   <p className="mt-0.5 text-xs flex items-center gap-1" style={{ color: '#a8c89a' }}>
                     <MapPin size={11} /> {bil(selectedExpert.location)}
                   </p>
