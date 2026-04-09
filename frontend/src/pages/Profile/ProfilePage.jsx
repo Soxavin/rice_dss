@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp, Leaf, FlaskConical, ClipboardList, User, Trash2, AlertCircle } from 'lucide-react'
+import { ChevronDown, ChevronUp, Leaf, FlaskConical, ClipboardList, User, Trash2, AlertCircle, Download } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 import { getFarmProfile, saveFarmProfile, getAnalyses, deleteAnalysis, clearAllAnalyses } from '../../lib/firestore'
@@ -271,6 +271,30 @@ export default function ProfilePage() {
     }
   }
 
+  const handleExportCSV = () => {
+    const rows = [
+      ['Date', 'Condition', 'Confidence Level', 'Confidence Label', 'Score (%)', 'Mode', 'Immediate Actions', 'Preventive Measures'],
+      ...analyses.map(a => [
+        formatDate(a.createdAt),
+        a.primary_condition || a.condition_key || '',
+        a.confidence_level || '',
+        a.confidence_label || '',
+        a.score != null ? Math.round(a.score * 100) : '',
+        MODE_LABEL[a.mode] || a.mode || '',
+        (a.recommendations?.immediate || []).join(' | '),
+        (a.recommendations?.preventive || []).join(' | '),
+      ]),
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `srov-meas-history-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleDeleteAnalysis = async (id) => {
     await deleteAnalysis(user.uid, id)
     setAnalyses(prev => prev.filter(a => a.id !== id))
@@ -449,13 +473,22 @@ export default function ProfilePage() {
           </div>
           <div className="flex items-center gap-2">
             {analyses.length > 0 && (
-              <button
-                onClick={() => setClearModal(true)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:bg-red-50 transition-colors"
-                style={{ color: '#dc2626', backgroundColor: '#fef2f2' }}
-              >
-                {t('profile_clear_all')}
-              </button>
+              <>
+                <button
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:bg-neutral-100 transition-colors"
+                  style={{ color: '#558b2f', backgroundColor: '#f0f7e6' }}
+                >
+                  <Download size={13} /> Export CSV
+                </button>
+                <button
+                  onClick={() => setClearModal(true)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:bg-red-50 transition-colors"
+                  style={{ color: '#dc2626', backgroundColor: '#fef2f2' }}
+                >
+                  {t('profile_clear_all')}
+                </button>
+              </>
             )}
             <Link
               to="/detect"
