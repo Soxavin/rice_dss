@@ -63,7 +63,7 @@ export default function Landing() {
       icon: Leaf, title: t('service_crop'),
       desc: t('service_crop_desc'),
       bullets: [t('service_crop_b1'), t('service_crop_b2')],
-      link: '/crop-integration', iconBg: '#d1fae5', iconColor: '#059669',
+      link: '/detect', iconBg: '#d1fae5', iconColor: '#059669',
     },
     {
       icon: Users, title: t('service_expert'),

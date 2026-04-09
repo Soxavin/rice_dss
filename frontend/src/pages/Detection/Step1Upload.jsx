@@ -13,6 +13,7 @@ export default function Step1Upload() {
   const [dragOver, setDragOver] = useState(false)
   const [mode, setMode] = useState('hybrid')
   const [isNavigating, setIsNavigating] = useState(false)
+  const [questionnaireDepth, setQuestionnaireDepth] = useState('quick')
 
   // Camera modal state
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -139,6 +140,11 @@ export default function Step1Upload() {
     const imageData = images.map((img) => ({ name: img.name, preview: img.preview }))
     sessionStorage.setItem('detect_images', JSON.stringify(imageData))
     sessionStorage.setItem('detect_mode', mode)
+    if (mode === 'questionnaire') {
+      sessionStorage.setItem('questionnaire_depth', questionnaireDepth)
+    } else {
+      sessionStorage.removeItem('questionnaire_depth')
+    }
     window.__detectFiles = images.map((img) => img.file)
     setTimeout(() => navigate('/detect/questions'), 120)
   }
@@ -211,6 +217,38 @@ export default function Step1Upload() {
             )
           })}
         </div>
+
+        {/* Quick / Detailed sub-toggle — shown only for questionnaire mode */}
+        {mode === 'questionnaire' && (
+          <div
+            role="group"
+            aria-label={t('q_depth_toggle_label')}
+            className="mt-3 grid grid-cols-2 gap-2"
+          >
+            {[
+              { id: 'quick',    labelKey: 'q_quick_label',    descKey: 'q_quick_desc' },
+              { id: 'detailed', labelKey: 'q_detailed_label', descKey: 'q_detailed_desc' },
+            ].map(({ id, labelKey, descKey }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setQuestionnaireDepth(id)}
+                aria-pressed={questionnaireDepth === id}
+                className="text-left rounded-xl transition-all cursor-pointer"
+                style={{
+                  padding: '10px 14px',
+                  border: questionnaireDepth === id ? '2px solid #fcd34d' : '2px solid #e0e0e0',
+                  backgroundColor: questionnaireDepth === id ? '#fffbeb' : '#fff',
+                }}
+              >
+                <div className="font-semibold text-sm" style={{ color: questionnaireDepth === id ? '#7b3f00' : '#424242' }}>
+                  {t(labelKey)}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: '#9e9e9e' }}>{t(descKey)}</div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
