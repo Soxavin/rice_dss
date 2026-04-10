@@ -27,6 +27,7 @@ function HistoryCard({ item, t, onDelete }) {
   const [open, setOpen] = useState(false)
   const [deleteState, setDeleteState] = useState('idle') // 'idle' | 'confirming' | 'deleting'
   const conf = CONF_STYLE[item.confidence_level] || CONF_STYLE.ml_only
+  const navigate = useNavigate()
 
   const handleTrashClick = (e) => {
     e.stopPropagation()
@@ -156,6 +157,17 @@ function HistoryCard({ item, t, onDelete }) {
               </div>
             </div>
           )}
+
+          {/* Run again */}
+          <div className="pt-1">
+            <button
+              onClick={() => navigate('/detect', { state: { mode: item.mode } })}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: '#f0f7e6', color: '#558b2f' }}
+            >
+              ↩ Run analysis again
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -206,6 +218,8 @@ export default function ProfilePage() {
 
   // Farm profile form state
   const [form, setForm] = useState({ variety: '', region: '', field_size: '', planting_method: '', notes: '' })
+  const [savedForm, setSavedForm] = useState(null)  // last Firestore-persisted snapshot
+  const [lastSavedAt, setLastSavedAt] = useState(null)
   const [formLoading, setFormLoading] = useState(true)
   const [formSaving, setFormSaving] = useState(false)
   const [formSaved, setFormSaved] = useState(false)
@@ -240,7 +254,11 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return
     getFarmProfile(user.uid)
-      .then(data => { if (data) setForm(f => ({ ...f, ...data })) })
+      .then(data => {
+        const merged = { variety: '', region: '', field_size: '', planting_method: '', notes: '', ...(data || {}) }
+        setForm(merged)
+        setSavedForm(merged)
+      })
       .catch(() => setFarmError(t('profile_farm_error')))
       .finally(() => setFormLoading(false))
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -272,6 +290,8 @@ export default function ProfilePage() {
     setSaveError(null)
     try {
       await saveFarmProfile(user.uid, form)
+      setSavedForm({ ...form })
+      setLastSavedAt(new Date())
       setFormSaved(true)
       setTimeout(() => setFormSaved(false), 2500)
     } catch {
@@ -280,6 +300,16 @@ export default function ProfilePage() {
       setFormSaving(false)
     }
   }
+
+  const handleReset = () => {
+    if (savedForm) {
+      setForm({ ...savedForm })
+      setFormSaved(false)
+      setSaveError(null)
+    }
+  }
+
+  const isFormDirty = savedForm !== null && JSON.stringify(form) !== JSON.stringify(savedForm)
 
   const handleExportCSV = () => {
     const rows = [
@@ -323,7 +353,7 @@ export default function ProfilePage() {
     // Commit any already-pending delete before starting a new one
     if (undoPending) {
       clearTimeout(undoPending.timerId)
-      deleteAnalysis(user.uid, undoPending.item.id).catch(() => {})
+      deleteAnalysis(user.uid, undoPending.id).catch(() => {})
       setUndoPending(null)
     }
     const snapshot = analyses
@@ -346,7 +376,7 @@ export default function ProfilePage() {
     // Commit any pending delete first
     if (undoPending) {
       clearTimeout(undoPending.timerId)
-      await deleteAnalysis(user.uid, undoPending.item?.id).catch(() => {})
+      await deleteAnalysis(user.uid, undoPending.id).catch(() => {})
       setUndoPending(null)
     }
     setClearing(true)
@@ -377,6 +407,7 @@ export default function ProfilePage() {
     return {
       total: analyses.length,
       mostCommon: mostCommon[0],
+      mostCommonCount: mostCommon[1],
       lastDate: formatDate(analyses[0].createdAt),
     }
   }, [analyses])
@@ -492,7 +523,7 @@ export default function ProfilePage() {
                 className={`${inputClass} resize-none`}
               />
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="submit"
                 disabled={formSaving}
@@ -501,8 +532,23 @@ export default function ProfilePage() {
               >
                 {formSaving ? '…' : t('profile_save')}
               </button>
+              {isFormDirty && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold border cursor-pointer hover:bg-neutral-50 transition-colors"
+                  style={{ borderColor: '#e0e0e0', color: '#757575', backgroundColor: '#fff' }}
+                >
+                  Reset
+                </button>
+              )}
               {formSaved && (
                 <span className="text-sm font-medium" style={{ color: '#558b2f' }}>{t('profile_saved')}</span>
+              )}
+              {!formSaved && lastSavedAt && !isFormDirty && (
+                <span className="text-xs text-neutral-400">
+                  Last saved: {lastSavedAt.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
               )}
               {saveError && (
                 <span className="text-sm flex items-center gap-1.5" style={{ color: '#dc2626' }}>
@@ -555,7 +601,7 @@ export default function ProfilePage() {
           <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 text-xs" style={{ color: '#757575' }}>
             <span><strong className="text-neutral-800">{stats.total}</strong> {stats.total === 1 ? 'analysis' : 'analyses'}</span>
             <span>·</span>
-            <span>Most common: <strong className="text-neutral-800">{stats.mostCommon}</strong></span>
+            <span>Most common: <strong className="text-neutral-800">{stats.mostCommon}</strong>{stats.mostCommonCount > 1 && <span className="ml-1 text-neutral-400">({stats.mostCommonCount}×)</span>}</span>
             <span>·</span>
             <span>Last: <strong className="text-neutral-800">{stats.lastDate}</strong></span>
           </div>
