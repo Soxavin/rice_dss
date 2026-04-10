@@ -56,6 +56,12 @@ HEALTHY_CLASS_NAME = 'healthy'
 # (e.g., random photos, diagrams, non-leaf objects) are rejected.
 MIN_CONFIDENCE_THRESHOLD = 0.80
 
+# Minimum fraction of pixels that must be "green-dominant" (G > R and G > B)
+# for the image to be accepted as a potential plant/leaf. This pre-screens
+# obviously non-plant images (hands, concrete, sky, paper) before ML inference.
+# Set low (3%) to allow heavily diseased/yellowed leaves to still pass.
+MIN_GREEN_RATIO = 0.03
+
 
 class RiceDSSInference:
     """
@@ -158,6 +164,33 @@ class RiceDSSInference:
         image = tf.cast(image, tf.uint8)
         image = tf.expand_dims(image, axis=0)
         return image
+
+    def _check_green_content(self, image_bytes: bytes) -> bool:
+        """
+        Returns True if the image has enough green pixels to plausibly be a plant.
+
+        Rice leaves are green (even when diseased, some green remains). This
+        pre-screen catches obviously non-plant images — skin, paper, concrete,
+        walls — before wasting ML inference on them.
+
+        Threshold is intentionally low (MIN_GREEN_RATIO = 3%) so that severely
+        diseased or yellowed leaves with little remaining green still pass.
+        """
+        try:
+            import io
+            from PIL import Image
+            img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+            pixels = np.array(img).astype(np.float32)
+            r, g, b = pixels[:, :, 0], pixels[:, :, 1], pixels[:, :, 2]
+            # A pixel counts as "green-dominant" when the green channel exceeds
+            # both red and blue, and has at least 15% brightness (avoids dark noise).
+            green_mask = (g > r) & (g > b) & (g > 38)
+            green_ratio = float(green_mask.mean())
+            print(f"[ML Inference] Green pixel ratio: {green_ratio:.3f} (min={MIN_GREEN_RATIO})")
+            return green_ratio >= MIN_GREEN_RATIO
+        except Exception as e:
+            print(f"[ML Inference] Green-content check failed ({e}), allowing through")
+            return True  # On failure, don't block inference
 
     def _bridge_to_dss(self, raw_probs: "np.ndarray") -> Optional[Dict[str, float]]:
         """
@@ -319,6 +352,9 @@ class RiceDSSInference:
             Returns None if inference fails.
         """
         try:
+            if not self._check_green_content(image_bytes):
+                print("[ML Inference] Green-content check failed — image rejected as non-plant")
+                return None
             image_tensor = self.preprocess_image_bytes(image_bytes)
             if use_tta:
                 raw_probs = self._predict_with_tta(image_tensor)
