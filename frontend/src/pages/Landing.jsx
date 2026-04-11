@@ -444,31 +444,33 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ CTA ═══════════════ */}
-      <section className="py-16" style={{ background: 'linear-gradient(135deg, #2d5a1b 0%, #1e3d12 100%)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white">
-            {t('cta_title')}
-          </h2>
-          <p className="mt-3 text-sm max-w-md mx-auto" style={{ color: '#a8c89a' }}>
-            {t('cta_subtitle')}
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              to="/detect"
-              className="inline-flex items-center gap-2 no-underline transition-colors"
-              style={{ backgroundColor: '#fff', color: '#212121', borderRadius: '8px', padding: '12px 28px', fontWeight: 600, fontSize: '14px', fontFamily: 'Roboto, sans-serif', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f5f5f5' }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
-            >
-              {t('cta_button')} <ArrowRight size={16} />
-            </Link>
-            <Link
-              to="/experts"
-              className="inline-flex items-center gap-2 no-underline transition-colors text-white hover:bg-white/10 font-semibold text-sm"
-              style={btnWhiteOutline}
-            >
-              {t('cta_experts')}
-            </Link>
+      <section className="py-16" style={{ backgroundColor: '#ffffff' }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl overflow-hidden text-center py-14 px-8" style={{ background: 'linear-gradient(135deg, #2d5a1b 0%, #1e3d12 100%)', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white">
+              {t('cta_title')}
+            </h2>
+            <p className="mt-3 text-sm max-w-md mx-auto" style={{ color: '#a8c89a' }}>
+              {t('cta_subtitle')}
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Link
+                to="/detect"
+                className="inline-flex items-center gap-2 no-underline transition-colors"
+                style={{ backgroundColor: '#fff', color: '#212121', borderRadius: '8px', padding: '12px 28px', fontWeight: 600, fontSize: '14px', fontFamily: 'Roboto, sans-serif', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f5f5f5' }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
+              >
+                {t('cta_button')} <ArrowRight size={16} />
+              </Link>
+              <Link
+                to="/experts"
+                className="inline-flex items-center gap-2 no-underline transition-colors text-white hover:bg-white/10 font-semibold text-sm"
+                style={btnWhiteOutline}
+              >
+                {t('cta_experts')}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
