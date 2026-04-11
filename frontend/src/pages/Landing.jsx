@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext'
 import {
   Search, Leaf, Users, BookOpen, ShoppingBag,
   ArrowRight, Camera, FileText, Cpu, Lightbulb,
-  Play, CheckCircle2
+  Play, CheckCircle2, Check
 } from 'lucide-react'
 
 const HERO_BG = '/images/hero-bg.jpg'
@@ -59,31 +59,41 @@ export default function Landing() {
       icon: Search, title: t('service_detection'),
       desc: t('service_detection_desc'),
       bullets: [t('service_detection_b1'), t('service_detection_b2')],
-      link: '/detect', iconBg: '#dcfce7', iconColor: '#16a34a',
+      link: '/detect',
+      iconGradient: 'linear-gradient(135deg, #4ade80 0%, #15803d 100%)',
+      iconColor: '#16a34a',
     },
     {
       icon: Leaf, title: t('service_crop'),
       desc: t('service_crop_desc'),
       bullets: [t('service_crop_b1'), t('service_crop_b2')],
-      link: '/detect', iconBg: '#d1fae5', iconColor: '#059669',
+      link: '/detect',
+      iconGradient: 'linear-gradient(135deg, #60a5fa 0%, #1d4ed8 100%)',
+      iconColor: '#1d4ed8',
     },
     {
       icon: Users, title: t('service_expert'),
       desc: t('service_expert_desc'),
       bullets: [t('service_expert_b1'), t('service_expert_b2')],
-      link: '/experts', iconBg: '#dbeafe', iconColor: '#2563eb',
+      link: '/experts',
+      iconGradient: 'linear-gradient(135deg, #2dd4bf 0%, #0f766e 100%)',
+      iconColor: '#0d9488',
     },
     {
       icon: BookOpen, title: t('service_learning'),
       desc: t('service_learning_desc'),
       bullets: [t('service_learning_b1'), t('service_learning_b2')],
-      link: '/learn', iconBg: '#fef3c7', iconColor: '#d97706',
+      link: '/learn',
+      iconGradient: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
+      iconColor: '#7c3aed',
     },
     {
       icon: ShoppingBag, title: t('service_suppliers'),
       desc: t('service_suppliers_desc'),
       bullets: [t('service_suppliers_b1'), t('service_suppliers_b2')],
-      link: '/experts?tab=suppliers', iconBg: '#f3e8ff', iconColor: '#9333ea',
+      link: '/experts?tab=suppliers',
+      iconGradient: 'linear-gradient(135deg, #f87171 0%, #b91c1c 100%)',
+      iconColor: '#b91c1c',
     },
   ]
 
@@ -105,20 +115,22 @@ export default function Landing() {
   const ServiceCard = ({ s }) => (
     <Link
       to={s.link}
-      className="group px-6 py-5 no-underline text-left transition-all hover-lift"
+      className="group px-6 py-6 no-underline text-left transition-all hover-lift"
       style={{ ...cardStyle, backgroundColor: '#fff', display: 'block' }}
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8bc34a'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.14)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bdbdbd'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; }}
     >
-      <div className="w-12 h-12 flex items-center justify-center" style={{ backgroundColor: s.iconBg, borderRadius: '12px' }}>
-        <s.icon size={22} style={{ color: s.iconColor }} />
+      <div className="w-14 h-14 flex items-center justify-center" style={{ background: s.iconGradient, borderRadius: '14px' }}>
+        <s.icon size={26} style={{ color: '#fff' }} />
       </div>
       <h3 className="mt-4 font-semibold text-base" style={{ color: '#212121' }}>{s.title}</h3>
       <p className="mt-2 text-sm leading-relaxed" style={{ color: '#757575' }}>{s.desc}</p>
       <ul className="mt-3 space-y-1.5 list-none">
         {s.bullets.map((b) => (
-          <li key={b} className="flex items-center gap-2 text-xs" style={{ color: '#616161' }}>
-            <CheckCircle2 size={14} style={{ color: s.iconColor }} className="shrink-0" />
+          <li key={b} className="flex items-center gap-2 text-sm" style={{ color: '#616161' }}>
+            <span className="shrink-0 flex items-center justify-center rounded-full" style={{ width: 17, height: 17, backgroundColor: s.iconColor }}>
+              <Check size={10} style={{ color: '#fff', strokeWidth: 2.5 }} />
+            </span>
             {b}
           </li>
         ))}
@@ -197,7 +209,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ SERVICES ═══════════════ */}
-      <section className="py-20" style={{ background: 'linear-gradient(180deg, #eef5d3 0%, #ffffff 14%)' }}>
+      <section className="py-20" style={{ background: 'linear-gradient(180deg, #eef5d3 0%, #ffffff 14%, #ffffff 82%, #f0f7e0 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
@@ -212,10 +224,10 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {services.slice(0, 3).map((s) => <ServiceCard key={s.title} s={s} />)}
           </div>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[54rem] mx-auto">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[44rem] mx-auto">
             {services.slice(3).map((s) => <ServiceCard key={s.title} s={s} />)}
           </div>
         </div>
@@ -259,7 +271,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ AI VISUAL ANALYSIS ═══════════════ */}
-      <section className="py-20 bg-white">
+      <section className="py-20" style={{ background: 'linear-gradient(180deg, #eef5d3 0%, #ffffff 12%, #ffffff 88%, #f5f5f5 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -322,7 +334,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ EDUCATIONAL RESOURCES ═══════════════ */}
-      <section className="py-20" style={{ backgroundColor: '#fafafa' }}>
+      <section className="py-20" style={{ background: 'linear-gradient(180deg, #f5f5f5 0%, #fafafa 8%, #fafafa 92%, #f0f0f0 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
@@ -377,7 +389,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ PARTNERS ═══════════════ */}
-      <section className="py-16 bg-white">
+      <section className="py-16" style={{ background: 'linear-gradient(180deg, #f0f0f0 0%, #ffffff 12%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
             {t('section_label_trusted')}
