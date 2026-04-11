@@ -267,10 +267,10 @@ export default function Landing() {
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {steps.map((step, i) => {
               const stepGradients = [
-                'linear-gradient(180deg, #c2dd60 0%, #568b2f 100%)',
-                'linear-gradient(180deg, #ffe34d 0%, #d4a501 100%)',
-                'linear-gradient(180deg, #c2dd60 0%, #568b2f 100%)',
-                'linear-gradient(180deg, #ffe34d 0%, #d4a501 100%)',
+                'linear-gradient(180deg, #558b2f 0%, #33691e 100%)',
+                'linear-gradient(180deg, #d4b438 0%, #b8960c 100%)',
+                'linear-gradient(180deg, #558b2f 0%, #33691e 100%)',
+                'linear-gradient(180deg, #d4b438 0%, #b8960c 100%)',
               ]
               return (
                 <div key={step.label} className="relative overflow-hidden rounded-2xl p-6 text-white flex flex-col transition-transform duration-200 hover:scale-[1.02] cursor-default" style={{
