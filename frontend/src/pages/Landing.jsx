@@ -230,15 +230,13 @@ export default function Landing() {
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #eef5d3 0%, #ffffff 14%, #ffffff 82%, #f0f7e0 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+            <div><span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_features')}
-            </span>
-            <div className="inline-block max-w-full">
-              <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
-                {t('services_title')}
-              </h2>
-              <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
-            </div>
+            </span></div>
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+              {t('services_title')}
+            </h2>
+            <div className="mt-3 mx-auto w-20 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
             <p className="mt-4 text-neutral-500 text-sm leading-relaxed">
               {t('services_subtitle')}
             </p>
@@ -257,15 +255,13 @@ export default function Landing() {
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #f0f7e0 0%, #eef5d3 6%, #d4e6a5 42%, #e8f4cc 54%, #f7fbee 62%, #ffffff 74%, #f5f5f5 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+            <div><span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_process')}
-            </span>
-            <div className="inline-block max-w-full">
-              <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
-                {t('how_title')}
-              </h2>
-              <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
-            </div>
+            </span></div>
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+              {t('how_title')}
+            </h2>
+            <div className="mt-3 mx-auto w-20 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
             <p className="mt-4 text-neutral-600 text-sm">{t('how_subtitle')}</p>
           </div>
 
@@ -283,7 +279,7 @@ export default function Landing() {
                   boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
                   minHeight: '220px',
                 }}>
-                  {/* Watermark step number */}
+                  {/* Watermark background number */}
                   <span className="absolute right-3 bottom-1 font-black leading-none select-none pointer-events-none" style={{ fontSize: '5rem', color: 'rgba(255,255,255,0.13)' }}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
@@ -291,8 +287,8 @@ export default function Landing() {
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
                       <step.icon size={22} />
                     </div>
-                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#7c5a00' }}>
-                      {i + 1}
+                    <span className="text-sm font-black leading-none" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                      {String(i + 1).padStart(2, '0')}
                     </span>
                   </div>
                   <div>
@@ -372,15 +368,13 @@ export default function Landing() {
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #f5f5f5 0%, #fafafa 8%, #fafafa 92%, #f0f0f0 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+            <div><span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_learning')}
-            </span>
-            <div className="inline-block max-w-full">
-              <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
-                {t('edu_title')}
-              </h2>
-              <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
-            </div>
+            </span></div>
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+              {t('edu_title')}
+            </h2>
+            <div className="mt-3 mx-auto w-20 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
             <p className="mt-4 text-neutral-500 text-sm">{t('edu_subtitle')}</p>
           </div>
 
@@ -433,10 +427,8 @@ export default function Landing() {
           <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
             {t('section_label_trusted')}
           </span>
-          <div className="inline-block max-w-full">
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
-            <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
-          </div>
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
+          <div className="mt-3 mx-auto w-20 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
 
           <div className="mt-10 flex flex-wrap justify-center gap-6">
             {[
@@ -456,7 +448,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ CTA ═══════════════ */}
-      <section className="py-16" style={{ backgroundColor: '#1a2e1a', borderTop: '3px solid #4a7c28' }}>
+      <section className="py-16" style={{ background: 'linear-gradient(135deg, #2d5a1b 0%, #1e3d12 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white">
             {t('cta_title')}
