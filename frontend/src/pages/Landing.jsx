@@ -273,7 +273,7 @@ export default function Landing() {
                 'linear-gradient(145deg, #a67c06 0%, #b8900e 100%)',
               ]
               return (
-                <div key={step.label} className="relative overflow-hidden rounded-2xl p-6 text-white flex flex-col justify-between transition-transform duration-200 hover:scale-[1.02] cursor-default" style={{
+                <div key={step.label} className="relative overflow-hidden rounded-2xl p-6 text-white flex flex-col transition-transform duration-200 hover:scale-[1.02] cursor-default" style={{
                   background: stepGradients[i],
                   boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
                   minHeight: '220px',
@@ -287,7 +287,7 @@ export default function Landing() {
                       <step.icon size={22} />
                     </div>
                   </div>
-                  <div>
+                  <div className="mt-4">
                     <h4 className="font-semibold leading-snug" style={{ fontSize: lang === 'km' ? '1.1rem' : '1rem' }}>{step.label}</h4>
                     <p className="mt-2 leading-relaxed" style={{ fontSize: lang === 'km' ? '15px' : '13px', color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
                   </div>
