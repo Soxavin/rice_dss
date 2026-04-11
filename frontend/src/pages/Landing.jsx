@@ -29,6 +29,7 @@ const btnGreenFilled = {
   padding: '12px 24px',
   fontWeight: 600,
   fontSize: '14px',
+  fontFamily: 'Roboto, sans-serif',
   boxShadow: '0 2px 8px rgba(85,139,47,0.35)',
 }
 const btnGreenOutline = {
@@ -38,7 +39,8 @@ const btnGreenOutline = {
   padding: '10px 24px',
   fontWeight: 600,
   fontSize: '14px',
-  backgroundColor: 'transparent',
+  fontFamily: 'Roboto, sans-serif',
+  backgroundColor: '#ffffff',
 }
 const btnWhiteOutline = {
   border: '2px solid rgba(255,255,255,0.65)',
@@ -144,12 +146,12 @@ export default function Landing() {
               >
                 {t('hero_badge')}
               </span>
-              <h1 className="font-heading text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-neutral-900 leading-[1.15] tracking-tight">
+              <h1 className="font-heading text-5xl sm:text-6xl lg:text-[5rem] font-bold text-neutral-900 leading-[1.1] tracking-tight">
                 {t('hero_title_1')}{' '}
                 <br className="hidden sm:block" />
                 <span className="text-primary-700">{t('hero_title_2')}</span>
               </h1>
-              <p className="mt-5 text-neutral-600 text-base leading-relaxed max-w-lg">
+              <p className="mt-5 text-neutral-600 text-lg sm:text-xl leading-relaxed max-w-lg">
                 {t('hero_subtitle')}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">

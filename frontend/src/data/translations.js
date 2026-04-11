@@ -10,8 +10,8 @@ export const translations = {
     nav_language: 'English',
 
     // Hero
-    hero_title_1: 'Rice Disease Detection',
-    hero_title_2: 'in Minutes',
+    hero_title_1: 'Rice Crop Disease',
+    hero_title_2: 'Detection in Minutes',
     hero_subtitle: 'Detect rice diseases instantly using advanced AI technology. Get expert recommendations and protect your agricultural operations.',
     hero_badge: 'Good Production Starts Here!',
     hero_cta: 'Start Analysis Now',

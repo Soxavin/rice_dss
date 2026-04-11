@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ChevronDown, Menu, X, User, LogOut, Tractor } from 'lucide-react'
+import { ChevronDown, Menu, X, User, LogOut, Tractor, Search } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 
@@ -112,8 +112,8 @@ export default function Navbar() {
                 onClick={() => setLangOpen(!langOpen)}
                 aria-expanded={langOpen}
                 aria-label={langLabel}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all hover:opacity-90"
-                style={{ backgroundColor: '#f0f7e6', border: '1.5px solid #7cb342', color: '#33691e', minWidth: '140px', justifyContent: 'space-between' }}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all hover:opacity-90"
+                style={{ backgroundColor: '#f0f7e6', border: '1.5px solid #7cb342', color: '#33691e', minWidth: '140px', justifyContent: 'space-between', fontFamily: 'Roboto, sans-serif' }}
               >
                 <span className="text-base leading-none">{langFlag}</span>
                 <span className="flex-1 text-left px-1.5">{langLabel}</span>
@@ -151,10 +151,17 @@ export default function Navbar() {
                 <Link
                   to="/detect"
                   className="text-sm font-medium no-underline transition-colors hover:opacity-90"
-                  style={{ backgroundColor: '#558b2f', color: '#fff', borderRadius: '8px', padding: '8px 16px', boxShadow: '0 2px 6px rgba(85,139,47,0.3)' }}
+                  style={{ backgroundColor: '#558b2f', color: '#fff', borderRadius: '8px', padding: '8px 16px', boxShadow: '0 2px 6px rgba(85,139,47,0.3)', fontFamily: 'Roboto, sans-serif' }}
                 >
                   {t('nav_start_analysis')}
                 </Link>
+                <button
+                  aria-label="Search"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-primary-50 bg-transparent border-none cursor-pointer"
+                  style={{ color: '#558b2f' }}
+                >
+                  <Search size={18} />
+                </button>
 
                 {/* Account dropdown — replaces bare avatar + logout */}
                 <div className="relative" ref={profileMenuRef}>
@@ -210,17 +217,24 @@ export default function Navbar() {
                 <Link
                   to="/sign-in"
                   className="text-sm font-medium no-underline transition-colors hover:bg-primary-50"
-                  style={{ border: '2px solid #558b2f', color: '#33691e', borderRadius: '8px', padding: '8px 16px' }}
+                  style={{ border: '2px solid #558b2f', color: '#33691e', borderRadius: '8px', padding: '8px 16px', fontFamily: 'Roboto, sans-serif' }}
                 >
                   {t('nav_sign_in')}
                 </Link>
                 <Link
                   to="/detect"
                   className="text-sm font-medium no-underline transition-colors hover:opacity-90"
-                  style={{ backgroundColor: '#558b2f', color: '#fff', borderRadius: '8px', padding: '8px 16px', boxShadow: '0 2px 6px rgba(85,139,47,0.3)' }}
+                  style={{ backgroundColor: '#558b2f', color: '#fff', borderRadius: '8px', padding: '8px 16px', boxShadow: '0 2px 6px rgba(85,139,47,0.3)', fontFamily: 'Roboto, sans-serif' }}
                 >
                   {t('nav_start_analysis')}
                 </Link>
+                <button
+                  aria-label="Search"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-primary-50 bg-transparent border-none cursor-pointer"
+                  style={{ color: '#558b2f' }}
+                >
+                  <Search size={18} />
+                </button>
               </>
             )}
           </div>
