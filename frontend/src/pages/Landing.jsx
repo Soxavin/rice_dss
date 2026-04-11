@@ -49,6 +49,7 @@ const btnWhiteOutline = {
   color: '#ffffff',
   fontWeight: 600,
   fontSize: '14px',
+  fontFamily: 'Roboto, sans-serif',
 }
 
 export default function Landing() {
@@ -169,7 +170,7 @@ export default function Landing() {
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
                   to="/detect"
-                  className="inline-flex items-center gap-2 no-underline transition-all hover:opacity-90"
+                  className="inline-flex items-center gap-2 no-underline transition-all hover:brightness-110 active:brightness-95"
                   style={btnGreenFilled}
                 >
                   {t('hero_cta')} <ArrowRight size={16} />
@@ -252,7 +253,7 @@ export default function Landing() {
               <div key={step.label} className="rounded-2xl p-6 text-white flex flex-col" style={{
                 background: 'linear-gradient(145deg, #b8910c 0%, #c5a028 55%, #d4b438 100%)',
                 boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
-                minHeight: '220px',
+                aspectRatio: '1',
               }}>
                 <div className="flex items-start justify-between mb-5">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
@@ -298,7 +299,7 @@ export default function Landing() {
               <Link
                 to="/detect"
                 className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg no-underline text-sm transition-all"
-                style={{ boxShadow: '0 2px 8px rgba(85,139,47,0.3)' }}
+                style={{ boxShadow: '0 2px 8px rgba(85,139,47,0.3)', fontFamily: 'Roboto, sans-serif' }}
               >
                 {t('visual_cta')} <ArrowRight size={16} />
               </Link>
@@ -425,8 +426,8 @@ export default function Landing() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
               to="/detect"
-              className="inline-flex items-center gap-2 no-underline transition-colors hover:opacity-90"
-              style={{ backgroundColor: '#fff', color: '#212121', borderRadius: '8px', padding: '12px 28px', fontWeight: 600, fontSize: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
+              className="inline-flex items-center gap-2 no-underline transition-colors hover:bg-neutral-100 active:bg-neutral-200"
+              style={{ backgroundColor: '#fff', color: '#212121', borderRadius: '8px', padding: '12px 28px', fontWeight: 600, fontSize: '14px', fontFamily: 'Roboto, sans-serif', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
             >
               {t('cta_button')} <ArrowRight size={16} />
             </Link>
