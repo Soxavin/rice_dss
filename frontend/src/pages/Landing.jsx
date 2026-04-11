@@ -187,9 +187,8 @@ export default function Landing() {
               </div>
               <div className="mt-8 flex items-center gap-6">
                 {[
-                  { value: '91.85%', label: t('hero_stat_accuracy') },
-                  { value: '6',      label: t('hero_stat_conditions') },
-                  { value: '3',      label: t('hero_stat_modes') },
+                  { value: '6', label: t('hero_stat_conditions') },
+                  { value: '3', label: t('hero_stat_modes') },
                 ].map((stat, i) => (
                   <div key={stat.label} className="flex items-center gap-3">
                     {i > 0 && <div className="w-px h-8 bg-neutral-200" />}
