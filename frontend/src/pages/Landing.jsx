@@ -115,9 +115,9 @@ export default function Landing() {
   const ServiceCard = ({ s }) => (
     <Link
       to={s.link}
-      className="group px-6 py-6 no-underline text-left transition-all hover-lift"
-      style={{ ...cardStyle, backgroundColor: '#fff', display: 'block' }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8bc34a'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.14)'; }}
+      className="group px-6 py-6 no-underline text-left transition-all hover-lift flex flex-col"
+      style={{ ...cardStyle, backgroundColor: '#fff', display: 'flex' }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.boxShadow = `0 8px 32px rgba(0,0,0,0.12), inset 0 3px 0 ${s.iconColor}`; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bdbdbd'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; }}
     >
       <div className="w-14 h-14 flex items-center justify-center" style={{ background: s.iconGradient, borderRadius: '14px' }}>
@@ -125,7 +125,7 @@ export default function Landing() {
       </div>
       <h3 className="mt-4 font-semibold text-base" style={{ color: '#212121' }}>{s.title}</h3>
       <p className="mt-2 text-sm leading-relaxed" style={{ color: '#757575' }}>{s.desc}</p>
-      <ul className="mt-3 space-y-1.5 list-none">
+      <ul className="mt-auto pt-3 space-y-1.5 list-none">
         {s.bullets.map((b) => (
           <li key={b} className="flex items-center gap-2 text-sm" style={{ color: '#616161' }}>
             <span className="shrink-0 flex items-center justify-center rounded-full" style={{ width: 17, height: 17, backgroundColor: s.iconColor }}>
