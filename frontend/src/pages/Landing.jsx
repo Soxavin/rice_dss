@@ -267,15 +267,15 @@ export default function Landing() {
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {steps.map((step, i) => {
               const stepGradients = [
-                'linear-gradient(145deg, #cfad32 0%, #dbbe40 100%)',
-                'linear-gradient(145deg, #3a7d1e 0%, #558b2f 100%)',
-                'linear-gradient(145deg, #cfad32 0%, #dbbe40 100%)',
-                'linear-gradient(145deg, #3a7d1e 0%, #558b2f 100%)',
+                'linear-gradient(180deg, #c2dd60 0%, #568b2f 100%)',
+                'linear-gradient(180deg, #ffe34d 0%, #d4a501 100%)',
+                'linear-gradient(180deg, #c2dd60 0%, #568b2f 100%)',
+                'linear-gradient(180deg, #ffe34d 0%, #d4a501 100%)',
               ]
               return (
                 <div key={step.label} className="relative overflow-hidden rounded-2xl p-6 text-white flex flex-col transition-transform duration-200 hover:scale-[1.02] cursor-default" style={{
                   background: stepGradients[i],
-                  boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
+                  boxShadow: '0 6px 24px rgba(0,0,0,0.15)',
                   minHeight: '220px',
                 }}>
                   {/* Watermark number — top-right */}
