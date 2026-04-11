@@ -278,17 +278,14 @@ export default function Landing() {
                   boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
                   minHeight: '220px',
                 }}>
-                  {/* Watermark background number */}
-                  <span className="absolute right-3 bottom-1 font-black leading-none select-none pointer-events-none" style={{ fontSize: '5rem', color: 'rgba(255,255,255,0.13)' }}>
+                  {/* Watermark number — top-right */}
+                  <span className="absolute right-3 top-2 font-black leading-none select-none pointer-events-none" style={{ fontSize: '5rem', color: 'rgba(255,255,255,0.13)' }}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <div className="flex items-start justify-between">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
                       <step.icon size={22} />
                     </div>
-                    <span className="text-sm font-black leading-none" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
                   </div>
                   <div>
                     <h4 className="font-semibold text-base leading-snug">{step.label}</h4>
