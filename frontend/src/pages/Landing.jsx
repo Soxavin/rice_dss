@@ -53,7 +53,7 @@ const btnWhiteOutline = {
 }
 
 export default function Landing() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
 
   const services = [
     {
@@ -288,8 +288,8 @@ export default function Landing() {
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-base leading-snug">{step.label}</h4>
-                    <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
+                    <h4 className="font-semibold leading-snug" style={{ fontSize: lang === 'km' ? '1.1rem' : '1rem' }}>{step.label}</h4>
+                    <p className="mt-2 leading-relaxed" style={{ fontSize: lang === 'km' ? '15px' : '13px', color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
                   </div>
                 </div>
               )
