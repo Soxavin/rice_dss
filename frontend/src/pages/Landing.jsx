@@ -138,7 +138,7 @@ export default function Landing() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-12 items-center">
             <div>
               <span
                 className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-primary-700 mb-6"
@@ -146,7 +146,7 @@ export default function Landing() {
               >
                 {t('hero_badge')}
               </span>
-              <h1 className="font-heading text-4xl sm:text-5xl lg:text-[4rem] font-bold text-neutral-900 leading-[1.15] tracking-tight">
+              <h1 className="font-heading text-4xl sm:text-5xl lg:text-[3.75rem] font-bold text-neutral-900 leading-[1.15] tracking-tight">
                 {t('hero_title_1')}{' '}
                 <br className="hidden sm:block" />
                 <span className="text-primary-700">{t('hero_title_2')}</span>
