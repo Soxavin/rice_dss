@@ -137,7 +137,7 @@ export default function Landing() {
           }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-12 items-center">
             <div>
               <span
@@ -151,7 +151,7 @@ export default function Landing() {
                 <br className="hidden sm:block" />
                 <span className="text-primary-700">{t('hero_title_2')}</span>
               </h1>
-              <p className="mt-5 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-lg">
+              <p className="mt-5 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-md">
                 {t('hero_subtitle')}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -170,16 +170,19 @@ export default function Landing() {
                   {t('hero_learn_more')}
                 </Link>
               </div>
-              {/* Social proof — hidden until real data is available */}
-              <div className="mt-6 flex flex-wrap items-center gap-5 invisible">
+              {/* Social proof */}
+              <div className="mt-6 flex flex-wrap items-center gap-5">
                 {[
-                  { val: '1,200+', label: 'Farmers Helped' },
-                  { val: '4', label: 'Diseases Detected' },
-                  { val: '95%', label: 'AI Accuracy' },
-                ].map((s) => (
-                  <div key={s.label} className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-bold" style={{ color: '#558b2f' }}>{s.val}</span>
-                    <span className="text-xs" style={{ color: '#757575' }}>{s.label}</span>
+                  { val: '9,200', label: 'Images Trained' },
+                  { val: '4',     label: 'Diseases Classified' },
+                  { val: '3',     label: 'Partner Institutions' },
+                ].map((s, i, arr) => (
+                  <div key={s.label} className="flex items-center gap-5">
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold leading-none" style={{ color: '#558b2f' }}>{s.val}</span>
+                      <span className="text-[11px] mt-0.5" style={{ color: '#9e9e9e' }}>{s.label}</span>
+                    </div>
+                    {i < arr.length - 1 && <div className="h-8 w-px" style={{ backgroundColor: '#d4e6a5' }} />}
                   </div>
                 ))}
               </div>

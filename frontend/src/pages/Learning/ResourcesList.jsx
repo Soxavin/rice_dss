@@ -2,14 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { Play, BookOpen, ArrowRight, Search, Users } from 'lucide-react'
-
-const SAMPLE_ARTICLES = [
-  { id: 'combating-blast',   title: { en: 'Combating Bacterial Leaf Blight',  km: 'ការប្រឆាំងជំងឺបាក់តេរីស្លឹក' },        category: 'plant_diseases',      type: 'article', img: '/images/article1.jpg' },
-  { id: 'early-detection',   title: { en: 'Early Detection of Stem Borers',   km: 'ការរកឃើញដំបូងនូវសត្វស្វានដំឡប' },      category: 'plant_diseases',      type: 'article', img: '/images/article2.jpg' },
-  { id: 'fertilizer-timing', title: { en: 'Optimal Fertilizer Timing',         km: 'ពេលវេលាល្អបំផុតសម្រាប់ដាក់ជីបំប៉ន' },  category: 'nutrient_deficiency', type: 'video',   img: '/images/article3.jpg' },
-  { id: 'soil-ph',           title: { en: 'Understanding Soil pH',             km: 'ការយល់ដឹងអំពី pH ដី' },                  category: 'nutrient_deficiency', type: 'article', img: '/images/article4.jpg' },
-  { id: 'irrigation',        title: { en: 'Efficient Irrigation Systems',      km: 'ប្រព័ន្ធស្រោចស្រពប្រកបដោយប្រសិទ្ធភាព' }, category: 'water_management',    type: 'video',   img: '/images/article1.jpg' },
-]
+import { SAMPLE_ARTICLES } from '../../data/searchData'
 
 export default function ResourcesList() {
   const { t, lang } = useLanguage()

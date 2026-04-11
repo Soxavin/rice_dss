@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronDown, Menu, X, User, LogOut, Tractor, Search } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
+import SearchModal from '../search/SearchModal'
 
 export default function Navbar() {
   const { lang, switchLang, t } = useLanguage()
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [langOpen, setLangOpen]           = useState(false)
   const [profileOpen, setProfileOpen]     = useState(false)
   const [scrolled, setScrolled]           = useState(false)
+  const [searchOpen, setSearchOpen]       = useState(false)
   const dropdownRef    = useRef(null)
   const langDropdownRef = useRef(null)
   const profileMenuRef = useRef(null)
@@ -24,6 +26,18 @@ export default function Navbar() {
     const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Cmd+K / Ctrl+K global shortcut to open search
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   // Close all dropdowns on outside click
@@ -157,6 +171,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   aria-label="Search"
+                  onClick={() => setSearchOpen(true)}
                   className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-primary-50 bg-transparent border-none cursor-pointer"
                   style={{ color: '#558b2f' }}
                 >
@@ -230,6 +245,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   aria-label="Search"
+                  onClick={() => setSearchOpen(true)}
                   className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-primary-50 bg-transparent border-none cursor-pointer"
                   style={{ color: '#558b2f' }}
                 >
@@ -334,6 +350,8 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </nav>
   )
 }
