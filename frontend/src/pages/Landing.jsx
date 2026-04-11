@@ -67,7 +67,7 @@ export default function Landing() {
       icon: Leaf, title: t('service_crop'),
       desc: t('service_crop_desc'),
       bullets: [t('service_crop_b1'), t('service_crop_b2')],
-      link: '/detect',
+      link: '/profile',
       iconGradient: 'linear-gradient(135deg, #60a5fa 0%, #1d4ed8 100%)',
       iconColor: '#1d4ed8',
     },
@@ -218,7 +218,7 @@ export default function Landing() {
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('services_title')}
             </h2>
-            <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
             <p className="mt-4 text-neutral-500 text-sm leading-relaxed">
               {t('services_subtitle')}
             </p>
@@ -233,8 +233,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ═══════════════ HOW IT WORKS ═══════════════ */}
-      <section className="py-20 bg-gradient-green">
+      {/* ═══════════════ HOW IT WORKS + AI VISUAL ANALYSIS (unified) ═══════════════ */}
+      <section className="py-20" style={{ background: 'linear-gradient(180deg, #f0f7e0 0%, #eef5d3 6%, #d4e6a5 42%, #e8f4cc 54%, #f7fbee 62%, #ffffff 74%, #f5f5f5 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
@@ -243,7 +243,7 @@ export default function Landing() {
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('how_title')}
             </h2>
-            <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
             <p className="mt-4 text-neutral-600 text-sm">{t('how_subtitle')}</p>
           </div>
 
@@ -268,11 +268,9 @@ export default function Landing() {
             ))}
           </div>
         </div>
-      </section>
 
-      {/* ═══════════════ AI VISUAL ANALYSIS ═══════════════ */}
-      <section className="py-20" style={{ background: 'linear-gradient(180deg, #eef5d3 0%, #ffffff 12%, #ffffff 88%, #f5f5f5 100%)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* AI Visual Analysis — same section, separated by spacing */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
@@ -334,6 +332,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ EDUCATIONAL RESOURCES ═══════════════ */}
+
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #f5f5f5 0%, #fafafa 8%, #fafafa 92%, #f0f0f0 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
@@ -343,14 +342,14 @@ export default function Landing() {
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('edu_title')}
             </h2>
-            <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
             <p className="mt-4 text-neutral-500 text-sm">{t('edu_subtitle')}</p>
           </div>
 
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {articles.map((a) => (
-              <Link key={a.title} to="/learn" className="group overflow-hidden hover-lift no-underline text-left transition-all" style={{ ...cardStyle, backgroundColor: '#fff', display: 'block' }}>
-                <div className="relative h-40 overflow-hidden">
+              <Link key={a.title} to="/learn" className="group overflow-hidden hover-lift no-underline text-left transition-all flex flex-col" style={{ ...cardStyle, backgroundColor: '#fff' }}>
+                <div className="relative h-40 overflow-hidden shrink-0">
                   <img src={a.img} alt={a.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   {a.type === 'video' && (
                     <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
@@ -360,7 +359,7 @@ export default function Landing() {
                     </div>
                   )}
                 </div>
-                <div className="p-5">
+                <div className="p-5 flex flex-col flex-1">
                   <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold mb-3" style={{ backgroundColor: a.catBg, color: a.catColor }}>
                     {a.category}
                   </span>
@@ -368,7 +367,7 @@ export default function Landing() {
                     {a.title}
                   </h4>
                   <p className="mt-2 text-xs text-neutral-500 leading-relaxed">{a.desc}</p>
-                  <span className="mt-3 text-xs text-primary-600 font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
+                  <span className="mt-auto pt-3 text-xs text-primary-600 font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
                     {a.type === 'video' ? t('edu_watch_video') : t('edu_read_article')} <ArrowRight size={12} />
                   </span>
                 </div>
