@@ -170,7 +170,6 @@ export default function Landing() {
                   {t('hero_learn_more')}
                 </Link>
               </div>
-              </div>
             </div>
 
             {/* Farmer card */}
