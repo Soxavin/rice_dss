@@ -268,9 +268,9 @@ export default function Landing() {
             {steps.map((step, i) => {
               const stepGradients = [
                 'linear-gradient(145deg, #cfad32 0%, #dbbe40 100%)',
-                'linear-gradient(145deg, #c5a328 0%, #cfad32 100%)',
-                'linear-gradient(145deg, #b8900e 0%, #c5a328 100%)',
-                'linear-gradient(145deg, #a67c06 0%, #b8900e 100%)',
+                'linear-gradient(145deg, #cfad32 0%, #dbbe40 100%)',
+                'linear-gradient(145deg, #cfad32 0%, #dbbe40 100%)',
+                'linear-gradient(145deg, #cfad32 0%, #dbbe40 100%)',
               ]
               return (
                 <div key={step.label} className="relative overflow-hidden rounded-2xl p-6 text-white flex flex-col transition-transform duration-200 hover:scale-[1.02] cursor-default" style={{
