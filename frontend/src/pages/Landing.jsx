@@ -105,7 +105,7 @@ export default function Landing() {
   const ServiceCard = ({ s }) => (
     <Link
       to={s.link}
-      className="group p-6 no-underline text-left transition-all hover-lift"
+      className="group px-6 py-5 no-underline text-left transition-all hover-lift"
       style={{ ...cardStyle, backgroundColor: '#fff', display: 'block' }}
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8bc34a'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.14)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#bdbdbd'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; }}
@@ -115,10 +115,10 @@ export default function Landing() {
       </div>
       <h3 className="mt-4 font-semibold text-base" style={{ color: '#212121' }}>{s.title}</h3>
       <p className="mt-2 text-sm leading-relaxed" style={{ color: '#757575' }}>{s.desc}</p>
-      <ul className="mt-4 space-y-2 list-none">
+      <ul className="mt-3 space-y-1.5 list-none">
         {s.bullets.map((b) => (
           <li key={b} className="flex items-center gap-2 text-xs" style={{ color: '#616161' }}>
-            <CheckCircle2 size={14} style={{ color: '#6b9f37' }} className="shrink-0" />
+            <CheckCircle2 size={14} style={{ color: s.iconColor }} className="shrink-0" />
             {b}
           </li>
         ))}
@@ -197,9 +197,12 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ SERVICES ═══════════════ */}
-      <section className="py-20 bg-white">
+      <section className="py-20" style={{ background: 'linear-gradient(180deg, #eef5d3 0%, #ffffff 14%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+              {t('section_label_features')}
+            </span>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('services_title')}
             </h2>
@@ -222,6 +225,9 @@ export default function Landing() {
       <section className="py-20 bg-gradient-green">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+              {t('section_label_process')}
+            </span>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('how_title')}
             </h2>
@@ -240,7 +246,7 @@ export default function Landing() {
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
                     <step.icon size={22} />
                   </div>
-                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#7c5a00' }}>
                     {i + 1}
                   </span>
                 </div>
@@ -257,6 +263,9 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+                {t('section_label_ai')}
+              </span>
               <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
                 {t('visual_title')}
               </h2>
@@ -316,6 +325,9 @@ export default function Landing() {
       <section className="py-20" style={{ backgroundColor: '#fafafa' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+              {t('section_label_learning')}
+            </span>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('edu_title')}
             </h2>
@@ -367,6 +379,9 @@ export default function Landing() {
       {/* ═══════════════ PARTNERS ═══════════════ */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+            {t('section_label_trusted')}
+          </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
           <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
 

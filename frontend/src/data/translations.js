@@ -20,6 +20,13 @@ export const translations = {
     hero_card_match: '95% Match',
     hero_card_complete: 'AI analysis complete — no disease detected',
 
+    // Section labels
+    section_label_features: 'Platform Features',
+    section_label_process: 'Our Process',
+    section_label_ai: 'AI Technology',
+    section_label_learning: 'Learning Hub',
+    section_label_trusted: 'Trusted By',
+
     // Services
     services_title: 'Comprehensive Rice Crop Supports',
     services_subtitle: 'Everything you need to protect and grow healthy rice',
@@ -753,6 +760,13 @@ export const translations = {
     hero_card_detected: 'រកឃើញដំណាំស្រូវ',
     hero_card_match: '95% ត្រូវគ្នា',
     hero_card_complete: 'ការវិភាគ AI រួចរាល់ — គ្មានជំងឺត្រូវបានរកឃើញ',
+
+    // Section labels
+    section_label_features: 'មុខងាររបស់វេទិកា',
+    section_label_process: 'ដំណើរការរបស់យើង',
+    section_label_ai: 'បច្ចេកវិទ្យា AI',
+    section_label_learning: 'មជ្ឈមណ្ឌលសិក្សា',
+    section_label_trusted: 'ទុកចិត្តដោយ',
 
     // Services
     services_title: 'ការគាំទ្រដំណាំស្រូវទូលំទូលាយ',
