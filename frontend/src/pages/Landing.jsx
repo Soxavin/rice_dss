@@ -183,6 +183,21 @@ export default function Landing() {
                   {t('hero_learn_more')}
                 </Link>
               </div>
+              <div className="mt-8 flex items-center gap-6">
+                {[
+                  { value: '91.85%', label: t('hero_stat_accuracy') },
+                  { value: '6',      label: t('hero_stat_conditions') },
+                  { value: '3',      label: t('hero_stat_modes') },
+                ].map((stat, i) => (
+                  <div key={stat.label} className="flex items-center gap-3">
+                    {i > 0 && <div className="w-px h-8 bg-neutral-200" />}
+                    <div>
+                      <p className="text-xl font-bold leading-none" style={{ color: '#33691e' }}>{stat.value}</p>
+                      <p className="text-xs text-neutral-500 mt-0.5">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Farmer card */}
@@ -250,12 +265,12 @@ export default function Landing() {
 
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {steps.map((step, i) => (
-              <div key={step.label} className="rounded-2xl p-6 text-white flex flex-col" style={{
+              <div key={step.label} className="rounded-2xl p-6 text-white flex flex-col justify-between" style={{
                 background: 'linear-gradient(145deg, #b8910c 0%, #c5a028 55%, #d4b438 100%)',
                 boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
-                aspectRatio: '1',
+                minHeight: '220px',
               }}>
-                <div className="flex items-start justify-between mb-5">
+                <div className="flex items-start justify-between">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
                     <step.icon size={22} />
                   </div>
@@ -263,8 +278,10 @@ export default function Landing() {
                     {i + 1}
                   </span>
                 </div>
-                <h4 className="font-semibold text-[15px] leading-snug">{step.label}</h4>
-                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
+                <div>
+                  <h4 className="font-semibold text-base leading-snug">{step.label}</h4>
+                  <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -283,16 +300,16 @@ export default function Landing() {
               <p className="mt-4 text-neutral-600 text-sm leading-relaxed">
                 {t('visual_subtitle')}
               </p>
-              <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="mt-6 grid grid-cols-2 gap-3">
                 {[
-                  { label: t('visual_item1'), icon: '🌱' },
-                  { label: t('visual_item2'), icon: '🔬' },
-                  { label: t('visual_item3'), icon: '🧪' },
-                  { label: t('visual_item4'), icon: '🌡️' },
+                  { label: t('visual_item1'), icon: '🌱', bg: '#f0fdf4', border: '#bbf7d0', dot: '#16a34a' },
+                  { label: t('visual_item2'), icon: '🔬', bg: '#fef2f2', border: '#fecaca', dot: '#dc2626' },
+                  { label: t('visual_item3'), icon: '💧', bg: '#eff6ff', border: '#bfdbfe', dot: '#2563eb' },
+                  { label: t('visual_item4'), icon: '🌡️', bg: '#fffbeb', border: '#fde68a', dot: '#d97706' },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: '#f7fbe7', border: '1px solid #d4e6a5' }}>
-                    <span className="text-lg">{item.icon}</span>
-                    <span className="text-sm font-medium text-neutral-800">{item.label}</span>
+                  <div key={item.label} className="flex items-center gap-3 p-3.5 rounded-xl" style={{ backgroundColor: item.bg, border: `1px solid ${item.border}` }}>
+                    <span className="text-base shrink-0 leading-none">{item.icon}</span>
+                    <span className="text-sm font-medium text-neutral-800 leading-snug">{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -395,7 +412,7 @@ export default function Landing() {
             {t('section_label_trusted')}
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
-          <div className="mt-3 mx-auto w-16 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+          <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
 
           <div className="mt-10 flex flex-wrap justify-center gap-6">
             {[

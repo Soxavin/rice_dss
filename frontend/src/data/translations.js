@@ -19,6 +19,9 @@ export const translations = {
     hero_card_detected: 'Rice crop detected',
     hero_card_match: '95% Match',
     hero_card_complete: 'AI analysis complete — no disease detected',
+    hero_stat_accuracy: 'AI Accuracy',
+    hero_stat_conditions: 'Conditions Detected',
+    hero_stat_modes: 'Analysis Modes',
 
     // Section labels
     section_label_features: 'Platform Features',
@@ -760,6 +763,9 @@ export const translations = {
     hero_card_detected: 'រកឃើញដំណាំស្រូវ',
     hero_card_match: '95% ត្រូវគ្នា',
     hero_card_complete: 'ការវិភាគ AI រួចរាល់ — គ្មានជំងឺត្រូវបានរកឃើញ',
+    hero_stat_accuracy: 'ភាពត្រឹមត្រូវ AI',
+    hero_stat_conditions: 'ជំងឺដែលរកឃើញ',
+    hero_stat_modes: 'របៀបវិភាគ',
 
     // Section labels
     section_label_features: 'មុខងាររបស់វេទិកា',
