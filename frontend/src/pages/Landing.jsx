@@ -170,21 +170,6 @@ export default function Landing() {
                   {t('hero_learn_more')}
                 </Link>
               </div>
-              {/* Social proof */}
-              <div className="mt-6 flex flex-wrap items-center gap-5">
-                {[
-                  { val: '9,200', label: 'Images Trained' },
-                  { val: '4',     label: 'Diseases Classified' },
-                  { val: '3',     label: 'Partner Institutions' },
-                ].map((s, i, arr) => (
-                  <div key={s.label} className="flex items-center gap-5">
-                    <div className="flex flex-col">
-                      <span className="text-lg font-bold leading-none" style={{ color: '#558b2f' }}>{s.val}</span>
-                      <span className="text-[11px] mt-0.5" style={{ color: '#9e9e9e' }}>{s.label}</span>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-8 w-px" style={{ backgroundColor: '#d4e6a5' }} />}
-                  </div>
-                ))}
               </div>
             </div>
 

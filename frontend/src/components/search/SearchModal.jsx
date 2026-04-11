@@ -148,7 +148,11 @@ export default function SearchModal({ open, onClose }) {
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-left cursor-pointer border-none transition-colors"
                         style={{ backgroundColor: isHl ? '#f7fbe7' : 'transparent', fontFamily: 'Roboto, sans-serif' }}
                       >
-                        <span className="text-xl w-7 text-center shrink-0">{item.img}</span>
+                        {item.img.startsWith('/') ? (
+                          <img src={item.img} alt="" className="w-7 h-7 rounded object-cover shrink-0" />
+                        ) : (
+                          <span className="text-xl w-7 text-center shrink-0">{item.img}</span>
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-neutral-800 truncate">{item.title}</p>
                           {item.desc && (
