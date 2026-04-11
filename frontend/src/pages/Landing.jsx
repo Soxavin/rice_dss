@@ -177,8 +177,10 @@ export default function Landing() {
                 </Link>
                 <Link
                   to="/learn"
-                  className="inline-flex items-center gap-2 no-underline transition-colors hover:bg-primary-50"
+                  className="inline-flex items-center gap-2 no-underline transition-colors"
                   style={btnGreenOutline}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f7fbe7' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
                 >
                   {t('hero_learn_more')}
                 </Link>
@@ -231,10 +233,12 @@ export default function Landing() {
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_features')}
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
-              {t('services_title')}
-            </h2>
-            <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <div className="inline-block max-w-full">
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+                {t('services_title')}
+              </h2>
+              <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            </div>
             <p className="mt-4 text-neutral-500 text-sm leading-relaxed">
               {t('services_subtitle')}
             </p>
@@ -256,34 +260,48 @@ export default function Landing() {
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_process')}
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
-              {t('how_title')}
-            </h2>
-            <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <div className="inline-block max-w-full">
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+                {t('how_title')}
+              </h2>
+              <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            </div>
             <p className="mt-4 text-neutral-600 text-sm">{t('how_subtitle')}</p>
           </div>
 
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {steps.map((step, i) => (
-              <div key={step.label} className="rounded-2xl p-6 text-white flex flex-col justify-between" style={{
-                background: 'linear-gradient(145deg, #b8910c 0%, #c5a028 55%, #d4b438 100%)',
-                boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
-                minHeight: '220px',
-              }}>
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
-                    <step.icon size={22} />
-                  </div>
-                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#7c5a00' }}>
-                    {i + 1}
+            {steps.map((step, i) => {
+              const stepGradients = [
+                'linear-gradient(145deg, #cfad32 0%, #dbbe40 100%)',
+                'linear-gradient(145deg, #c5a328 0%, #cfad32 100%)',
+                'linear-gradient(145deg, #b8900e 0%, #c5a328 100%)',
+                'linear-gradient(145deg, #a67c06 0%, #b8900e 100%)',
+              ]
+              return (
+                <div key={step.label} className="relative overflow-hidden rounded-2xl p-6 text-white flex flex-col justify-between transition-transform duration-200 hover:scale-[1.02] cursor-default" style={{
+                  background: stepGradients[i],
+                  boxShadow: '0 6px 24px rgba(197,160,40,0.40)',
+                  minHeight: '220px',
+                }}>
+                  {/* Watermark step number */}
+                  <span className="absolute right-3 bottom-1 font-black leading-none select-none pointer-events-none" style={{ fontSize: '5rem', color: 'rgba(255,255,255,0.13)' }}>
+                    {String(i + 1).padStart(2, '0')}
                   </span>
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
+                      <step.icon size={22} />
+                    </div>
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#7c5a00' }}>
+                      {i + 1}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-base leading-snug">{step.label}</h4>
+                    <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-base leading-snug">{step.label}</h4>
-                  <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>{step.desc}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -357,10 +375,12 @@ export default function Landing() {
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_learning')}
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
-              {t('edu_title')}
-            </h2>
-            <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            <div className="inline-block max-w-full">
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
+                {t('edu_title')}
+              </h2>
+              <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+            </div>
             <p className="mt-4 text-neutral-500 text-sm">{t('edu_subtitle')}</p>
           </div>
 
@@ -396,8 +416,10 @@ export default function Landing() {
           <div className="mt-10 text-center">
             <Link
               to="/learn"
-              className="inline-flex items-center gap-2 no-underline transition-colors hover:bg-primary-50"
+              className="inline-flex items-center gap-2 no-underline transition-colors"
               style={btnGreenOutline}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f7fbe7' }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
             >
               {t('edu_view_all')} <ArrowRight size={16} />
             </Link>
@@ -411,8 +433,10 @@ export default function Landing() {
           <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
             {t('section_label_trusted')}
           </span>
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
-          <div className="mt-3 mx-auto w-24 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+          <div className="inline-block max-w-full">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
+            <div className="mt-3 h-1 rounded-full w-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
+          </div>
 
           <div className="mt-10 flex flex-wrap justify-center gap-6">
             {[
@@ -432,7 +456,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ CTA ═══════════════ */}
-      <section className="py-16" style={{ backgroundColor: '#1a2e1a' }}>
+      <section className="py-16" style={{ backgroundColor: '#1a2e1a', borderTop: '3px solid #4a7c28' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white">
             {t('cta_title')}
@@ -443,8 +467,10 @@ export default function Landing() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
               to="/detect"
-              className="inline-flex items-center gap-2 no-underline transition-colors hover:bg-neutral-100 active:bg-neutral-200"
+              className="inline-flex items-center gap-2 no-underline transition-colors"
               style={{ backgroundColor: '#fff', color: '#212121', borderRadius: '8px', padding: '12px 28px', fontWeight: 600, fontSize: '14px', fontFamily: 'Roboto, sans-serif', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f5f5f5' }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
             >
               {t('cta_button')} <ArrowRight size={16} />
             </Link>
