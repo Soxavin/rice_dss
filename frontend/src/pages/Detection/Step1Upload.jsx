@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera, Layers2, Cpu, ClipboardList } from 'lucide-react'
+import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera, Layers2, Cpu, ClipboardList, Zap, ListChecks, Sprout, Eye, Cloud, Droplets, LayoutGrid, Timer, Leaf } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import DetectionProgress from '../../components/detection/DetectionProgress'
 
@@ -184,9 +184,11 @@ export default function Step1Upload() {
       {/* Header */}
       <div>
         <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900 italic">
-          {t('detect_step1_title')}
+          {mode === 'questionnaire' ? t('detect_step1_title_q') : t('detect_step1_title')}
         </h1>
-        <p className="mt-2 text-neutral-600 max-w-xl">{t('detect_step1_subtitle')}</p>
+        <p className="mt-2 text-neutral-600 max-w-xl">
+          {mode === 'questionnaire' ? t('detect_step1_subtitle_q') : t('detect_step1_subtitle')}
+        </p>
       </div>
 
       {/* Mode selector */}
@@ -230,37 +232,6 @@ export default function Step1Upload() {
           })}
         </div>
 
-        {/* Quick / Detailed sub-toggle — shown only for questionnaire mode */}
-        {mode === 'questionnaire' && (
-          <div
-            role="group"
-            aria-label={t('q_depth_toggle_label')}
-            className="mt-3 grid grid-cols-2 gap-2"
-          >
-            {[
-              { id: 'quick',    labelKey: 'q_quick_label',    descKey: 'q_quick_desc' },
-              { id: 'detailed', labelKey: 'q_detailed_label', descKey: 'q_detailed_desc' },
-            ].map(({ id, labelKey, descKey }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setQuestionnaireDepth(id)}
-                aria-pressed={questionnaireDepth === id}
-                className="text-left rounded-xl transition-all cursor-pointer"
-                style={{
-                  padding: '10px 14px',
-                  border: questionnaireDepth === id ? '2px solid #fcd34d' : '2px solid #e0e0e0',
-                  backgroundColor: questionnaireDepth === id ? '#fffbeb' : '#fff',
-                }}
-              >
-                <div className="font-semibold text-sm" style={{ color: questionnaireDepth === id ? '#7b3f00' : '#424242' }}>
-                  {t(labelKey)}
-                </div>
-                <div className="text-xs mt-0.5" style={{ color: '#9e9e9e' }}>{t(descKey)}</div>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className={`mt-6 grid grid-cols-1 ${mode !== 'questionnaire' ? 'lg:grid-cols-3' : ''} gap-8`}>
@@ -269,16 +240,75 @@ export default function Step1Upload() {
         <div className={mode !== 'questionnaire' ? 'lg:col-span-2' : ''}>
 
           {mode === 'questionnaire' ? (
-            /* Questionnaire-only — soft message, no upload required */
-            <div className="border-2 border-dashed rounded-xl p-10 text-center" style={{ borderColor: '#a8d060', backgroundColor: '#f7fbe7' }}>
-              <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: '#d4edaa' }}>
-                <ClipboardList size={28} style={{ color: '#558b2f' }} />
-              </div>
-              <h3 className="mt-4 font-semibold text-neutral-900">{t('detect_mode_questionnaire')}</h3>
-              <p className="mt-1 text-sm" style={{ color: '#33691e' }}>{t('detect_mode_questionnaire_desc')}</p>
-              <p className="mt-3 text-xs" style={{ color: '#9e9e9e' }}>
-                {t('detect_no_images_note')}
+            /* Questionnaire config card */
+            <div className="rounded-2xl p-6 bg-white" style={{ border: '1px solid #e0e0e0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+              {/* Depth selector */}
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#9e9e9e' }}>
+                {t('q_depth_toggle_label')}
               </p>
+              <div role="group" aria-label={t('q_depth_toggle_label')} className="grid grid-cols-2 gap-3">
+                {[
+                  { id: 'quick',    labelKey: 'q_quick_label',    descKey: 'q_quick_desc',    Icon: Zap },
+                  { id: 'detailed', labelKey: 'q_detailed_label', descKey: 'q_detailed_desc', Icon: ListChecks },
+                ].map(({ id, labelKey, descKey, Icon }) => {
+                  const active = questionnaireDepth === id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setQuestionnaireDepth(id)}
+                      aria-pressed={active}
+                      className="text-left cursor-pointer transition-all"
+                      style={{
+                        padding: '16px',
+                        borderRadius: '12px',
+                        border: active ? '2px solid #fcd34d' : '2px solid #e0e0e0',
+                        backgroundColor: active ? '#fffbeb' : '#fafafa',
+                      }}
+                    >
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: active ? '#fef3c7' : '#f0f0f0' }}>
+                        <Icon size={16} style={{ color: active ? '#92400e' : '#9e9e9e' }} />
+                      </div>
+                      <div className="font-bold text-sm mt-2" style={{ color: active ? '#7b3f00' : '#424242' }}>
+                        {t(labelKey)}
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: '#757575' }}>{t(descKey)}</div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Topics preview */}
+              <div className="mt-5">
+                <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#9e9e9e' }}>
+                  {t('detect_q_topics_label')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { Icon: Sprout,     key: 'q_cat_growth' },
+                    { Icon: Eye,        key: 'q_cat_symptoms' },
+                    { Icon: Cloud,      key: 'q_cat_weather' },
+                    { Icon: Droplets,   key: 'q_cat_water' },
+                    { Icon: LayoutGrid, key: 'q_cat_spread' },
+                    { Icon: Timer,      key: 'q_cat_onset' },
+                    { Icon: Leaf,       key: 'q_cat_fertilizer' },
+                  ].map(({ Icon, key }) => (
+                    <span key={key} className="inline-flex items-center gap-1.5 text-xs font-medium"
+                      style={{ backgroundColor: '#f5f5f5', color: '#616161', borderRadius: '999px', padding: '4px 10px' }}>
+                      <Icon size={12} />
+                      {t(key)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Upgrade tip */}
+              <div className="mt-4 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm"
+                style={{ backgroundColor: '#f7fbe7', border: '1px solid #c5dc8a' }}>
+                <Camera size={15} style={{ color: '#558b2f' }} className="shrink-0" />
+                <p style={{ color: '#33691e' }}>{t('detect_q_upgrade_tip')}</p>
+              </div>
             </div>
           ) : (
             /* Upload zone for hybrid / ml modes */
