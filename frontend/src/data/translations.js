@@ -738,6 +738,17 @@ export const translations = {
     result_saved: 'Saved to profile',
     service_crop: 'My Farm Profile',
 
+    // Detection flow stepper + mode tags
+    detect_progress_step1: 'Upload',
+    detect_progress_step2: 'Assess',
+    detect_progress_step3: 'Results',
+    mode_tag_recommended: '★ Recommended',
+    mode_tag_fastest: '⚡ Fastest',
+    mode_tag_no_camera: 'No camera',
+    result_footer_note: 'Analysis complete · saved to your profile',
+    score_label_low: 'Low',
+    score_label_high: 'High',
+
     // Common
     step_of: 'of',
     questionnaire: 'QUESTIONNAIRE',
@@ -1465,6 +1476,17 @@ export const translations = {
     profile_save_error: 'មិនអាចរក្សាទុក។ សូមព្យាយាមម្ដងទៀត។',
     result_saved: 'បានរក្សាទុកទៅក្នុងប្រវត្តិរូប',
     service_crop: 'កសិដ្ឋានរបស់ខ្ញុំ',
+
+    // Detection flow stepper + mode tags
+    detect_progress_step1: 'បញ្ចូល',
+    detect_progress_step2: 'វាយតម្លៃ',
+    detect_progress_step3: 'លទ្ធផល',
+    mode_tag_recommended: '★ ណែនាំ',
+    mode_tag_fastest: '⚡ លឿនបំផុត',
+    mode_tag_no_camera: 'មិនត្រូវការកាមេរ៉ា',
+    result_footer_note: 'ការវិភាគបានបញ្ចប់ · រក្សាទុកក្នុងប្រវត្តិរូប',
+    score_label_low: 'ទាប',
+    score_label_high: 'ខ្ពស់',
 
     // Common
     step_of: 'នៃ',

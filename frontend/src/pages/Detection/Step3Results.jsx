@@ -4,6 +4,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 import { saveAnalysis } from '../../lib/firestore'
 import { AlertCircle, CheckCircle, Leaf, Phone, ArrowRight, Download, TriangleAlert, Info, ChevronLeft } from 'lucide-react'
+import DetectionProgress from '../../components/detection/DetectionProgress'
 
 // ─── Confidence level colours ─────────────────────────────────────────────────
 const CONF_STYLE = {
@@ -187,39 +188,27 @@ export default function Step3Results() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+      {/* Step progress */}
+      <DetectionProgress step={3} />
+
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-6">
         <div>
           <h1 className="font-heading text-3xl font-bold text-neutral-900">{t('detect_step3_title')}</h1>
           <p className="mt-1 text-sm" style={{ color: '#757575' }}>{t('detect_step3_subtitle')}</p>
-          <button
-            onClick={() => navigate('/detect')}
-            className="sm:hidden mt-3 px-4 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: '#558b2f', color: '#fff' }}
-          >
-            + {t('detect_start_new')}
-          </button>
-        </div>
-        <div className="hidden sm:flex flex-col items-end shrink-0 gap-1">
-          <span className="text-sm font-medium" style={{ color: '#558b2f' }}>{t('step_label')} 3 {t('step_of')} 3</span>
-          <div className="flex gap-1">
-            {[0, 1, 2].map(i => (
-              <div key={i} className="w-8 h-1.5 rounded-full" style={{ backgroundColor: '#558b2f' }} />
-            ))}
-          </div>
-          <button
-            onClick={() => navigate('/detect')}
-            className="mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: '#558b2f', color: '#fff' }}
-          >
-            + {t('detect_start_new')}
-          </button>
           {saved && (
-            <span className="mt-1 text-xs font-medium flex items-center gap-1" style={{ color: '#558b2f' }}>
+            <span className="mt-2 inline-flex text-xs font-medium items-center gap-1" style={{ color: '#558b2f' }}>
               <CheckCircle size={12} /> {t('result_saved')}
             </span>
           )}
         </div>
+        <button
+          onClick={() => navigate('/detect')}
+          className="hidden sm:block px-4 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer hover:opacity-90 transition-opacity shrink-0"
+          style={{ backgroundColor: '#558b2f', color: '#fff' }}
+        >
+          + {t('detect_start_new')}
+        </button>
       </div>
 
       {/* ── Demo result banner (C2) ─────────────────────────────────────────── */}
@@ -347,9 +336,18 @@ export default function Step3Results() {
                 </span>
                 <span className="text-sm mb-1" style={{ color: '#9e9e9e' }}>{t('detect_confidence_score')}</span>
               </div>
-              <div className="w-full rounded-full h-2.5" style={{ backgroundColor: '#f0f0f0' }}>
-                <div className="h-2.5 rounded-full transition-all duration-1000"
-                  style={{ width: `${scorePct}%`, backgroundColor: '#558b2f' }} />
+              <div className="w-full rounded-full overflow-hidden" style={{ height: '12px', backgroundColor: '#f0f0f0' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-1000"
+                  style={{
+                    width: `${scorePct}%`,
+                    background: `linear-gradient(90deg, #a8d060 0%, #558b2f 100%)`,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[10px]" style={{ color: '#bdbdbd' }}>{t('score_label_low') || 'Low'}</span>
+                <span className="text-[10px]" style={{ color: '#bdbdbd' }}>{t('score_label_high') || 'High'}</span>
               </div>
               {result.disclaimer && (
                 <p className="mt-3 text-xs leading-relaxed italic" style={{ color: '#bdbdbd' }}>{result.disclaimer}</p>
@@ -366,7 +364,7 @@ export default function Step3Results() {
         <div className="lg:col-span-2 space-y-5">
 
           {/* About condition */}
-          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0' }}>
+          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
             <h3 className="font-semibold text-sm flex items-center gap-2 text-neutral-900">
               <Info size={15} style={{ color: '#558b2f' }} /> {t('detect_about_condition')}
             </h3>
@@ -376,7 +374,7 @@ export default function Step3Results() {
           </div>
 
           {/* Key symptoms */}
-          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0' }}>
+          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
             <h3 className="font-semibold text-sm flex items-center gap-2 text-neutral-900">
               🔍 {t('detect_key_symptoms')}
             </h3>
@@ -395,7 +393,7 @@ export default function Step3Results() {
 
           {/* Immediate actions */}
           {(recs.immediate || []).length > 0 && (
-            <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0' }}>
+            <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
               <h3 className="font-semibold text-sm flex items-center gap-2 text-neutral-900">
                 ✅ {t('detect_recommended_actions')}
               </h3>
@@ -415,7 +413,7 @@ export default function Step3Results() {
 
           {/* Preventive + monitoring */}
           {(recs.preventive || []).length > 0 && (
-            <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0' }}>
+            <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
               <h3 className="font-semibold text-sm flex items-center gap-2 text-neutral-900">
                 🛡️ {t('detect_preventive')}
               </h3>
@@ -465,7 +463,7 @@ export default function Step3Results() {
         <div className="space-y-5">
 
           {/* All condition scores */}
-          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0' }}>
+          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
             <h3 className="font-semibold text-sm text-neutral-900">{t('detect_all_scores')}</h3>
             <div className="mt-3 space-y-3">
               {Object.entries(allScores)
@@ -492,7 +490,7 @@ export default function Step3Results() {
           </div>
 
           {/* Recommended products */}
-          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0' }}>
+          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
             <h3 className="font-semibold text-sm text-neutral-900">{t('detect_recommended_products')}</h3>
             <div className="mt-3 space-y-3">
               {displayProducts.map((p) => (
@@ -571,6 +569,18 @@ export default function Step3Results() {
             <Download size={14} /> {t('detect_save_data')}
           </button>
         </div>
+      </div>
+
+      {/* ── Bottom CTA bar ───────────────────────────────────────────────────── */}
+      <div className="mt-8 flex items-center justify-between py-5" style={{ borderTop: '1px solid #e0e0e0' }}>
+        <p className="text-sm" style={{ color: '#9e9e9e' }}>{t('result_footer_note')}</p>
+        <button
+          onClick={() => navigate('/detect')}
+          className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: '#558b2f' }}
+        >
+          + {t('detect_start_new')}
+        </button>
       </div>
 
     </div>

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera, Layers2, Cpu, ClipboardList } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
+import DetectionProgress from '../../components/detection/DetectionProgress'
 
 // Analysis modes
 const MODES = ['hybrid', 'ml', 'questionnaire']
@@ -169,30 +170,23 @@ export default function Step1Upload() {
   ]
 
   const modeConfig = {
-    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        icon: Layers2,       iconBg: '#d4edaa', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060' },
-    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            icon: Cpu,           iconBg: '#dbeafe', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd' },
-    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), icon: ClipboardList, iconBg: '#fef3c7', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d' },
+    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        tag: t('mode_tag_recommended'), icon: Layers2,       iconBg: '#d4edaa', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060' },
+    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            tag: t('mode_tag_fastest'),      icon: Cpu,           iconBg: '#dbeafe', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd' },
+    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), tag: t('mode_tag_no_camera'),    icon: ClipboardList, iconBg: '#fef3c7', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d' },
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+      {/* Step progress */}
+      <DetectionProgress step={1} />
+
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900 italic">
-            {t('detect_step1_title')}
-          </h1>
-          <p className="mt-2 text-neutral-600 max-w-xl">{t('detect_step1_subtitle')}</p>
-        </div>
-        <div className="hidden sm:block text-right">
-          <span className="text-sm font-medium text-primary-600">{t('step_label')} 1 {t('step_of')} 3</span>
-          <div className="mt-1 flex gap-1">
-            <div className="w-8 h-1.5 rounded-full bg-primary-500" />
-            <div className="w-8 h-1.5 rounded-full bg-neutral-200" />
-            <div className="w-8 h-1.5 rounded-full bg-neutral-200" />
-          </div>
-        </div>
+      <div>
+        <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900 italic">
+          {t('detect_step1_title')}
+        </h1>
+        <p className="mt-2 text-neutral-600 max-w-xl">{t('detect_step1_subtitle')}</p>
       </div>
 
       {/* Mode selector */}
@@ -209,11 +203,11 @@ export default function Step1Upload() {
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className="text-left p-3 rounded-xl transition-all cursor-pointer"
+                className="text-left p-4 rounded-xl transition-all cursor-pointer"
                 style={{
                   backgroundColor: active ? cfg.bg : '#fff',
                   border: `2px solid ${active ? cfg.border : '#e0e0e0'}`,
-                  boxShadow: active ? `0 0 0 1px ${cfg.border}` : 'none',
+                  boxShadow: active ? `0 4px 12px rgba(0,0,0,0.08)` : 'none',
                 }}
               >
                 <div className="flex items-center gap-2">
@@ -224,7 +218,13 @@ export default function Step1Upload() {
                     {cfg.label}
                   </span>
                 </div>
-                <p className="mt-1 text-xs leading-snug" style={{ color: '#757575' }}>{cfg.desc}</p>
+                <p className="mt-1.5 text-xs leading-snug" style={{ color: '#757575' }}>{cfg.desc}</p>
+                <span
+                  className="mt-2 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: active ? cfg.border : '#f0f0f0', color: active ? cfg.color : '#9e9e9e' }}
+                >
+                  {cfg.tag}
+                </span>
               </button>
             )
           })}
@@ -270,12 +270,12 @@ export default function Step1Upload() {
 
           {mode === 'questionnaire' ? (
             /* Questionnaire-only — soft message, no upload required */
-            <div className="border-2 border-dashed rounded-xl p-10 text-center" style={{ borderColor: '#fcd34d', backgroundColor: '#fffbeb' }}>
-              <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl" style={{ backgroundColor: '#fef3c7' }}>
-                📋
+            <div className="border-2 border-dashed rounded-xl p-10 text-center" style={{ borderColor: '#a8d060', backgroundColor: '#f7fbe7' }}>
+              <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: '#d4edaa' }}>
+                <ClipboardList size={28} style={{ color: '#558b2f' }} />
               </div>
               <h3 className="mt-4 font-semibold text-neutral-900">{t('detect_mode_questionnaire')}</h3>
-              <p className="mt-1 text-sm" style={{ color: '#92400e' }}>{t('detect_mode_questionnaire_desc')}</p>
+              <p className="mt-1 text-sm" style={{ color: '#33691e' }}>{t('detect_mode_questionnaire_desc')}</p>
               <p className="mt-3 text-xs" style={{ color: '#9e9e9e' }}>
                 {t('detect_no_images_note')}
               </p>
@@ -286,14 +286,16 @@ export default function Step1Upload() {
               onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
               onDragLeave={() => setDragOver(false)}
               onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFilesWithModeUpgrade(e.dataTransfer.files) }}
-              className={`border-2 border-dashed rounded-xl transition-colors ${
-                dragOver ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-neutral-50'
-              }`}
+              className="border-2 border-dashed rounded-xl transition-colors"
+              style={{
+                borderColor: dragOver ? '#558b2f' : '#a8d060',
+                backgroundColor: dragOver ? '#eef5d3' : '#f7fbe7',
+              }}
             >
               {/* Drop prompt */}
               <div className="p-10 text-center">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary-100 flex items-center justify-center text-primary-500">
-                  <Upload size={28} />
+                <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: '#d4edaa' }}>
+                  <Upload size={32} style={{ color: '#558b2f' }} />
                 </div>
                 <h3 className="mt-4 font-semibold text-neutral-900">{t('detect_upload_tap')}</h3>
                 <p className="mt-1 text-sm text-neutral-500">{t('detect_upload_desc')}</p>
@@ -323,7 +325,7 @@ export default function Step1Upload() {
 
               {/* Uploaded previews — inside the zone */}
               {images.length > 0 && (
-                <div className="px-6 pb-6 border-t border-dashed border-neutral-300 pt-5">
+                <div className="px-6 pb-6 pt-5" style={{ borderTop: '1.5px dashed #a8d060' }}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-sm text-neutral-900">
                       {t('detect_uploaded')} ({images.length}/5)

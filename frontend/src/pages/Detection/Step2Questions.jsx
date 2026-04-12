@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Check } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import { hybridImages, hybridImage, diagnoseQuestionnaire, predictImage, predictImages } from '../../api/client'
+import DetectionProgress from '../../components/detection/DetectionProgress'
 
 // ─── DSS field constants — must match dss/validation.py exactly ───────────────
 const GROWTH_STAGES      = ['seedling', 'tillering', 'elongation', 'flowering', 'grain_filling']
@@ -489,20 +491,13 @@ export default function Step2Questions() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 
+      {/* Step progress */}
+      <DetectionProgress step={2} />
+
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-6 mb-5">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-neutral-900">{t('detect_step2_title')}</h1>
-          <p className="mt-1.5 text-sm max-w-lg" style={{ color: '#757575' }}>{t('detect_step2_subtitle')}</p>
-        </div>
-        <div className="hidden sm:block text-right shrink-0">
-          <span className="text-sm font-medium" style={{ color: '#558b2f' }}>{t('step_label')} 2 {t('step_of')} 3</span>
-          <div className="mt-1 flex gap-1">
-            {[0, 1, 2].map(i => (
-              <div key={i} className="w-8 h-1.5 rounded-full" style={{ backgroundColor: i < 2 ? '#558b2f' : '#e0e0e0' }} />
-            ))}
-          </div>
-        </div>
+      <div className="mb-5">
+        <h1 className="font-heading text-3xl font-bold text-neutral-900">{t('detect_step2_title')}</h1>
+        <p className="mt-1.5 text-sm max-w-lg" style={{ color: '#757575' }}>{t('detect_step2_subtitle')}</p>
       </div>
 
       {/* ── Mode + image strip ───────────────────────────────────────────────── */}
@@ -609,16 +604,22 @@ export default function Step2Questions() {
 
       {/* ── Conversational questionnaire ─────────────────────────────────────── */}
       {mode !== 'ml' && currentQ && (
-        <div className="mt-6">
+        <div className="mt-6 rounded-2xl p-6 bg-white" style={{ border: '1px solid #e0e0e0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
 
-          {/* Progress bar */}
+          {/* Q chip + progress */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#d4edaa', color: '#33691e' }}>
+              Q {step + 1} / {total}
+            </span>
+            <span className="text-xs" style={{ color: '#9e9e9e' }}>{progressLabel}</span>
+          </div>
           <div
             role="progressbar"
             aria-valuenow={step + 1}
             aria-valuemin={1}
             aria-valuemax={total}
             aria-label={progressLabel}
-            className="w-full rounded-full overflow-hidden"
+            className="w-full rounded-full overflow-hidden mb-5"
             style={{ height: '6px', backgroundColor: '#e0e0e0' }}
           >
             <div
@@ -626,10 +627,9 @@ export default function Step2Questions() {
               style={{ width: `${progressPct}%`, backgroundColor: '#558b2f' }}
             />
           </div>
-          <p className="text-xs mt-1.5 text-right" style={{ color: '#9e9e9e' }}>{progressLabel}</p>
 
           {/* Question card */}
-          <fieldset className="mt-5 border-none p-0 m-0">
+          <fieldset className="border-none p-0 m-0">
             <legend
               ref={questionRef}
               tabIndex={-1}
@@ -670,15 +670,23 @@ export default function Step2Questions() {
                     onClick={() => handleSelect(currentQ, opt)}
                     className="w-full text-left rounded-2xl transition-all duration-150 cursor-pointer"
                     style={{
-                      padding: '14px 18px',
+                      padding: '12px 16px',
                       border: isSelected ? '2px solid #558b2f' : '2px solid #e0e0e0',
                       backgroundColor: isSelected ? '#f7fbe7' : '#ffffff',
-                      fontWeight: isSelected ? '600' : '400',
-                      color: isSelected ? '#33691e' : '#424242',
                       boxShadow: isSelected ? '0 2px 8px rgba(85,139,47,0.15)' : 'none',
                     }}
                   >
-                    {label}
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all"
+                        style={{ backgroundColor: isSelected ? '#558b2f' : '#e0e0e0' }}
+                      >
+                        {isSelected && <Check size={11} color="#fff" strokeWidth={3} />}
+                      </div>
+                      <span style={{ fontWeight: isSelected ? '600' : '400', color: isSelected ? '#33691e' : '#424242' }}>
+                        {label}
+                      </span>
+                    </div>
                   </button>
                 )
               })}
