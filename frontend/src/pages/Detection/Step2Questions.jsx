@@ -550,10 +550,10 @@ export default function Step2Questions() {
 
       {/* ── ML-only mode ─────────────────────────────────────────────────────── */}
       {mode === 'ml' && (
-        <div className="mt-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #bfdbfe', backgroundColor: '#eff6ff' }}>
+        <div className="mt-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #a8d060', backgroundColor: '#f7fbe7' }}>
           {/* Icon + heading */}
           <div className="px-6 pt-6 pb-4 text-center">
-            <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: '#dbeafe' }}>
+            <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-3" style={{ backgroundColor: '#d4edaa' }}>
               🤖
             </div>
             <h3 className="font-semibold text-neutral-900 text-lg">{t('detect_ml_mode_notice')}</h3>
@@ -566,17 +566,17 @@ export default function Step2Questions() {
           <div className="px-6 pb-6">
             {loading ? (
               <>
-                <div className="w-full rounded-full overflow-hidden mt-2" style={{ height: '8px', backgroundColor: '#bfdbfe' }}>
+                <div className="w-full rounded-full overflow-hidden mt-2" style={{ height: '8px', backgroundColor: '#c5dc8a' }}>
                   <div
                     className="h-full rounded-full"
                     style={{
                       width: `${progressWidth}%`,
-                      backgroundColor: '#1d4ed8',
+                      backgroundColor: '#558b2f',
                       transition: progressWidth === 0 ? 'none' : 'width 2s ease-out',
                     }}
                   />
                 </div>
-                <p className="mt-3 text-center text-sm font-medium" style={{ color: '#1d4ed8' }}>
+                <p className="mt-3 text-center text-sm font-medium" style={{ color: '#558b2f' }}>
                   <span className="inline-block animate-spin mr-2">⏳</span>
                   {t('detect_analyzing_btn')}
                 </p>
@@ -586,7 +586,7 @@ export default function Step2Questions() {
                 onClick={handleSubmit}
                 disabled={loading}
                 className="w-full mt-2 py-3 rounded-xl font-semibold text-sm text-white border-none cursor-pointer disabled:opacity-60 transition-opacity"
-                style={{ backgroundColor: '#1d4ed8' }}
+                style={{ backgroundColor: '#558b2f' }}
               >
                 {t('detect_ml_run')}
               </button>

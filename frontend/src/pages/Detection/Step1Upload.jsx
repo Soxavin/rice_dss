@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera } from 'lucide-react'
+import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera, Layers2, Cpu, ClipboardList } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 
 // Analysis modes
@@ -169,9 +169,9 @@ export default function Step1Upload() {
   ]
 
   const modeConfig = {
-    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        badge: '⭐', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060' },
-    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            badge: '🤖', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd' },
-    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), badge: '📋', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d' },
+    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        icon: Layers2,       iconBg: '#d4edaa', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060' },
+    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            icon: Cpu,           iconBg: '#dbeafe', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd' },
+    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), icon: ClipboardList, iconBg: '#fef3c7', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d' },
   }
 
   return (
@@ -217,7 +217,9 @@ export default function Step1Upload() {
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{cfg.badge}</span>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: active ? cfg.iconBg : '#f5f5f5' }}>
+                    <cfg.icon size={16} style={{ color: active ? cfg.color : '#9e9e9e' }} />
+                  </div>
                   <span className="font-semibold text-sm" style={{ color: active ? cfg.color : '#424242' }}>
                     {cfg.label}
                   </span>
@@ -277,21 +279,6 @@ export default function Step1Upload() {
               <p className="mt-3 text-xs" style={{ color: '#9e9e9e' }}>
                 {t('detect_no_images_note')}
               </p>
-              <button
-                onClick={handleNext}
-                disabled={isNavigating}
-                className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm border-none cursor-pointer transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#7b3f00', color: '#fff' }}
-              >
-                {isNavigating ? (
-                  <>
-                    <span className="inline-block w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    {t('detect_next')}…
-                  </>
-                ) : (
-                  <>{t('detect_continue_questionnaire')} →</>
-                )}
-              </button>
             </div>
           ) : (
             /* Upload zone for hybrid / ml modes */
@@ -312,7 +299,10 @@ export default function Step1Upload() {
                 <p className="mt-1 text-sm text-neutral-500">{t('detect_upload_desc')}</p>
 
                 <div className="mt-6 flex gap-3 justify-center">
-                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors">
+                  <label
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer text-sm font-medium transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: '#558b2f', color: '#fff' }}
+                  >
                     <ImageIcon size={16} />
                     {t('detect_choose_files')}
                     <input type="file" accept="image/*" multiple onChange={(e) => handleFilesWithModeUpgrade(e.target.files)} className="hidden" />
@@ -320,7 +310,10 @@ export default function Step1Upload() {
                   <button
                     type="button"
                     onClick={openCamera}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg cursor-pointer text-sm font-medium hover:bg-neutral-800 transition-colors border-none"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer text-sm font-medium transition-colors border-none"
+                    style={{ backgroundColor: '#fff', color: '#558b2f', border: '1.5px solid #558b2f' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f7fbe7'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
                   >
                     <Camera size={16} />
                     {t('detect_use_camera')}
@@ -393,11 +386,6 @@ export default function Step1Upload() {
             </div>
           </div>
 
-          <div className="rounded-xl overflow-hidden border border-neutral-200">
-            <div className="bg-neutral-100 h-36 flex items-center justify-center">
-              <span className="text-sm text-neutral-500">📹 {t('detect_watch_demo')}</span>
-            </div>
-          </div>
         </div>}
       </div>
 
