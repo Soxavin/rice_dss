@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera, Layers2, Cpu, ClipboardList, Zap, ListChecks, Sprout, Eye, Cloud, Droplets, LayoutGrid, Timer, Leaf } from 'lucide-react'
+import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera, Layers2, Cpu, ClipboardList, Zap, ListChecks, Sprout, Eye, Cloud, Droplets, LayoutGrid, Timer, Leaf, Clock, History, Layers } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import DetectionProgress from '../../components/detection/DetectionProgress'
 
@@ -286,16 +286,25 @@ export default function Step1Upload() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { Icon: Sprout,     key: 'q_cat_growth' },
-                    { Icon: Eye,        key: 'q_cat_symptoms' },
-                    { Icon: Cloud,      key: 'q_cat_weather' },
-                    { Icon: Droplets,   key: 'q_cat_water' },
-                    { Icon: LayoutGrid, key: 'q_cat_spread' },
-                    { Icon: Timer,      key: 'q_cat_onset' },
-                    { Icon: Leaf,       key: 'q_cat_fertilizer' },
-                  ].map(({ Icon, key }) => (
+                    { Icon: Sprout,     key: 'q_cat_growth',    depth: 'both' },
+                    { Icon: Eye,        key: 'q_cat_symptoms',  depth: 'both' },
+                    { Icon: Cloud,      key: 'q_cat_weather',   depth: 'both' },
+                    { Icon: Droplets,   key: 'q_cat_water',     depth: 'both' },
+                    { Icon: LayoutGrid, key: 'q_cat_spread',    depth: 'both' },
+                    { Icon: Timer,      key: 'q_cat_onset',     depth: 'both' },
+                    { Icon: Leaf,       key: 'q_cat_fertilizer',depth: 'both' },
+                    { Icon: Clock,      key: 'q_cat_timing',    depth: 'detailed' },
+                    { Icon: History,    key: 'q_cat_history',   depth: 'detailed' },
+                    { Icon: Layers,     key: 'q_cat_soil',      depth: 'detailed' },
+                  ].filter(c => c.depth === 'both' || questionnaireDepth === 'detailed')
+                   .map(({ Icon, key, depth }) => (
                     <span key={key} className="inline-flex items-center gap-1.5 text-xs font-medium"
-                      style={{ backgroundColor: '#f5f5f5', color: '#616161', borderRadius: '999px', padding: '4px 10px' }}>
+                      style={{
+                        backgroundColor: depth === 'detailed' ? '#fef3c7' : '#f5f5f5',
+                        color: depth === 'detailed' ? '#92400e' : '#616161',
+                        borderRadius: '999px',
+                        padding: '4px 10px',
+                      }}>
                       <Icon size={12} />
                       {t(key)}
                     </span>
