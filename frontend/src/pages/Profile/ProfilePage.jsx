@@ -59,7 +59,7 @@ function HistoryCard({ item, t, onDelete, conditionCounts }) {
             className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold"
             style={{ backgroundColor: conf.bg, border: `1px solid ${conf.border}`, color: conf.text }}
           >
-            {item.primary_condition || item.condition_key || '—'}
+            {item.condition_key ? (t(`cond_name_${item.condition_key}`) || item.primary_condition) : (item.primary_condition || '—')}
           </div>
 
           {/* Meta */}
@@ -407,36 +407,36 @@ export default function ProfilePage() {
     }
   }
 
-  // Summary stats computed from full history
+  // Summary stats computed from full history — keyed by condition_key for language-invariance
   const stats = useMemo(() => {
     if (!analyses.length) return null
     const counts = {}
     analyses.forEach(a => {
-      const k = a.primary_condition || a.condition_key || 'Unknown'
+      const k = a.condition_key || a.primary_condition || 'unknown'
       counts[k] = (counts[k] || 0) + 1
     })
-    const [mostCommon] = Object.entries(counts).sort((a, b) => b[1] - a[1])
+    const [mostCommonKey, mostCommonCount] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
     return {
       total: analyses.length,
-      mostCommon: mostCommon[0],
-      mostCommonCount: mostCommon[1],
+      mostCommonKey,
+      mostCommonCount,
       lastDate: formatDate(analyses[0].createdAt),
     }
   }, [analyses])
 
-  // Condition counts for trend insight chips
+  // Condition counts for trend insight chips — keyed by condition_key
   const conditionCounts = useMemo(() => {
     const counts = {}
     analyses.forEach(a => {
-      const k = a.primary_condition || a.condition_key
+      const k = a.condition_key
       if (k) counts[k] = (counts[k] || 0) + 1
     })
     return counts
   }, [analyses])
 
-  // Unique conditions for dropdown (only shown when >1 distinct condition)
+  // Unique condition_keys for dropdown (only shown when >1 distinct condition)
   const uniqueConditions = useMemo(() =>
-    [...new Set(analyses.map(a => a.primary_condition || a.condition_key).filter(Boolean))].sort(),
+    [...new Set(analyses.map(a => a.condition_key).filter(Boolean))].sort(),
     [analyses]
   )
 
@@ -450,7 +450,7 @@ export default function ProfilePage() {
   // Filtered list
   const filteredAnalyses = useMemo(() => analyses.filter(a => {
     if (filterMode !== 'all' && a.mode !== filterMode) return false
-    if (filterCondition !== 'all' && (a.primary_condition || a.condition_key) !== filterCondition) return false
+    if (filterCondition !== 'all' && a.condition_key !== filterCondition) return false
     return true
   }), [analyses, filterMode, filterCondition])
 
@@ -623,7 +623,7 @@ export default function ProfilePage() {
           <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 text-xs" style={{ color: '#757575' }}>
             <span><strong className="text-neutral-800">{stats.total}</strong> {stats.total === 1 ? t('profile_stat_analysis') : t('profile_stat_analyses')}</span>
             <span>·</span>
-            <span>{t('profile_stat_most_common')} <strong className="text-neutral-800">{stats.mostCommon}</strong>{stats.mostCommonCount > 1 && <span className="ml-1 text-neutral-400">({stats.mostCommonCount}×)</span>}</span>
+            <span>{t('profile_stat_most_common')} <strong className="text-neutral-800">{t(`cond_name_${stats.mostCommonKey}`) || stats.mostCommonKey}</strong>{stats.mostCommonCount > 1 && <span className="ml-1 text-neutral-400">({stats.mostCommonCount}×)</span>}</span>
             <span>·</span>
             <span>{t('profile_stat_last')} <strong className="text-neutral-800">{stats.lastDate}</strong></span>
           </div>
@@ -673,7 +673,7 @@ export default function ProfilePage() {
               >
                 <option value="all">{t('profile_filter_all_conditions')}</option>
                 {uniqueConditions.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{t(`cond_name_${c}`) || c}</option>
                 ))}
               </select>
             )}
