@@ -259,6 +259,7 @@ export default function Step2Questions() {
   const mountedRef = useRef(true)
   const questionRef = useRef(null)
   const autoSubmittedRef = useRef(false)
+  const enterCtxRef = useRef(null) // stable ref so Enter handler always sees latest state
 
   const [answers, setAnswers] = useState({
     growth_stage:        null,
@@ -342,6 +343,37 @@ export default function Step2Questions() {
       setStep(activeQuestions.length - 1)
     }
   }, [activeQuestions.length, step])
+
+  // Enter key — advance to next question (or submit on last step)
+  // enterCtxRef is updated every render so the handler below always sees fresh state
+  const _activeQsForEnter = activeQuestions
+  const _isLastStepForEnter = step === _activeQsForEnter.length - 1
+  enterCtxRef.current = { currentQ: _activeQsForEnter[step], answers, loading, isLastStep: _isLastStepForEnter, mode }
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== 'Enter') return
+      const { currentQ, answers, loading, isLastStep, mode } = enterCtxRef.current
+      if (loading || mode === 'ml' || !currentQ) return
+      const el = document.activeElement
+      const role = el?.getAttribute('role')
+      if (role === 'radio' || role === 'checkbox') {
+        // Option button focused: if already answered, advance; otherwise let Enter select the option
+        const val = answers[currentQ.id]
+        const hasAnswer = currentQ.type === 'multi'
+          ? Array.isArray(val) && val.length > 0
+          : val !== null
+        if (hasAnswer) {
+          e.preventDefault() // stop the button from being re-clicked (toggling off the selection)
+          isLastStep ? handleSubmit() : handleNext()
+        }
+        return
+      }
+      if (el?.tagName === 'BUTTON') return // let Back / Skip / Next buttons fire naturally
+      isLastStep ? handleSubmit() : handleNext()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Selection handler ────────────────────────────────────────────────────
   const handleSelect = (question, val) => {
