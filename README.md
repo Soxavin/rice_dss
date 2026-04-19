@@ -144,7 +144,7 @@ pip install tensorflow    # Required for ML features
 ### 2. Verify the system
 
 ```bash
-# Run the full test suite (155 tests)
+# Run the full test suite (162 tests)
 pytest tests/ -v --tb=short
 
 # Run the local sanity check
@@ -297,7 +297,7 @@ pytest tests/ -v --tb=short
 
 The system supports **English** (default) and **Khmer (ភាសាខ្មែរ)**.
 
-- **UI**: Language toggle at the top of the Streamlit interface switches all labels, questions, and results
+- **Web UI**: Language toggle in the navbar switches all labels, questions, and results with a 130ms crossfade transition. All ~700+ i18n strings live in `frontend/src/data/translations.js`.
 - **API**: Add `?lang=km` to any DSS endpoint to get Khmer output
 - **Architecture**: Translations are a post-processing layer (`translations/`) that sits between the frozen DSS output and the response — no DSS core files are modified
 - **Recommendations**: Refined for clarity, safety (label-based chemical guidance, banned chemicals removed), and real-world farmer usability. Both languages match in decision intent while using natural phrasing for each language
@@ -341,10 +341,10 @@ The production frontend is a React 18 + Vite + Tailwind v4 single-page applicati
 
 **Stack:**
 - React 18 + React Router v6
-- Vite 8.0.3 + `@tailwindcss/vite`
-- Firebase v11 (Google + Email/Password auth)
+- Vite 8.0.3 + `@tailwindcss/vite` (Tailwind v4)
+- Firebase v11 — Google + Email/Password auth; Firestore for user data persistence
 - Axios (proxied to `/api` locally, or `VITE_API_URL` in production)
-- Lucide React icons, Playfair Display + Inter fonts
+- Lucide React icons; Kantumruy Pro + Playfair Display fonts
 
 **Local development:**
 ```bash
@@ -370,26 +370,48 @@ VITE_API_URL=https://rice-dss-137747818788.asia-southeast1.run.app
 - Set all `VITE_*` env vars in Vercel dashboard → Settings → Environment Variables
 - Add the Vercel domain to Firebase Console → Authentication → Authorized domains (required for Google sign-in)
 
+**Firestore setup (one-time manual step):**
+1. Firebase Console → Firestore Database → Create database → region `asia-southeast1`
+2. Publish these security rules:
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
+
 **Key pages:**
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | Landing | Hero, services, how-it-works, educational resources |
-| `/detect` | Step 1 — Upload | Mode selector (Hybrid / ML-only / Questionnaire) + image upload |
-| `/detect/questions` | Step 2 — Questions | Mode-aware questionnaire + navigation guard |
-| `/detect/results` | Step 3 — Results | Diagnosis card, Grad-CAM viewer, recommendations, products |
-| `/experts` | Experts & Support | Agricultural experts, suppliers, treatments |
-| `/learn` | Learning | Articles and video resources |
-| `/sign-in` / `/sign-up` | Auth | Firebase-backed sign in/up |
+| `/` | Landing | Hero, services, how-it-works, educational resources, partners |
+| `/detect` | Step 1 — Upload | Mode selector with per-mode detection capability grid + image upload |
+| `/detect/questions` | Step 2 — Questions | Conversational one-question-at-a-time questionnaire (19 Qs, smart branching) |
+| `/detect/results` | Step 3 — Results | Diagnosis card, confidence explainer, Grad-CAM viewer, recommendations |
+| `/profile` | User Profile | Farm information form + analysis history (Firestore-backed) |
+| `/experts` | Experts & Support | Agricultural experts, suppliers, contact form |
+| `/learn` | Learning Resources | Articles and video resources |
+| `/search` | Search Results | Full-text search across all content |
+| `/sign-in` / `/sign-up` | Auth | Firebase-backed sign in/up (Google + Email/Password) |
 
 **Detection flow (data passing between steps):**
 - Step 1 → Step 2: `sessionStorage['detect_mode']` + `sessionStorage['detect_images']` + `window.__detectFiles`
-- Step 2 → Backend: mode-aware API call (see `frontend/src/api/client.js`)
+- Step 2 → Backend: mode-aware API call — hybrid/ml use FormData image upload; questionnaire uses JSON body
 - Step 2 → Step 3: `sessionStorage['detect_result']` (full `DSSResponse` JSON)
+- Step 3: auto-saves result to Firestore `users/{uid}/analyses/{auto-id}` for authenticated users
+
+**Firestore data model:**
+- `users/{uid}/analyses/{auto-id}` — per-analysis record: mode, condition_key, confidence, score, recommendations, createdAt
+- `users/{uid}/profile/farm` — farm profile: variety, region, field_size, planting_method, notes
 
 **Language system:**
 - EN/KM toggle with 130ms fade transition via `LanguageContext.jsx`
 - Always use `switchLang(newLang)` from UI — never call `setLang` directly
-- All strings in `frontend/src/data/translations.js` (~500+ keys)
+- All strings in `frontend/src/data/translations.js` (~700+ keys)
+- Condition grouping/filtering in profile page uses `condition_key` (slug) as canonical identifier — display names resolved via `t('cond_name_*')` so they update on language switch regardless of when the analysis was saved
 
 ---
 
@@ -418,7 +440,7 @@ gcloud run deploy rice-dss \
   --region asia-southeast1 \
   --memory 1Gi \
   --allow-unauthenticated \
-  --set-env-vars "CORS_ORIGINS=*"
+  --set-env-vars "CORS_ORIGINS=https://rice-dss.vercel.app"
 ```
 
 After deployment:
