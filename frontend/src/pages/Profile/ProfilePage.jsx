@@ -23,7 +23,7 @@ function formatDate(ts) {
 }
 
 // ── Analysis history card ─────────────────────────────────────────────────────
-function HistoryCard({ item, t, onDelete }) {
+function HistoryCard({ item, t, onDelete, conditionCounts }) {
   const [open, setOpen] = useState(false)
   const [deleteState, setDeleteState] = useState('idle') // 'idle' | 'confirming' | 'deleting'
   const conf = CONF_STYLE[item.confidence_level] || CONF_STYLE.ml_only
@@ -118,7 +118,7 @@ function HistoryCard({ item, t, onDelete }) {
           {/* Immediate actions */}
           {item.recommendations?.immediate?.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: '#558b2f' }}>Immediate Actions</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: '#558b2f' }}>{t('profile_rec_immediate')}</p>
               <ul className="space-y-1">
                 {item.recommendations.immediate.map((r, i) => (
                   <li key={i} className="text-sm text-neutral-700 flex gap-2">
@@ -132,7 +132,7 @@ function HistoryCard({ item, t, onDelete }) {
           {/* Preventive */}
           {item.recommendations?.preventive?.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: '#854d0e' }}>Preventive Measures</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: '#854d0e' }}>{t('profile_rec_preventive')}</p>
               <ul className="space-y-1">
                 {item.recommendations.preventive.map((r, i) => (
                   <li key={i} className="text-sm text-neutral-700 flex gap-2">
@@ -146,7 +146,7 @@ function HistoryCard({ item, t, onDelete }) {
           {/* Secondary conditions */}
           {item.secondary_conditions?.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide mb-2 text-neutral-500">Also Possible</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-2 text-neutral-500">{t('profile_also_possible')}</p>
               <div className="flex flex-wrap gap-2">
                 {item.secondary_conditions.map((sc, i) => (
                   <span key={i} className="text-xs px-2 py-1 rounded-lg bg-white border border-neutral-200 text-neutral-600">
@@ -165,9 +165,21 @@ function HistoryCard({ item, t, onDelete }) {
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:opacity-90 transition-opacity"
               style={{ backgroundColor: '#f0f7e6', color: '#558b2f' }}
             >
-              ↩ Run analysis again
+              {t('profile_run_again')}
             </button>
           </div>
+
+          {/* Trend insight — shown when same condition appears 2+ times */}
+          {conditionCounts && conditionCounts[item.primary_condition || item.condition_key] >= 2 && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-lg text-xs"
+              style={{ backgroundColor: '#fef3c7', border: '1px solid #fde68a', color: '#92400e' }}>
+              <span className="shrink-0">⚠</span>
+              <span>
+                {t('profile_trend_seen')} {conditionCounts[item.primary_condition || item.condition_key]}× {t('profile_trend_times')}{' '}
+                {t(`profile_trend_${item.condition_key}`) || t('profile_trend_generic')}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -185,7 +197,7 @@ function ClearAllModal({ count, t, onConfirm, onCancel, loading }) {
         <h3 className="font-bold text-neutral-900 text-lg">{t('profile_clear_confirm_title')}</h3>
         <p className="text-sm text-neutral-500 mt-2 leading-relaxed">{t('profile_clear_confirm_body')}</p>
         <p className="text-sm font-semibold mt-1" style={{ color: '#dc2626' }}>
-          {count} {count === 1 ? 'entry' : 'entries'} will be deleted.
+          {count} {count === 1 ? t('profile_clear_entry') : t('profile_clear_entries')} will be deleted.
         </p>
         <div className="flex gap-3 mt-6">
           <button
@@ -412,6 +424,16 @@ export default function ProfilePage() {
     }
   }, [analyses])
 
+  // Condition counts for trend insight chips
+  const conditionCounts = useMemo(() => {
+    const counts = {}
+    analyses.forEach(a => {
+      const k = a.primary_condition || a.condition_key
+      if (k) counts[k] = (counts[k] || 0) + 1
+    })
+    return counts
+  }, [analyses])
+
   // Unique conditions for dropdown (only shown when >1 distinct condition)
   const uniqueConditions = useMemo(() =>
     [...new Set(analyses.map(a => a.primary_condition || a.condition_key).filter(Boolean))].sort(),
@@ -539,7 +561,7 @@ export default function ProfilePage() {
                   className="px-4 py-2.5 rounded-xl text-sm font-semibold border cursor-pointer hover:bg-neutral-50 transition-colors"
                   style={{ borderColor: '#e0e0e0', color: '#757575', backgroundColor: '#fff' }}
                 >
-                  Reset
+                  {t('profile_reset')}
                 </button>
               )}
               {formSaved && (
@@ -575,7 +597,7 @@ export default function ProfilePage() {
                   className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:bg-neutral-100 transition-colors"
                   style={{ color: '#558b2f', backgroundColor: '#f0f7e6' }}
                 >
-                  <Download size={13} /> Export CSV
+                  <Download size={13} /> {t('profile_export_csv')}
                 </button>
                 <button
                   onClick={() => setClearModal(true)}
@@ -591,7 +613,7 @@ export default function ProfilePage() {
               className="text-sm font-semibold no-underline px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
               style={{ backgroundColor: '#558b2f', color: '#fff', boxShadow: '0 2px 6px rgba(85,139,47,0.3)' }}
             >
-              + New Analysis
+              {t('profile_new_analysis')}
             </Link>
           </div>
         </div>
@@ -599,11 +621,11 @@ export default function ProfilePage() {
         {/* Summary stats bar */}
         {stats && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 text-xs" style={{ color: '#757575' }}>
-            <span><strong className="text-neutral-800">{stats.total}</strong> {stats.total === 1 ? 'analysis' : 'analyses'}</span>
+            <span><strong className="text-neutral-800">{stats.total}</strong> {stats.total === 1 ? t('profile_stat_analysis') : t('profile_stat_analyses')}</span>
             <span>·</span>
-            <span>Most common: <strong className="text-neutral-800">{stats.mostCommon}</strong>{stats.mostCommonCount > 1 && <span className="ml-1 text-neutral-400">({stats.mostCommonCount}×)</span>}</span>
+            <span>{t('profile_stat_most_common')} <strong className="text-neutral-800">{stats.mostCommon}</strong>{stats.mostCommonCount > 1 && <span className="ml-1 text-neutral-400">({stats.mostCommonCount}×)</span>}</span>
             <span>·</span>
-            <span>Last: <strong className="text-neutral-800">{stats.lastDate}</strong></span>
+            <span>{t('profile_stat_last')} <strong className="text-neutral-800">{stats.lastDate}</strong></span>
           </div>
         )}
 
@@ -613,10 +635,10 @@ export default function ProfilePage() {
             {/* Mode tabs */}
             <div className="flex rounded-lg overflow-hidden shrink-0" style={{ border: '1px solid #e0e0e0' }}>
               {[
-                { key: 'all',           label: 'All' },
-                { key: 'ml',            label: 'Image-Only' },
-                { key: 'hybrid',        label: 'Hybrid' },
-                { key: 'questionnaire', label: 'Questionnaire' },
+                { key: 'all',           labelKey: 'profile_tab_all' },
+                { key: 'ml',            labelKey: 'profile_tab_ml' },
+                { key: 'hybrid',        labelKey: 'profile_tab_hybrid' },
+                { key: 'questionnaire', labelKey: 'profile_tab_questionnaire' },
               ].filter(tab => tab.key === 'all' || modeCounts[tab.key] > 0).map(tab => (
                 <button
                   key={tab.key}
@@ -627,7 +649,7 @@ export default function ProfilePage() {
                     color: filterMode === tab.key ? '#fff' : '#616161',
                   }}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                   <span
                     className="text-xs rounded-full px-1.5 py-0.5 font-semibold"
                     style={{
@@ -649,7 +671,7 @@ export default function ProfilePage() {
                 className="text-xs px-3 py-1.5 rounded-lg border cursor-pointer outline-none transition-colors"
                 style={{ borderColor: '#e0e0e0', color: '#616161', backgroundColor: '#fff' }}
               >
-                <option value="all">All conditions</option>
+                <option value="all">{t('profile_filter_all_conditions')}</option>
                 {uniqueConditions.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -684,20 +706,20 @@ export default function ProfilePage() {
           </div>
         ) : filteredAnalyses.length === 0 ? (
           <div className="rounded-2xl p-6 text-center bg-white" style={{ border: '1px solid #e0e0e0' }}>
-            <p className="text-sm text-neutral-500">No analyses match this filter.</p>
+            <p className="text-sm text-neutral-500">{t('profile_no_filter_match')}</p>
             <button
               onClick={() => { setFilterMode('all'); setFilterCondition('all') }}
               className="mt-3 text-xs font-semibold border-none bg-transparent cursor-pointer hover:underline"
               style={{ color: '#558b2f' }}
             >
-              Clear filters
+              {t('profile_clear_filters')}
             </button>
           </div>
         ) : (
           <>
             <div className="space-y-3">
               {filteredAnalyses.map(item => (
-                <HistoryCard key={item.id} item={item} t={t} onDelete={handleDeleteAnalysis} />
+                <HistoryCard key={item.id} item={item} t={t} onDelete={handleDeleteAnalysis} conditionCounts={conditionCounts} />
               ))}
             </div>
 
@@ -710,7 +732,7 @@ export default function ProfilePage() {
                   className="px-5 py-2 rounded-xl text-sm font-semibold border cursor-pointer hover:bg-neutral-50 transition-colors disabled:opacity-60"
                   style={{ borderColor: '#e0e0e0', color: '#558b2f', backgroundColor: '#fff' }}
                 >
-                  {loadingMore ? '…' : 'Load more'}
+                  {loadingMore ? '…' : t('profile_load_more')}
                 </button>
               </div>
             )}
@@ -721,7 +743,7 @@ export default function ProfilePage() {
       {/* ── Undo delete toast ─────────────────────────────────────────────────── */}
       {undoPending && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-medium shadow-2xl" style={{ backgroundColor: '#1c1c1e', color: '#fff', whiteSpace: 'nowrap' }}>
-          <span>Entry deleted</span>
+          <span>{t('profile_entry_deleted')}</span>
           <button
             onClick={handleUndoDelete}
             className="font-bold border-none bg-transparent cursor-pointer hover:underline"
