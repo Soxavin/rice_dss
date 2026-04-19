@@ -327,6 +327,11 @@ export default function Step3Results() {
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: confStyle.dot }} />
                 {result.confidence_label || 'Unknown confidence'}
               </div>
+              {t(`conf_explain_${confLevel}`) && (
+                <p className="mt-2 text-xs italic leading-relaxed" style={{ color: '#9e9e9e' }}>
+                  {t(`conf_explain_${confLevel}`)}
+                </p>
+              )}
             </div>
 
             <div className="mt-6">

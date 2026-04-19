@@ -234,6 +234,19 @@ export default function Step1Upload() {
 
       </div>
 
+      {/* ── What we detect ───────────────────────────────────────────────────── */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold shrink-0" style={{ color: '#9e9e9e' }}>
+          {t('detect_coverage_label')}
+        </span>
+        {['blast', 'brown_spot', 'bacterial_blight', 'iron_toxicity', 'n_deficiency', 'salt_toxicity'].map(key => (
+          <span key={key} className="inline-flex items-center text-xs font-medium"
+            style={{ backgroundColor: '#f0f7e6', color: '#33691e', borderRadius: '999px', padding: '3px 10px', border: '1px solid #c5dc8a' }}>
+            {t(`cond_name_${key}`)}
+          </span>
+        ))}
+      </div>
+
       <div className={`mt-6 grid grid-cols-1 ${mode !== 'questionnaire' ? 'lg:grid-cols-3' : ''} gap-8`}>
 
         {/* Upload area — 2 columns (full-width for questionnaire) */}
