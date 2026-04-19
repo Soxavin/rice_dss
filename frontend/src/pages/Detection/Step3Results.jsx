@@ -256,8 +256,11 @@ export default function Step3Results() {
         </div>
       )}
 
+      {/* ── Capture region (result card + detail grid) ───────────────────────── */}
+      <div ref={resultRef}>
+
       {/* ── Main result card ─────────────────────────────────────────────────── */}
-      <div ref={resultRef} className="mt-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #e0e0e0', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+      <div className="mt-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #e0e0e0', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
         <div className="grid grid-cols-1 md:grid-cols-2">
 
           {/* ── Image panel ── */}
@@ -577,6 +580,8 @@ export default function Step3Results() {
         </div>
       </div>
 
+      </div>{/* end capture region */}
+
       {/* ── Bottom actions ───────────────────────────────────────────────────── */}
       <div className="mt-8 flex items-center justify-end gap-3 border-t pt-6 no-print" style={{ borderColor: '#eeeeee' }}>
         <div className="flex items-center gap-3">
@@ -720,18 +725,18 @@ export default function Step3Results() {
       {/* ── Sticky consult CTA (only when recs.consult is true) ──────────────── */}
       {recs.consult && (
         <div className="fixed bottom-0 left-0 right-0 z-50 no-print"
-          style={{ backgroundColor: '#fff', borderTop: '2px solid #f59e0b', boxShadow: '0 -4px 20px rgba(0,0,0,0.12)' }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 min-w-0">
-              <TriangleAlert size={18} color="#d97706" className="shrink-0" />
-              <span className="text-sm font-semibold truncate" style={{ color: '#92400e' }}>
+          style={{ backgroundColor: '#fef3c7', borderTop: '3px solid #f59e0b', boxShadow: '0 -6px 24px rgba(0,0,0,0.18)' }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <TriangleAlert size={20} color="#d97706" className="shrink-0" />
+              <span className="text-sm font-semibold" style={{ color: '#92400e' }}>
                 {t('detect_consult_sticky_msg')}
               </span>
             </div>
             <Link
               to="/experts"
-              className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: '#d97706' }}
+              className="shrink-0 px-5 py-2.5 rounded-lg text-sm font-bold text-white no-underline hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: '#d97706', boxShadow: '0 2px 8px rgba(217,119,6,0.4)' }}
             >
               {t('detect_consult_sticky_btn')}
             </Link>
