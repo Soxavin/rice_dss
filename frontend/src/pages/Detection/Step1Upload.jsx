@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Upload, Camera, X, Image as ImageIcon, Sun, Focus, EyeOff, Maximize, SwitchCamera, Layers2, Cpu, ClipboardList, Zap, ListChecks, Sprout, Eye, Cloud, Droplets, LayoutGrid, Timer, Leaf, Clock, History, Layers } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import DetectionProgress from '../../components/detection/DetectionProgress'
@@ -10,9 +10,13 @@ const MODES = ['hybrid', 'ml', 'questionnaire']
 export default function Step1Upload() {
   const { t } = useLanguage()
   const navigate = useNavigate()
+  const location = useLocation()
   const [images, setImages] = useState([])
   const [dragOver, setDragOver] = useState(false)
-  const [mode, setMode] = useState('hybrid')
+  const [mode, setMode] = useState(() => {
+    const stateMode = location.state?.mode
+    return stateMode && MODES.includes(stateMode) ? stateMode : 'hybrid'
+  })
   const [isNavigating, setIsNavigating] = useState(false)
   const [questionnaireDepth, setQuestionnaireDepth] = useState('quick')
 
@@ -198,7 +202,8 @@ export default function Step1Upload() {
         <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#9e9e9e' }}>
           {t('detect_mode_label')}
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="sm:grid sm:grid-cols-3 sm:gap-3 flex overflow-x-auto gap-3 pb-2 snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
           {MODES.map((m) => {
             const cfg = modeConfig[m]
             const active = mode === m
@@ -207,7 +212,7 @@ export default function Step1Upload() {
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className="text-left p-4 rounded-xl transition-all cursor-pointer flex flex-col"
+                className="text-left p-4 rounded-xl transition-all cursor-pointer flex flex-col shrink-0 snap-start w-[85vw] sm:w-auto sm:shrink"
                 style={{
                   backgroundColor: active ? cfg.bg : '#fff',
                   border: `2px solid ${active ? cfg.border : '#e0e0e0'}`,

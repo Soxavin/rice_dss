@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 import { saveAnalysis } from '../../lib/firestore'
-import { AlertCircle, CheckCircle, Leaf, Phone, ArrowRight, Download, TriangleAlert, Info, ChevronLeft } from 'lucide-react'
+import { AlertCircle, CheckCircle, Leaf, Phone, ArrowRight, Download, TriangleAlert, Info, ChevronLeft, ImageDown, ChevronDown, ChevronUp, Lock } from 'lucide-react'
 import DetectionProgress from '../../components/detection/DetectionProgress'
+import html2canvas from 'html2canvas'
+import { explainScores } from '../../api/client'
 
 // ─── Confidence level colours ─────────────────────────────────────────────────
 const CONF_STYLE = {
@@ -36,6 +38,9 @@ export default function Step3Results() {
   const [activeTab, setActiveTab] = useState('photo') // 'photo' | 'gradcam'
   const [saved, setSaved] = useState(false)
   const savedRef = useRef(false) // guard against StrictMode double-fire
+  const resultRef = useRef(null)
+  const [explainer, setExplainer] = useState(null)
+  const [explainOpen, setExplainOpen] = useState(false)
 
   useEffect(() => {
     // C4: wrap in try-catch so malformed JSON doesn't crash the page
@@ -67,6 +72,18 @@ export default function Step3Results() {
       }).then(() => setSaved(true)).catch(() => { /* fire-and-forget — never block the UI */ })
     }
   }, [isAuthenticated, user]) // W3: only run once on mount (isAuthenticated/user stable refs)
+
+  // Fetch explainer breakdown for questionnaire/hybrid modes (silent fail — bonus panel)
+  useEffect(() => {
+    if (!result || result.is_demo) return
+    const saved = sessionStorage.getItem('detect_answers')
+    if (!saved) return // ML-only mode — no questionnaire answers
+    try {
+      explainScores(JSON.parse(saved), 'en') // always EN for signal labels
+        .then(r => setExplainer(r.data.explanations))
+        .catch(() => {}) // silent fail
+    } catch { /* malformed detect_answers — ignore */ }
+  }, [result])
 
   if (!result) {
     // Check if we're still loading from sessionStorage (brief flash) or genuinely no result
@@ -130,6 +147,16 @@ export default function Step3Results() {
   const hasWarnings   = (result.warnings || []).length > 0
   const secondaryConds = result.secondary_conditions || []
 
+  // Pathognomonic lock: bacterial_blight diagnosed + morning_ooze in answers
+  const pathognomicLock = condKey === 'bacterial_blight' && (() => {
+    try {
+      const saved = sessionStorage.getItem('detect_answers')
+      if (!saved) return false
+      const ans = JSON.parse(saved)
+      return Array.isArray(ans.additional_symptoms) && ans.additional_symptoms.includes('morning_ooze')
+    } catch { return false }
+  })()
+
   const gradcamSrc    = result.gradcam_base64 ? `data:image/png;base64,${result.gradcam_base64}` : null
   const hasUploads    = uploadedImages.length > 0
   const hasTabs       = gradcamSrc && hasUploads
@@ -186,7 +213,7 @@ export default function Step3Results() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8${recs.consult ? ' pb-24' : ''}`}>
 
       {/* Step progress */}
       <DetectionProgress step={3} />
@@ -230,7 +257,7 @@ export default function Step3Results() {
       )}
 
       {/* ── Main result card ─────────────────────────────────────────────────── */}
-      <div className="mt-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #e0e0e0', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+      <div ref={resultRef} className="mt-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #e0e0e0', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
         <div className="grid grid-cols-1 md:grid-cols-2">
 
           {/* ── Image panel ── */}
@@ -315,6 +342,13 @@ export default function Step3Results() {
               <h2 className="mt-2 font-heading text-2xl font-bold text-neutral-900 leading-snug">
                 {result.primary_condition || 'Uncertain'}
               </h2>
+              {pathognomicLock && (
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold"
+                  style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}
+                  title={t('explain_pathognomonic_note')}>
+                  <Lock size={10} /> {t('explain_pathognomonic')}
+                </div>
+              )}
 
               {isAmbiguous && result.ambiguous_between && (
                 <p className="mt-1 text-xs" style={{ color: '#757575' }}>
@@ -396,6 +430,34 @@ export default function Step3Results() {
             </div>
           </div>
 
+          {/* Secondary conditions — shown BEFORE actions so co-morbids are visible */}
+          {secondaryConds.length > 0 && (
+            <div className="rounded-2xl p-5 bg-white" style={{ border: '2px solid #fde047', boxShadow: '0 2px 12px rgba(202,138,4,0.10)' }}>
+              <h3 className="font-semibold text-base flex items-center gap-2 text-neutral-900">
+                <AlertCircle size={16} style={{ color: '#ca8a04' }} /> {t('detect_secondary_conditions')}
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: '#9e9e9e' }}>{t('detect_secondary_hint')}</p>
+              <div className="mt-3 space-y-2">
+                {secondaryConds.map((sc, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#fefce8', border: '1px solid #fef08a' }}>
+                    <div>
+                      <span className="text-sm font-semibold text-neutral-800">
+                        {sc.condition_key ? condLabel(sc.condition_key) : (sc.condition || sc.condition_key)}
+                      </span>
+                      {sc.note && <span className="ml-2 text-xs" style={{ color: '#9e9e9e' }}>{sc.note}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-24 rounded-full h-2" style={{ backgroundColor: '#e0e0e0' }}>
+                        <div className="h-2 rounded-full" style={{ width: `${Math.round((sc.score || 0) * 100)}%`, backgroundColor: '#eab308' }} />
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: '#92400e' }}>{Math.round((sc.score || 0) * 100)}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Immediate actions */}
           {(recs.immediate || []).length > 0 && (
             <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
@@ -434,32 +496,6 @@ export default function Step3Results() {
                   <span className="font-semibold text-neutral-700">📅 {t('detect_monitoring_label')} </span>{recs.monitoring}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Secondary conditions */}
-          {secondaryConds.length > 0 && (
-            <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #fde047' }}>
-              <h3 className="font-semibold text-sm flex items-center gap-2 text-neutral-900">
-                <AlertCircle size={15} style={{ color: '#ca8a04' }} /> {t('detect_secondary_conditions')}
-              </h3>
-              <p className="mt-1 text-xs" style={{ color: '#9e9e9e' }}>{t('detect_secondary_hint')}</p>
-              <div className="mt-3 space-y-2">
-                {secondaryConds.map((sc, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#fefce8' }}>
-                    <div>
-                      <span className="text-sm font-medium text-neutral-800">{sc.condition || sc.condition_key}</span>
-                      {sc.note && <span className="ml-2 text-xs" style={{ color: '#9e9e9e' }}>{sc.note}</span>}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="w-20 rounded-full h-1.5" style={{ backgroundColor: '#e0e0e0' }}>
-                        <div className="h-1.5 rounded-full" style={{ width: `${Math.round((sc.score || 0) * 100)}%`, backgroundColor: '#eab308' }} />
-                      </div>
-                      <span className="text-xs font-semibold" style={{ color: '#616161' }}>{Math.round((sc.score || 0) * 100)}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -560,6 +596,21 @@ export default function Step3Results() {
           </button>
           <button
             onClick={() => {
+              if (!resultRef.current) return
+              html2canvas(resultRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+                const link = document.createElement('a')
+                link.download = `srovmeas-result-${Date.now()}.png`
+                link.href = canvas.toDataURL('image/png')
+                link.click()
+              })
+            }}
+            className="px-4 py-2.5 rounded-xl font-semibold text-sm border cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity no-print"
+            style={{ backgroundColor: '#fff', color: '#616161', border: '1.5px solid #bdbdbd' }}
+          >
+            <ImageDown size={14} /> {t('detect_save_image')}
+          </button>
+          <button
+            onClick={() => {
               const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })
               const url = URL.createObjectURL(blob)
               const a = document.createElement('a')
@@ -576,17 +627,117 @@ export default function Step3Results() {
         </div>
       </div>
 
-      {/* ── Bottom CTA bar ───────────────────────────────────────────────────── */}
-      <div className="mt-8 flex items-center justify-between py-5" style={{ borderTop: '1px solid #e0e0e0' }}>
-        <p className="text-sm" style={{ color: '#9e9e9e' }}>{t('result_footer_note')}</p>
-        <button
-          onClick={() => navigate('/detect')}
-          className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: '#558b2f' }}
-        >
-          + {t('detect_start_new')}
-        </button>
-      </div>
+      {/* ── Explainer panel ("How the system decided") ───────────────────────── */}
+      {explainer && (() => {
+        const condData = explainer[condKey]
+        if (!condData || !condData.signals || condData.signals.length === 0) return null
+        const confMod = explainer.confidence_modifier || 1
+        const confSrc = explainer.confidence_source || 'somewhat_sure'
+        return (
+          <div className="mt-8 rounded-2xl bg-white no-print" style={{ border: '1px solid #e0e0e0' }}>
+            {/* Toggle header */}
+            <button
+              type="button"
+              onClick={() => setExplainOpen(o => !o)}
+              className="w-full flex items-center justify-between px-5 py-4 cursor-pointer bg-transparent border-none text-left"
+              style={{ borderBottom: explainOpen ? '1px solid #f0f0f0' : 'none', borderRadius: explainOpen ? '16px 16px 0 0' : '16px' }}
+            >
+              <div>
+                <p className="font-semibold text-sm text-neutral-900">{t('explain_section_title')}</p>
+                <p className="text-xs mt-0.5" style={{ color: '#9e9e9e' }}>{t('explain_section_subtitle')}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-medium" style={{ color: '#558b2f' }}>
+                  {explainOpen ? t('explain_hide') : t('explain_show')}
+                </span>
+                {explainOpen ? <ChevronUp size={16} color="#558b2f" /> : <ChevronDown size={16} color="#558b2f" />}
+              </div>
+            </button>
+
+            {explainOpen && (
+              <div className="px-5 pb-5">
+                {/* Signal table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <th className="text-left py-2 pr-3 font-semibold text-neutral-700">{t('explain_signal_field')}</th>
+                        <th className="text-center py-2 px-2 font-semibold text-neutral-700">{t('explain_signal_effect')}</th>
+                        <th className="text-right py-2 px-2 font-semibold text-neutral-700">{t('explain_signal_weight')}</th>
+                        <th className="text-left py-2 pl-3 font-semibold text-neutral-700">{t('explain_signal_reason')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {condData.signals.map((sig, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #fafafa' }}>
+                          <td className="py-2 pr-3" style={{ color: '#424242' }}>
+                            <span className="font-medium">{sig.field.replace(/_/g, ' ')}</span>
+                            <span className="ml-1" style={{ color: '#9e9e9e' }}>= {sig.value}</span>
+                          </td>
+                          <td className="py-2 px-2 text-center">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                              style={sig.effect === '+' ? { backgroundColor: '#f0f7e6', color: '#33691e' } : { backgroundColor: '#fef2f2', color: '#c62828' }}>
+                              {sig.effect}
+                            </span>
+                          </td>
+                          <td className="py-2 px-2 text-right font-semibold" style={{ color: sig.effect === '+' ? '#33691e' : '#c62828' }}>
+                            {sig.weight > 0 ? '+' : ''}{sig.weight}
+                          </td>
+                          <td className="py-2 pl-3 leading-snug" style={{ color: '#757575' }}>{sig.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Confidence modifier row */}
+                <div className="mt-3 flex items-center gap-2 p-3 rounded-lg text-xs" style={{ backgroundColor: '#fafafa', border: '1px solid #f0f0f0' }}>
+                  <Info size={13} color="#9e9e9e" className="shrink-0" />
+                  <span style={{ color: '#757575' }}>
+                    {t('explain_confidence_row')
+                      .replace('{level}', confSrc.replace(/_/g, ' '))
+                      .replace('{pct}', Math.round(confMod * 100))}
+                  </span>
+                </div>
+
+                {/* Pathognomonic lock note */}
+                {pathognomicLock && (
+                  <div className="mt-2 flex items-start gap-2 p-3 rounded-lg text-xs"
+                    style={{ backgroundColor: '#fef3c7', border: '1px solid #fde68a' }}>
+                    <Lock size={13} color="#d97706" className="shrink-0 mt-0.5" />
+                    <span style={{ color: '#92400e' }}>{t('explain_pathognomonic_note')}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* ── Footer note ──────────────────────────────────────────────────────── */}
+      <p className="mt-6 text-sm text-center" style={{ color: '#9e9e9e' }}>{t('result_footer_note')}</p>
+
+      {/* ── Sticky consult CTA (only when recs.consult is true) ──────────────── */}
+      {recs.consult && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 no-print"
+          style={{ backgroundColor: '#fff', borderTop: '2px solid #f59e0b', boxShadow: '0 -4px 20px rgba(0,0,0,0.12)' }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <TriangleAlert size={18} color="#d97706" className="shrink-0" />
+              <span className="text-sm font-semibold truncate" style={{ color: '#92400e' }}>
+                {t('detect_consult_sticky_msg')}
+              </span>
+            </div>
+            <Link
+              to="/experts"
+              className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: '#d97706' }}
+            >
+              {t('detect_consult_sticky_btn')}
+            </Link>
+          </div>
+        </div>
+      )}
 
     </div>
   )

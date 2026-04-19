@@ -396,6 +396,7 @@ export default function Step2Questions() {
       let result
 
       if (mode === 'ml') {
+        sessionStorage.removeItem('detect_answers') // no questionnaire data for ML-only
         const fd = new FormData()
         if (files.length > 1) {
           files.forEach(f => fd.append('images', f))
@@ -410,12 +411,14 @@ export default function Step2Questions() {
         const clean = Object.fromEntries(
           Object.entries(answers).filter(([, v]) => v !== null && !(Array.isArray(v) && v.length === 0))
         )
+        sessionStorage.setItem('detect_answers', JSON.stringify(clean))
         const res = await diagnoseQuestionnaire(clean, lang)
         result = res.data
       } else {
         const clean = Object.fromEntries(
           Object.entries(answers).filter(([, v]) => v !== null && !(Array.isArray(v) && v.length === 0))
         )
+        sessionStorage.setItem('detect_answers', JSON.stringify(clean))
         const fd = new FormData()
         if (files.length > 1) {
           files.forEach(f => fd.append('images', f))
