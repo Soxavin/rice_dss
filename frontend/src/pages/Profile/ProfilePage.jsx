@@ -14,7 +14,7 @@ const CONF_STYLE = {
   ml_only:  { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af' },
 }
 
-const MODE_LABEL = { ml: 'Image Only (AI)', questionnaire: 'Questionnaire', hybrid: 'Hybrid' }
+const MODE_KEY = { ml: 'profile_mode_ml', questionnaire: 'profile_mode_questionnaire', hybrid: 'profile_mode_hybrid' }
 
 function formatDate(ts) {
   if (!ts) return '—'
@@ -65,10 +65,10 @@ function HistoryCard({ item, t, onDelete, conditionCounts }) {
           {/* Meta */}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-neutral-800 truncate">
-              {item.confidence_label || item.confidence_level}
+              {item.confidence_level ? (t(`profile_conf_${item.confidence_level}`) || item.confidence_label) : item.confidence_label}
             </p>
             <p className="text-xs text-neutral-500 mt-0.5">
-              {formatDate(item.createdAt)} · {MODE_LABEL[item.mode] || item.mode}
+              {formatDate(item.createdAt)} · {MODE_KEY[item.mode] ? t(MODE_KEY[item.mode]) : item.mode}
             </p>
           </div>
 
@@ -332,7 +332,7 @@ export default function ProfilePage() {
         a.confidence_level || '',
         a.confidence_label || '',
         a.score != null ? Math.round(a.score * 100) : '',
-        MODE_LABEL[a.mode] || a.mode || '',
+        { ml: 'Image Only (AI)', questionnaire: 'Questionnaire', hybrid: 'Hybrid' }[a.mode] || a.mode || '',
         (a.recommendations?.immediate || []).join(' | '),
         (a.recommendations?.preventive || []).join(' | '),
       ]),
