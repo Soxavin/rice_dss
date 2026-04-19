@@ -170,9 +170,9 @@ export default function Step1Upload() {
   ]
 
   const modeConfig = {
-    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        tag: t('mode_tag_recommended'), icon: Layers2,       iconBg: '#d4edaa', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060' },
-    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            tag: t('mode_tag_fastest'),      icon: Cpu,           iconBg: '#dbeafe', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd' },
-    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), tag: t('mode_tag_no_camera'),    icon: ClipboardList, iconBg: '#fef3c7', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d' },
+    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        tag: t('mode_tag_recommended'), icon: Layers2,       iconBg: '#d4edaa', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060', full: ['blast','brown_spot','bacterial_blight','iron_toxicity','n_deficiency','salt_toxicity'], limited: [] },
+    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            tag: t('mode_tag_fastest'),      icon: Cpu,           iconBg: '#dbeafe', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd', full: ['blast','brown_spot','bacterial_blight','iron_toxicity'], limited: ['n_deficiency','salt_toxicity'] },
+    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), tag: t('mode_tag_no_camera'),    icon: ClipboardList, iconBg: '#fef3c7', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d', full: ['blast','brown_spot','bacterial_blight','iron_toxicity','n_deficiency','salt_toxicity'], limited: [] },
   }
 
   return (
@@ -227,24 +227,33 @@ export default function Step1Upload() {
                 >
                   {cfg.tag}
                 </span>
+                {/* Per-mode detection coverage */}
+                <div className="mt-3 pt-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div className="flex flex-wrap gap-1">
+                    {cfg.full.map(key => (
+                      <span key={key} className="inline-flex items-center gap-0.5 text-[10px] font-medium"
+                        style={{ backgroundColor: '#f0f7e6', color: '#33691e', borderRadius: '999px', padding: '2px 7px', border: '1px solid #c5dc8a' }}>
+                        ✓ {t(`cond_name_${key}`)}
+                      </span>
+                    ))}
+                    {cfg.limited.map(key => (
+                      <span key={key} className="inline-flex items-center gap-0.5 text-[10px] font-medium"
+                        style={{ backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '999px', padding: '2px 7px', border: '1px solid #fde68a' }}>
+                        ⚠ {t(`cond_name_${key}`)}
+                      </span>
+                    ))}
+                  </div>
+                  {cfg.limited.length > 0 && (
+                    <p className="mt-1.5 text-[10px] italic leading-snug" style={{ color: '#9e9e9e' }}>
+                      {t('detect_mode_limited_note')}
+                    </p>
+                  )}
+                </div>
               </button>
             )
           })}
         </div>
 
-      </div>
-
-      {/* ── What we detect ───────────────────────────────────────────────────── */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold shrink-0" style={{ color: '#9e9e9e' }}>
-          {t('detect_coverage_label')}
-        </span>
-        {['blast', 'brown_spot', 'bacterial_blight', 'iron_toxicity', 'n_deficiency', 'salt_toxicity'].map(key => (
-          <span key={key} className="inline-flex items-center text-xs font-medium"
-            style={{ backgroundColor: '#f0f7e6', color: '#33691e', borderRadius: '999px', padding: '3px 10px', border: '1px solid #c5dc8a' }}>
-            {t(`cond_name_${key}`)}
-          </span>
-        ))}
       </div>
 
       <div className={`mt-6 grid grid-cols-1 ${mode !== 'questionnaire' ? 'lg:grid-cols-3' : ''} gap-8`}>
