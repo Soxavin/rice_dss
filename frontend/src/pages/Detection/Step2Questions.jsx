@@ -348,11 +348,11 @@ export default function Step2Questions() {
   // enterCtxRef is updated every render so the handler below always sees fresh state
   const _activeQsForEnter = activeQuestions
   const _isLastStepForEnter = step === _activeQsForEnter.length - 1
-  enterCtxRef.current = { currentQ: _activeQsForEnter[step], answers, loading, isLastStep: _isLastStepForEnter, mode }
+  enterCtxRef.current = { currentQ: _activeQsForEnter[step], answers, loading, isLastStep: _isLastStepForEnter, mode, handleNext, handleSubmit }
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== 'Enter') return
-      const { currentQ, answers, loading, isLastStep, mode } = enterCtxRef.current
+      const { currentQ, answers, loading, isLastStep, mode, handleNext, handleSubmit } = enterCtxRef.current
       if (loading || mode === 'ml' || !currentQ) return
       const el = document.activeElement
       const role = el?.getAttribute('role')
