@@ -169,10 +169,12 @@ export default function Step1Upload() {
     { icon: Maximize, text: t('detect_guidance_4') },
   ]
 
+  const ALL_CONDITIONS = ['blast', 'brown_spot', 'bacterial_blight', 'iron_toxicity', 'n_deficiency', 'salt_toxicity']
+
   const modeConfig = {
-    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        tag: t('mode_tag_recommended'), icon: Layers2,       iconBg: '#d4edaa', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060', full: ['blast','brown_spot','bacterial_blight','iron_toxicity','n_deficiency','salt_toxicity'], limited: [] },
-    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            tag: t('mode_tag_fastest'),      icon: Cpu,           iconBg: '#dbeafe', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd', full: ['blast','brown_spot','bacterial_blight'], limited: ['iron_toxicity','n_deficiency','salt_toxicity'] },
-    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), tag: t('mode_tag_no_camera'),    icon: ClipboardList, iconBg: '#fef3c7', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d', full: ['blast','brown_spot','bacterial_blight','iron_toxicity','n_deficiency','salt_toxicity'], limited: [] },
+    hybrid:        { label: t('detect_mode_hybrid'),        desc: t('detect_mode_hybrid_desc'),        tag: t('mode_tag_recommended'), icon: Layers2,       iconBg: '#d4edaa', color: '#558b2f', bg: '#f7fbe7', border: '#a8d060', full: ALL_CONDITIONS,                                          note: { key: 'detect_mode_note_hybrid',        bg: '#f0f7e6', color: '#33691e', border: '#c5dc8a', icon: '✓' } },
+    ml:            { label: t('detect_mode_ml'),            desc: t('detect_mode_ml_desc'),            tag: t('mode_tag_fastest'),      icon: Cpu,           iconBg: '#dbeafe', color: '#1565c0', bg: '#eff6ff', border: '#93c5fd', full: ['blast','brown_spot','bacterial_blight'],                note: { key: 'detect_mode_note_ml',            bg: '#fef3c7', color: '#92400e', border: '#fde68a', icon: '⚠' } },
+    questionnaire: { label: t('detect_mode_questionnaire'), desc: t('detect_mode_questionnaire_desc'), tag: t('mode_tag_no_camera'),    icon: ClipboardList, iconBg: '#fef3c7', color: '#7b3f00', bg: '#fffbeb', border: '#fcd34d', full: ALL_CONDITIONS,                                          note: { key: 'detect_mode_note_questionnaire', bg: '#eff6ff', color: '#1565c0', border: '#bfdbfe', icon: 'ℹ' } },
   }
 
   return (
@@ -205,13 +207,14 @@ export default function Step1Upload() {
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className="text-left p-4 rounded-xl transition-all cursor-pointer"
+                className="text-left p-4 rounded-xl transition-all cursor-pointer flex flex-col"
                 style={{
                   backgroundColor: active ? cfg.bg : '#fff',
                   border: `2px solid ${active ? cfg.border : '#e0e0e0'}`,
                   boxShadow: active ? `0 4px 12px rgba(0,0,0,0.08)` : 'none',
                 }}
               >
+                {/* Header */}
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: active ? cfg.iconBg : '#f5f5f5' }}>
                     <cfg.icon size={16} style={{ color: active ? cfg.color : '#9e9e9e' }} />
@@ -220,48 +223,45 @@ export default function Step1Upload() {
                     {cfg.label}
                   </span>
                 </div>
+
+                {/* Description */}
                 <p className="mt-1.5 text-xs leading-snug" style={{ color: '#757575' }}>{cfg.desc}</p>
+
+                {/* Tag pill */}
                 <span
                   className="mt-2 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
                   style={{ backgroundColor: active ? cfg.border : '#f0f0f0', color: active ? cfg.color : '#9e9e9e' }}
                 >
                   {cfg.tag}
                 </span>
-                {/* Per-mode detection coverage */}
+
+                {/* Coverage grid */}
                 <div className="mt-3 pt-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: '#9e9e9e' }}>
-                    {t('detect_mode_detects_label')}
+                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#9e9e9e' }}>
+                    {t('detect_mode_coverage_label')}
                   </p>
-                  <div className="flex flex-wrap gap-1">
-                    {cfg.full.map(key => (
-                      <span key={key} className="inline-flex items-center gap-0.5 text-[10px] font-medium"
-                        style={{ backgroundColor: '#f0f7e6', color: '#33691e', borderRadius: '999px', padding: '2px 7px', border: '1px solid #c5dc8a' }}>
-                        ✓ {t(`cond_name_${key}`)}
-                      </span>
-                    ))}
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                    {ALL_CONDITIONS.map(key => {
+                      const detected = cfg.full.includes(key)
+                      return (
+                        <div key={key} className="flex items-center gap-1" style={{ color: detected ? '#33691e' : '#bdbdbd' }}>
+                          <span className="shrink-0 text-[11px] font-bold">{detected ? '✓' : '✕'}</span>
+                          <span className="text-[10px] leading-tight">{t(`cond_name_${key}`)}</span>
+                        </div>
+                      )
+                    })}
                   </div>
-                  {cfg.limited.length > 0 && (
-                    <>
-                      <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: '#9e9e9e' }}>
-                        {t('detect_mode_cannot_label')}
-                      </p>
-                      <div className="flex flex-wrap gap-1 mb-2.5">
-                        {cfg.limited.map(key => (
-                          <span key={key} className="inline-flex items-center gap-0.5 text-[10px] font-medium"
-                            style={{ backgroundColor: '#f5f5f5', color: '#757575', borderRadius: '999px', padding: '2px 7px', border: '1px solid #e0e0e0' }}>
-                            ✕ {t(`cond_name_${key}`)}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-start gap-1.5 rounded-lg px-2.5 py-2"
-                        style={{ backgroundColor: '#fef3c7', border: '1px solid #fde68a' }}>
-                        <span className="shrink-0 text-[11px]">⚠</span>
-                        <p className="text-[10px] leading-snug" style={{ color: '#92400e' }}>
-                          {t('detect_ml_limitation_warning')}
-                        </p>
-                      </div>
-                    </>
-                  )}
+                </div>
+
+                {/* Footer note — mt-auto anchors to card bottom for equal height */}
+                <div className="mt-auto pt-3">
+                  <div className="flex items-start gap-1.5 rounded-lg px-2.5 py-2"
+                    style={{ backgroundColor: cfg.note.bg, border: `1px solid ${cfg.note.border}` }}>
+                    <span className="shrink-0 text-[11px]">{cfg.note.icon}</span>
+                    <p className="text-[10px] leading-snug" style={{ color: cfg.note.color }}>
+                      {t(cfg.note.key)}
+                    </p>
+                  </div>
                 </div>
               </button>
             )
