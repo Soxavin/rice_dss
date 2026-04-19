@@ -677,6 +677,10 @@ export const translations = {
     cond_name_iron_toxicity: 'Iron Toxicity',
     cond_name_n_deficiency: 'N Deficiency',
     cond_name_salt_toxicity: 'Salt Toxicity',
+    cond_name_uncertain:      'Uncertain',
+    cond_name_ambiguous_fungal: 'Ambiguous Fungal',
+    cond_name_out_of_scope:   'Out of Scope',
+    detect_ml_nonbiotic_warning: 'Non-biotic nutrient stresses cannot be detected in ML-only mode.',
 
     // Demo fallback strings (shown when backend offline)
     demo_confidence_label: 'Probable — High Confidence',
@@ -1492,6 +1496,10 @@ export const translations = {
     cond_name_iron_toxicity: 'ជាតិដែករំលាយ',
     cond_name_n_deficiency: 'ខ្វះជីអាសូត',
     cond_name_salt_toxicity: 'ជាតិអំបិលក្នុងដី',
+    cond_name_uncertain:      'មិនច្បាស់',
+    cond_name_ambiguous_fungal: 'ផ្សិតមិនច្បាស់',
+    cond_name_out_of_scope:   'ក្រៅវិសាលភាព',
+    detect_ml_nonbiotic_warning: 'ភាពស្ត្រេសសារធាតុចិញ្ចឹមមិនអាចរកឃើញក្នុងរបៀប AI-រូបភាពតែប៉ុណ្ណោះ។',
 
     // Demo fallback strings (shown when backend offline)
     demo_confidence_label: 'ទំនងជា — ទំនុកចិត្តខ្ពស់',

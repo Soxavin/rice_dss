@@ -185,6 +185,9 @@ export default function Step3Results() {
     iron_toxicity:    t('cond_name_iron_toxicity'),
     n_deficiency:     t('cond_name_n_deficiency'),
     salt_toxicity:    t('cond_name_salt_toxicity'),
+    uncertain:        t('cond_name_uncertain'),
+    ambiguous_fungal: t('cond_name_ambiguous_fungal'),
+    out_of_scope:     t('cond_name_out_of_scope'),
   })[key] || key.replace(/_/g, ' ')
 
   // Translatable condition data (built inside component so t() is in scope)
@@ -248,10 +251,14 @@ export default function Step3Results() {
 
       {/* ── Warnings banner ──────────────────────────────────────────────────── */}
       {hasWarnings && (
-        <div className="mt-5 rounded-xl p-4 flex gap-3" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde047' }}>
-          <TriangleAlert size={18} className="shrink-0 mt-0.5" style={{ color: '#ca8a04' }} />
+        <div className="mt-5 rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde047' }}>
+          <TriangleAlert size={18} className="shrink-0" style={{ color: '#ca8a04' }} />
           <div className="space-y-1">
-            {result.warnings.map((w, i) => <p key={i} className="text-sm" style={{ color: '#854d0e' }}>{w}</p>)}
+            {result.warnings.map((w, i) => {
+              const clean = w.replace(/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\u{1F300}-\u{1F9FF}]/gu, '').trim()
+              const text = /non.biotic/i.test(clean) ? t('detect_ml_nonbiotic_warning') : clean
+              return <p key={i} className="text-sm" style={{ color: '#854d0e' }}>{text}</p>
+            })}
           </div>
         </div>
       )}
@@ -343,7 +350,7 @@ export default function Step3Results() {
               </div>
 
               <h2 className="mt-2 font-heading text-2xl font-bold text-neutral-900 leading-snug">
-                {result.primary_condition || 'Uncertain'}
+                {condLabel(condKey)}
               </h2>
               {pathognomicLock && (
                 <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold"
@@ -362,7 +369,7 @@ export default function Step3Results() {
               <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium"
                 style={{ backgroundColor: confStyle.bg, border: `1px solid ${confStyle.border}`, color: confStyle.text }}>
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: confStyle.dot }} />
-                {result.confidence_label || 'Unknown confidence'}
+                {t('profile_conf_' + confLevel) || result.confidence_label}
               </div>
               {t(`conf_explain_${confLevel}`) && (
                 <p className="mt-2 text-xs italic leading-relaxed" style={{ color: '#9e9e9e' }}>
@@ -602,7 +609,7 @@ export default function Step3Results() {
           <button
             onClick={() => {
               if (!resultRef.current) return
-              html2canvas(resultRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+              html2canvas(resultRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1400, windowHeight: 900 }).then(canvas => {
                 const link = document.createElement('a')
                 link.download = `srovmeas-result-${Date.now()}.png`
                 link.href = canvas.toDataURL('image/png')
