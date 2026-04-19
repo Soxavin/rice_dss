@@ -150,7 +150,7 @@ function HistoryCard({ item, t, onDelete, conditionCounts }) {
               <div className="flex flex-wrap gap-2">
                 {item.secondary_conditions.map((sc, i) => (
                   <span key={i} className="text-xs px-2 py-1 rounded-lg bg-white border border-neutral-200 text-neutral-600">
-                    {sc.condition || sc.condition_key}
+                    {sc.condition_key ? (t(`cond_name_${sc.condition_key}`) || sc.condition) : sc.condition}
                     {sc.score != null && <span className="ml-1 text-neutral-400">({Math.round(sc.score * 100)}%)</span>}
                   </span>
                 ))}
