@@ -344,11 +344,7 @@ export default function Step2Questions() {
     }
   }, [activeQuestions.length, step])
 
-  // Enter key — advance to next question (or submit on last step)
-  // enterCtxRef is updated every render so the handler below always sees fresh state
-  const _activeQsForEnter = activeQuestions
-  const _isLastStepForEnter = step === _activeQsForEnter.length - 1
-  enterCtxRef.current = { currentQ: _activeQsForEnter[step], answers, loading, isLastStep: _isLastStepForEnter, mode, handleNext, handleSubmit }
+  // Enter key effect defined below, after handleNext/handleSubmit declarations
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== 'Enter') return
@@ -507,6 +503,10 @@ export default function Step2Questions() {
   }
 
   const hasImages = uploadedImages.length > 0
+
+  // Update ref after all handlers are declared so Enter handler always calls latest versions
+  const _isLastStepForEnter = step === activeQuestions.length - 1
+  enterCtxRef.current = { currentQ: activeQuestions[step], answers, loading, isLastStep: _isLastStepForEnter, mode, handleNext, handleSubmit }
 
   const modeBadge = {
     hybrid:        { label: t('detect_mode_badge_hybrid'),        color: '#33691e', bg: '#d4e6a5' },
