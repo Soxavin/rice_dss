@@ -3,7 +3,8 @@ import { useLanguage } from '../context/LanguageContext'
 import {
   Search, Leaf, Users, BookOpen, ShoppingBag,
   ArrowRight, Camera, FileText, Cpu, Lightbulb,
-  Play, CheckCircle2, Check
+  Play, CheckCircle2, Check, Microscope, 
+  Droplets, Thermometer
 } from 'lucide-react'
 
 const HERO_BG = '/images/hero-bg.jpg'
@@ -106,7 +107,7 @@ export default function Landing() {
   ]
 
   const articles = [
-    { title: t('edu_art1_title'), desc: t('edu_art1_desc'), category: t('edu_art1_cat'), catBg: '#fef2f2', catColor: '#dc2626', type: 'article', img: '/images/article1.jpg' },
+    { title: t('edu_art1_title'), desc: t('edu_art1_desc'), category: t('edu_art1_cat'), catBg: '#fef2f2', catColor: '#dc2626', type: 'article', img: '/images/article1.png' },
     { title: t('edu_art2_title'), desc: t('edu_art2_desc'), category: t('edu_art2_cat'), catBg: '#fffbeb', catColor: '#d97706', type: 'video', img: '/images/article2.jpg' },
     { title: t('edu_art3_title'), desc: t('edu_art3_desc'), category: t('edu_art3_cat'), catBg: '#eff6ff', catColor: '#2563eb', type: 'article', img: '/images/article3.jpg' },
     { title: t('edu_art4_title'), desc: t('edu_art4_desc'), category: t('edu_art4_cat'), catBg: '#f0fdf4', catColor: '#16a34a', type: 'video', img: '/images/article4.jpg' },
@@ -146,7 +147,7 @@ export default function Landing() {
         <div className="absolute inset-0">
           <img src={HERO_BG} alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0" style={{
-            background: 'linear-gradient(to right, rgba(247,251,231,0.97) 0%, rgba(255,255,255,0.92) 30%, rgba(255,255,255,0.5) 55%, rgba(255,255,255,0.05) 100%)'
+            background: 'linear-gradient(to right, rgba(252, 255, 242, 0.97) 0%, rgba(248, 255, 243, 0.92) 20%, rgba(255,255,255,0.5) 55%, rgba(255,255,255,0.05) 70%)'
           }} />
         </div>
 
@@ -164,7 +165,7 @@ export default function Landing() {
                 <br className="hidden sm:block" />
                 <span className="text-primary-700">{t('hero_title_2')}</span>
               </h1>
-              <p className="mt-5 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-md">
+              <p className="mt-5 text-neutral-600 text-base sm:text-xl leading-relaxed max-w-md">
                 {t('hero_subtitle')}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -173,7 +174,7 @@ export default function Landing() {
                   className="inline-flex items-center gap-2 no-underline transition-all hover:brightness-110 active:brightness-95"
                   style={btnGreenFilled}
                 >
-                  {t('hero_cta')} <ArrowRight size={16} />
+                  {t('hero_cta')} <ArrowRight size={18} />
                 </Link>
                 <Link
                   to="/learn"
@@ -236,7 +237,7 @@ export default function Landing() {
               {t('services_title')}
             </h2>
             <div className="mt-3 mx-auto w-20 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
-            <p className="mt-4 text-neutral-500 text-sm leading-relaxed">
+            <p className="mt-4 text-neutral-600 text-l leading-relaxed">
               {t('services_subtitle')}
             </p>
           </div>
@@ -254,14 +255,14 @@ export default function Landing() {
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #f0f7e0 0%, #eef5d3 6%, #d4e6a5 42%, #e8f4cc 54%, #f7fbee 62%, #ffffff 74%, #f5f5f5 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
-            <div><span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+            <div><span className="inline-block px-3 py-1 rounded-full text-s font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_process')}
             </span></div>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('how_title')}
             </h2>
             <div className="mt-3 mx-auto w-20 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
-            <p className="mt-4 text-neutral-600 text-sm">{t('how_subtitle')}</p>
+            <p className="mt-4 text-neutral-600 text-m">{t('how_subtitle')}</p>
           </div>
 
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -307,21 +308,44 @@ export default function Landing() {
               <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
                 {t('visual_title')}
               </h2>
-              <p className="mt-4 text-neutral-600 text-sm leading-relaxed">
+              <p className="mt-4 text-neutral-800 text-l leading-relaxed">
                 {t('visual_subtitle')}
               </p>
               <div className="mt-6 grid grid-cols-2 gap-3">
                 {[
-                  { label: t('visual_item1'), icon: '🌱', bg: '#f0fdf4', border: '#bbf7d0', dot: '#16a34a' },
-                  { label: t('visual_item2'), icon: '🔬', bg: '#fef2f2', border: '#fecaca', dot: '#dc2626' },
-                  { label: t('visual_item3'), icon: '💧', bg: '#eff6ff', border: '#bfdbfe', dot: '#2563eb' },
-                  { label: t('visual_item4'), icon: '🌡️', bg: '#fffbeb', border: '#fde68a', dot: '#d97706' },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-3 p-3.5 rounded-xl" style={{ backgroundColor: item.bg, border: `1px solid ${item.border}` }}>
-                    <span className="text-base shrink-0 leading-none">{item.icon}</span>
-                    <span className="text-sm font-medium text-neutral-800 leading-snug">{item.label}</span>
-                  </div>
-                ))}
+                  { label: t('visual_item1'), icon: Leaf, bg: '#f0fdf4', border: '#bbf7d0', color: '#16a34a' },
+                  { label: t('visual_item2'), icon: Microscope, bg: '#fef2f2', border: '#fecaca', color: '#dc2626' },
+                  { label: t('visual_item3'), icon: Droplets, bg: '#eff6ff', border: '#bfdbfe', color: '#2563eb' },
+                  { label: t('visual_item4'), icon: Thermometer, bg: '#fffbeb', border: '#fde68a', color: '#d97706' },
+                ].map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div
+                      key={item.label}
+                      className="
+                        group flex items-center gap-3 p-4 rounded-xl cursor-pointer
+                        transition-all duration-300 ease-out
+                        hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02]
+                      "
+                      style={{
+                        backgroundColor: item.bg,
+                        border: `1px solid ${item.border}`,
+                      }}
+                    >
+                      <Icon
+                        size={20}
+                        strokeWidth={2}
+                        className="transition-transform duration-300 group-hover:scale-110"
+                        style={{ color: item.color }}
+                      />
+
+                      <span className="text-sm md:text-base font-semibold text-neutral-800">
+                        {item.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <Link
                 to="/detect"
@@ -333,28 +357,68 @@ export default function Landing() {
             </div>
 
             {/* Analysis card */}
-            <div className="p-6" style={floatingCard}>
-              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('visual_card_label')}</p>
+            <div
+              className="
+                p-10 rounded-2xl transition-all duration-300
+                hover:shadow-2xl hover:-translate-y-2
+              "
+              style={{
+                ...floatingCard,
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              {/* Label */}
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                {t('visual_card_label')}
+              </p>
+
+              {/* Disease */}
               <div className="flex items-center gap-2 mt-3">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
-                <span className="text-sm font-semibold text-neutral-900">{t('visual_card_disease')}</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-sm font-semibold text-neutral-900">
+                  {t('visual_card_disease')}
+                </span>
               </div>
-              <span className="text-xs text-neutral-500 ml-5">{t('visual_card_confidence')}</span>
-              <div className="mt-4 w-full h-44 rounded-xl overflow-hidden">
-                <img src={ANALYSIS_IMG} alt="Analysis" className="w-full h-full object-cover" />
+
+              {/* Confidence */}
+              <div className="mt-2 ml-5">
+                <span className="text-xs text-neutral-500">
+                  {t('visual_card_confidence')}
+                </span>
+
+                {/* Progress bar */}
+                <div className="mt-1 h-1.5 w-full bg-neutral-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary-500 rounded-full w-[78%] transition-all duration-500" />
+                </div>
               </div>
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-neutral-700">{t('visual_card_recs')}</p>
-                <ul className="mt-2 space-y-1.5 list-none">
+
+              {/* Image */}
+              <div className="mt-5 w-full h-44 rounded-xl overflow-hidden group">
+                <img
+                  src={ANALYSIS_IMG}
+                  alt="Analysis"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+
+              {/* Recommendations */}
+              <div className="mt-5">
+                <p className="text-s font-semibold text-neutral-700">
+                  {t('visual_card_recs')}
+                </p>
+
+                <ul className="mt-3 space-y-2 list-none">
                   {[t('visual_card_rec1'), t('visual_card_rec2'), t('visual_card_rec3')].map((r) => (
-                    <li key={r} className="flex items-start gap-2 text-xs text-neutral-500">
-                      <CheckCircle2 size={13} className="text-primary-500 shrink-0 mt-0.5" />
-                      {r}
+                    <li key={r} className="flex items-start gap-2 text-sm text-neutral-600">
+                      <CheckCircle2 size={16} className="text-primary-600 shrink-0 mt-0.5" />
+                      <span className="leading-snug">{r}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
+
+
           </div>
         </div>
       </section>
@@ -364,14 +428,14 @@ export default function Landing() {
       <section className="py-20" style={{ background: 'linear-gradient(180deg, #f5f5f5 0%, #fafafa 8%, #fafafa 92%, #f0f0f0 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto">
-            <div><span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+            <div><span className="inline-block px-3 py-1 rounded-full text-s font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
               {t('section_label_learning')}
             </span></div>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
               {t('edu_title')}
             </h2>
             <div className="mt-3 mx-auto w-20 h-1 rounded-full" style={{ background: 'linear-gradient(to right, #8bc34a, #c5a028)' }} />
-            <p className="mt-4 text-neutral-500 text-sm">{t('edu_subtitle')}</p>
+            <p className="mt-4 text-neutral-600 text-m">{t('edu_subtitle')}</p>
           </div>
 
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -387,16 +451,17 @@ export default function Landing() {
                     </div>
                   )}
                 </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold mb-3" style={{ backgroundColor: a.catBg, color: a.catColor }}>
+                <div className="p-7 flex flex-col flex-1">
+                  <span className="inline-block px-2.5 py-1 rounded-md text-[13px] font-semibold mb-3" style={{ backgroundColor: a.catBg, color: a.catColor }}>
                     {a.category}
                   </span>
-                  <h4 className="font-semibold text-neutral-900 text-sm group-hover:text-primary-600 transition-colors leading-snug">
+                  <h4 className="font-semibold text-neutral-900 text-m group-hover:text-primary-600 transition-colors leading-snug">
                     {a.title}
                   </h4>
-                  <p className="mt-2 text-xs text-neutral-500 leading-relaxed">{a.desc}</p>
-                  <span className="mt-auto pt-3 text-xs text-primary-600 font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
-                    {a.type === 'video' ? t('edu_watch_video') : t('edu_read_article')} <ArrowRight size={12} />
+                  <p className="mt-2 text-xs text-neutral-600 leading-relaxed">{a.desc}</p>
+                  <span className="mt-auto pt-3 text-s text-primary-600 font-semibold flex items-center gap-1 group-hover:gap-2 
+                                    transition-all group-hover:underline underline-offset-4 decoration-2">
+                    {a.type === 'video' ? t('edu_watch_video') : t('edu_read_article')} 
                   </span>
                 </div>
               </Link>
@@ -411,7 +476,7 @@ export default function Landing() {
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f7fbe7' }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
             >
-              {t('edu_view_all')} <ArrowRight size={16} />
+              {t('edu_view_all')}
             </Link>
           </div>
         </div>
@@ -420,7 +485,7 @@ export default function Landing() {
       {/* ═══════════════ PARTNERS ═══════════════ */}
       <section className="py-16" style={{ background: 'linear-gradient(180deg, #f0f0f0 0%, #ffffff 12%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
+          <span className="inline-block px-3 py-1 rounded-full text-s font-semibold mb-4" style={{ backgroundColor: '#eef5d3', color: '#33691e', border: '1px solid #c5dc8a' }}>
             {t('section_label_trusted')}
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">{t('partners_title')}</h2>
@@ -428,17 +493,53 @@ export default function Landing() {
 
           <div className="mt-10 flex flex-wrap justify-center gap-6">
             {[
-              { abbr: 'AUPP', full: t('partner_aupp') },
-              { abbr: 'MOA',  full: t('partner_moa') },
-              { abbr: 'ARI',  full: t('partner_ari') },
-            ].map((p) => (
-              <div key={p.abbr} className="flex items-center gap-4 px-6 py-4 rounded-xl" style={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0', minWidth: '200px' }}>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ backgroundColor: '#f7fbe7', color: '#33691e', border: '2px solid #a8d060' }}>
-                  {p.abbr}
-                </div>
-                <span className="text-sm font-medium text-neutral-700 leading-snug">{p.full}</span>
+            {
+              abbr: 'AUPP',
+              full: t('partner_aupp'),
+              logo: '/images/AUPP-logo.png'
+            },
+            {
+              abbr: 'MOA',
+              full: t('partner_mrd'),
+              logo: '/images/MRD-logo.png'
+            },
+            {
+              abbr: 'ARI',
+              full: t('partner_vigor'),
+              logo: '/images/Vigor Cambodia Logo-01.png'
+            },
+          ].map((p) => (
+            <div
+              key={p.abbr}
+              className="
+                flex items-center gap-4 px-6 py-4 rounded-xl
+                bg-white border border-neutral-200
+                transition-all duration-300
+                hover:shadow-md hover:-translate-y-1
+              "
+              style={{ minWidth: '220px' }}
+            >
+              {/* Logo circle */}
+              <div
+                className="
+                  w-12 h-12 rounded-full flex items-center justify-center
+                  bg-neutral-100 border border-neutral-200
+                  overflow-hidden shrink-0
+                "
+              >
+                <img
+                  src={p.logo}
+                  alt={p.abbr}
+                  className="w-8 h-8 object-contain"
+                />
               </div>
-            ))}
+
+              {/* Text */}
+              <span className="text-sm sm:text-base font-semibold text-neutral-800 leading-snug">
+                {p.full}
+              </span>
+            </div>
+          ))}
           </div>
         </div>
       </section>
@@ -450,7 +551,7 @@ export default function Landing() {
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white">
               {t('cta_title')}
             </h2>
-            <p className="mt-3 text-sm max-w-md mx-auto" style={{ color: '#a8c89a' }}>
+            <p className="mt-3 text-m max-w-md mx-auto" style={{ color: '#a8c89a' }}>
               {t('cta_subtitle')}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
@@ -461,7 +562,7 @@ export default function Landing() {
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f5f5f5' }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
               >
-                {t('cta_button')} <ArrowRight size={16} />
+                {t('cta_button')} 
               </Link>
               <Link
                 to="/experts"

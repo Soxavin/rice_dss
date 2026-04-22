@@ -107,8 +107,8 @@ export const translations = {
     partner_2: 'Growing Together',
     partner_3: 'Quality First',
     partner_aupp: 'American University of Phnom Penh (AUPP)',
-    partner_moa:  'Ministry of Agriculture & Rural Development',
-    partner_ari:  'Agricultural Research Institute',
+    partner_mrd:  'Ministry of Rural Development',
+    partner_vigor:  'Vigor Cambodia',
 
     // CTA
     cta_title: 'Ready to Protect Your Rice Crops?',
@@ -941,9 +941,9 @@ export const translations = {
     partner_1: 'កិច្ចសហការដែលគួរឱ្យទុកចិត្ត',
     partner_2: 'រីកចម្រើនជាមួយគ្នា',
     partner_3: 'គុណភាពជាអាទិភាព',
-    partner_aupp: 'សាកលវិទ្យាល័យអាមេរិចនៃភ្នំពេញ (AUPP)',
-    partner_moa:  'ក្រសួងកសិកម្ម និងអភិវឌ្ឍន៍សហគមន៍',
-    partner_ari:  'វិទ្យាស្ថានស្រាវជ្រាវកសិកម្ម',
+    partner_aupp: 'សកលវិទ្យាល័យអាមេរិចនៃភ្នំពេញ (AUPP)',
+    partner_mrd:  'ក្រសួងអភិវឌ្ឍន៍ជនបទ',
+    partner_vigor:  'វីហ្គឺខេមបូឌា',
 
     // CTA
     cta_title: 'រួចរាល់ក្នុងការការពារដំណាំស្រូវរបស់អ្នក?',
