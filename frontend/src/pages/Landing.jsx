@@ -66,8 +66,8 @@ export default function Landing() {
       iconColor: '#16a34a',
     },
     {
-      icon: Leaf, title: t('service_crop'),
-      desc: t('service_crop_desc'),
+      icon: Leaf, title: t('service_profile'),
+      desc: t('service_profile_desc'),
       bullets: [t('service_crop_b1'), t('service_crop_b2')],
       link: '/profile',
       iconGradient: 'linear-gradient(135deg, #60a5fa 0%, #1d4ed8 100%)',
@@ -165,7 +165,7 @@ export default function Landing() {
                 <br className="hidden sm:block" />
                 <span className="text-primary-700">{t('hero_title_2')}</span>
               </h1>
-              <p className="mt-5 text-neutral-600 text-base sm:text-xl leading-relaxed max-w-md">
+              <p className="mt-8 text-neutral-600 text-base sm:text-xl leading-relaxed max-w-xl">
                 {t('hero_subtitle')}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
