@@ -38,6 +38,7 @@ async def save_analysis(
 @router.get("/analyses", response_model=list[AnalysisOut])
 async def get_my_analyses(
     limit: int = Query(15, le=50),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -46,8 +47,40 @@ async def get_my_analyses(
         .where(AnalysisHistory.user_id == current_user.id)
         .order_by(AnalysisHistory.created_at.desc())
         .limit(limit)
+        .offset(offset)
     )
     return result.scalars().all()
+
+
+@router.delete("/analyses/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_analysis(
+    analysis_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(AnalysisHistory).where(
+            AnalysisHistory.id == analysis_id,
+            AnalysisHistory.user_id == current_user.id,
+        )
+    )
+    record = result.scalar_one_or_none()
+    if not record:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Analysis not found")
+    await db.delete(record)
+    await db.commit()
+
+
+@router.delete("/analyses", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_all_analyses(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from sqlalchemy import delete as sql_delete
+    await db.execute(
+        sql_delete(AnalysisHistory).where(AnalysisHistory.user_id == current_user.id)
+    )
+    await db.commit()
 
 
 # ─── Admin endpoints ──────────────────────────────────────────────────────────

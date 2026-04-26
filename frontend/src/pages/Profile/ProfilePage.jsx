@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ChevronDown, ChevronUp, Leaf, FlaskConical, ClipboardList, User, Trash2, AlertCircle, Download } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
-import { getFarmProfile, saveFarmProfile, getAnalyses, deleteAnalysis, clearAllAnalyses } from '../../lib/firestore'
+import { getFarmProfile, saveFarmProfile } from '../../lib/firestore'
+import { adminRequest } from '../../api/adminClient'
 
 // Reuse same confidence colours as Step3Results
 const CONF_STYLE = {
@@ -225,7 +226,7 @@ function ClearAllModal({ count, t, onConfirm, onCancel, loading }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const { t } = useLanguage()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, getBackendToken } = useAuth()
   const navigate = useNavigate()
 
   // Farm profile form state
@@ -242,9 +243,9 @@ export default function ProfilePage() {
   const [analyses, setAnalyses] = useState([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [historyError, setHistoryError] = useState(null)
-  const [lastDoc, setLastDoc] = useState(null)
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const PAGE_SIZE = 15
 
   // Undo-delete state
   const [undoPending, setUndoPending] = useState(null) // { item, snapshot, timerId }
@@ -275,14 +276,30 @@ export default function ProfilePage() {
       .finally(() => setFormLoading(false))
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function normaliseAnalysis(a) {
+    const r = a.result || {}
+    return {
+      id: a.id,
+      createdAt: a.created_at,
+      mode: a.mode?.toLowerCase() ?? 'questionnaire',
+      confidence_level: r.confidence_level,
+      confidence_label: r.confidence_label,
+      condition_key: r.condition_key,
+      primary_condition: r.primary_condition,
+      recommendations: r.recommendations,
+      secondary_conditions: r.secondary_conditions,
+      score: a.confidence ?? r.score,
+    }
+  }
+
   // Load analysis history (first page)
   useEffect(() => {
     if (!user) return
-    getAnalyses(user.uid)
-      .then(({ items, lastDoc: ld, hasMore: hm }) => {
+    adminRequest(getBackendToken, 'get', `/analyses?limit=${PAGE_SIZE}&offset=0`)
+      .then(res => {
+        const items = (res.data || []).map(normaliseAnalysis)
         setAnalyses(items)
-        setLastDoc(ld)
-        setHasMore(hm)
+        setHasMore(items.length === PAGE_SIZE)
       })
       .catch(() => setHistoryError(t('profile_history_error')))
       .finally(() => setHistoryLoading(false))
@@ -350,10 +367,10 @@ export default function ProfilePage() {
   const handleLoadMore = async () => {
     setLoadingMore(true)
     try {
-      const { items, lastDoc: ld, hasMore: hm } = await getAnalyses(user.uid, lastDoc)
+      const res = await adminRequest(getBackendToken, 'get', `/analyses?limit=${PAGE_SIZE}&offset=${analyses.length}`)
+      const items = (res.data || []).map(normaliseAnalysis)
       setAnalyses(prev => [...prev, ...items])
-      setLastDoc(ld)
-      setHasMore(hm)
+      setHasMore(items.length === PAGE_SIZE)
     } catch {
       setHistoryError(t('profile_history_error'))
     } finally {
@@ -365,13 +382,13 @@ export default function ProfilePage() {
     // Commit any already-pending delete before starting a new one
     if (undoPending) {
       clearTimeout(undoPending.timerId)
-      deleteAnalysis(user.uid, undoPending.id).catch(() => {})
+      adminRequest(getBackendToken, 'delete', `/analyses/${undoPending.id}`).catch(() => {})
       setUndoPending(null)
     }
     const snapshot = analyses
     setAnalyses(prev => prev.filter(a => a.id !== id))
     const timerId = setTimeout(() => {
-      deleteAnalysis(user.uid, id).catch(() => setHistoryError(t('profile_history_error')))
+      adminRequest(getBackendToken, 'delete', `/analyses/${id}`).catch(() => setHistoryError(t('profile_history_error')))
       setUndoPending(null)
     }, 5000)
     setUndoPending({ id, snapshot, timerId })
@@ -388,14 +405,13 @@ export default function ProfilePage() {
     // Commit any pending delete first
     if (undoPending) {
       clearTimeout(undoPending.timerId)
-      await deleteAnalysis(user.uid, undoPending.id).catch(() => {})
+      await adminRequest(getBackendToken, 'delete', `/analyses/${undoPending.id}`).catch(() => {})
       setUndoPending(null)
     }
     setClearing(true)
     try {
-      await clearAllAnalyses(user.uid)
+      await adminRequest(getBackendToken, 'delete', '/analyses')
       setAnalyses([])
-      setLastDoc(null)
       setHasMore(false)
       setFilterMode('all')
       setFilterCondition('all')

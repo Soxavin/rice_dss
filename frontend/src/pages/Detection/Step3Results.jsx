@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
-import { saveAnalysis } from '../../lib/firestore'
+import { adminRequest } from '../../api/adminClient'
 import { AlertCircle, CheckCircle, Leaf, Phone, ArrowRight, Download, TriangleAlert, Info, ChevronLeft, ImageDown, ChevronDown, ChevronUp, Lock } from 'lucide-react'
 import DetectionProgress from '../../components/detection/DetectionProgress'
 import html2canvas from 'html2canvas'
@@ -31,7 +31,7 @@ const FALLBACK_IMG = '/images/analysis-leaf.jpg'
 export default function Step3Results() {
   const { t } = useLanguage()
   const navigate = useNavigate()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, getBackendToken } = useAuth()
   const [result, setResult] = useState(null)
   const [uploadedImages, setUploadedImages] = useState([])
   const [activeImg, setActiveImg] = useState(0)
@@ -54,21 +54,16 @@ export default function Step3Results() {
       if (imgs) setUploadedImages(JSON.parse(imgs))
     } catch { /* ignore */ }
 
-    // Auto-save to Firestore if user is authenticated and result is not a demo
+    // Auto-save to PostgreSQL backend if user is authenticated and result is not a demo
     if (parsed && !parsed.is_demo && isAuthenticated && user && !savedRef.current) {
       savedRef.current = true
-      saveAnalysis(user.uid, {
-        mode: sessionStorage.getItem('detect_mode') || 'unknown',
-        condition_key: parsed.condition_key,
-        primary_condition: parsed.primary_condition,
-        confidence_level: parsed.confidence_level,
-        confidence_label: parsed.confidence_label,
-        score: parsed.score,
-        secondary_conditions: parsed.secondary_conditions || [],
-        recommendations: {
-          immediate: parsed.recommendations?.immediate || [],
-          preventive: parsed.recommendations?.preventive || [],
-        },
+      const rawMode = sessionStorage.getItem('detect_mode') || 'questionnaire'
+      const modeMap = { hybrid: 'HYBRID', ml: 'ML', questionnaire: 'QUESTIONNAIRE' }
+      adminRequest(getBackendToken, 'post', '/analyses', {
+        mode: modeMap[rawMode] ?? 'QUESTIONNAIRE',
+        result: parsed,
+        confidence: parsed.score ?? null,
+        image_url: null,
       }).then(() => setSaved(true)).catch(() => { /* fire-and-forget — never block the UI */ })
     }
   }, [isAuthenticated, user]) // W3: only run once on mount (isAuthenticated/user stable refs)
