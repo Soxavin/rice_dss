@@ -1,6 +1,6 @@
 # Rice DSS — PostgreSQL + Admin Dashboard: Change Documentation
 
-> **Audience:** Vin and teammates. Covers every file that was added or modified,
+> Covers every file that was added or modified,
 > how the pieces connect, how they changed the existing architecture, and what
 > still needs to be done manually before the system is fully live.
 
