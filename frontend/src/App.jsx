@@ -3,6 +3,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/layout/Layout'
+import AdminRoute from './components/AdminRoute'
 
 // C9: route-level code splitting — each page chunk is loaded only when first visited
 const Landing        = lazy(() => import('./pages/Landing'))
@@ -18,6 +19,15 @@ const VideoDetail    = lazy(() => import('./pages/Learning/VideoDetail'))
 const ExpertsPage    = lazy(() => import('./pages/Experts/ExpertsPage'))
 const ProfilePage    = lazy(() => import('./pages/Profile/ProfilePage'))
 const NotFound       = lazy(() => import('./pages/NotFound'))
+
+// Admin pages
+const AdminLayout    = lazy(() => import('./pages/Admin/AdminLayout'))
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'))
+const AdminUsers     = lazy(() => import('./pages/Admin/AdminUsers'))
+const AdminResources = lazy(() => import('./pages/Admin/AdminResources'))
+const ResourceEditor = lazy(() => import('./pages/Admin/ResourceEditor'))
+const AdminProfiles  = lazy(() => import('./pages/Admin/AdminProfiles'))
+const AdminAnalysis  = lazy(() => import('./pages/Admin/AdminAnalysis'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -49,6 +59,16 @@ export default function App() {
               {/* Auth pages — no navbar/footer layout */}
               <Route path="/sign-in" element={<SignIn />} />
               <Route path="/sign-up" element={<SignUp />} />
+              {/* Admin — role-gated, own layout */}
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="resources" element={<AdminResources />} />
+                <Route path="resources/new" element={<ResourceEditor />} />
+                <Route path="resources/:id" element={<ResourceEditor />} />
+                <Route path="profiles" element={<AdminProfiles />} />
+                <Route path="analysis" element={<AdminAnalysis />} />
+              </Route>
             </Routes>
           </Suspense>
         </BrowserRouter>

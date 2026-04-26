@@ -37,4 +37,10 @@ export const hybridImages = (formData, lang = 'en') =>
 export const explainScores = (answers, lang = 'en') =>
   client.post(`/explain?lang=${lang}`, answers)
 
+// Content endpoints (public)
+export const getResources  = (lang = 'en') => client.get(`/resources?lang=${lang}`)
+export const getResource   = (id, lang = 'en') => client.get(`/resources/${id}?lang=${lang}`)
+export const getProfiles   = () => client.get('/profiles')
+export const getCategories = () => client.get('/categories')
+
 export default client
