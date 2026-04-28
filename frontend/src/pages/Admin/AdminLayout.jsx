@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, FileText, UserCheck, BarChart2, LogOut, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, UserCheck, BarChart2, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV = [
@@ -25,7 +25,7 @@ export default function AdminLayout() {
       <aside className="w-56 shrink-0 flex flex-col" style={{ backgroundColor: '#1a2e0f', minHeight: '100vh' }}>
         <div className="px-5 py-5 border-b" style={{ borderColor: '#2d4a1e' }}>
           <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#a8d060' }}>Admin</p>
-          <p className="text-sm font-bold text-white mt-0.5">Sro Meas</p>
+          <p className="text-sm font-bold text-white mt-0.5">Srov Meas</p>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">

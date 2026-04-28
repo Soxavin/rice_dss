@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold text-neutral-900 mb-1">Dashboard</h1>
-      <p className="text-sm mb-8" style={{ color: '#757575' }}>Overview of the Sro Meas platform.</p>
+      <p className="text-sm mb-8" style={{ color: '#757575' }}>Overview of the Srov Meas platform.</p>
 
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
