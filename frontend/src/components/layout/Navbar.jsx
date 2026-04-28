@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ChevronDown, Menu, X, User, LogOut, Tractor, Search } from 'lucide-react'
+import { ChevronDown, Menu, X, User, LogOut, Tractor, Search, LayoutDashboard } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 import SearchModal from '../search/SearchModal'
 
 export default function Navbar() {
   const { lang, switchLang, t } = useLanguage()
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated, user, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen]       = useState(false)
@@ -215,6 +215,19 @@ export default function Navbar() {
                         <Tractor size={15} style={{ color: '#558b2f' }} />
                         {t('service_crop')}
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm no-underline transition-colors"
+                          style={{ color: '#558b2f' }}
+                          onClick={() => setProfileOpen(false)}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f7e6'}
+                          onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
+                        >
+                          <LayoutDashboard size={15} style={{ color: '#558b2f' }} />
+                          Admin Dashboard
+                        </Link>
+                      )}
                       <div className="border-t border-neutral-100" />
                       <button
                         onClick={() => { logout(); setProfileOpen(false) }}
@@ -335,6 +348,11 @@ export default function Navbar() {
                 <Link to="/profile" className="flex items-center gap-2 text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
                   <Tractor size={15} style={{ color: '#558b2f' }} /> {t('service_crop')}
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin" className="flex items-center gap-2 text-sm font-medium no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" style={{ color: '#558b2f' }} onClick={() => setMobileOpen(false)}>
+                    <LayoutDashboard size={15} style={{ color: '#558b2f' }} /> Admin Dashboard
+                  </Link>
+                )}
                 <Link to="/detect" className="block text-center text-sm font-medium text-white no-underline px-4 py-2.5 rounded-lg" style={{ backgroundColor: '#558b2f' }} onClick={() => setMobileOpen(false)}>
                   {t('nav_start_analysis')}
                 </Link>
