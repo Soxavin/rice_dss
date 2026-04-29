@@ -4,11 +4,15 @@ from sqlalchemy.orm import DeclarativeBase
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-# Neon requires SSL; asyncpg accepts it via connect_args
+# Fall back to in-memory SQLite when DATABASE_URL is not set (e.g. CI test runs).
+# The DSS endpoints never touch the DB, so tests pass without a real Neon connection.
+_effective_url = DATABASE_URL or "sqlite+aiosqlite://"
+_is_postgres = _effective_url.startswith("postgresql")
+
 engine = create_async_engine(
-    DATABASE_URL,
-    connect_args={"ssl": "require"} if DATABASE_URL else {},
-    pool_pre_ping=True,
+    _effective_url,
+    connect_args={"ssl": "require"} if _is_postgres else {},
+    pool_pre_ping=_is_postgres,
     echo=False,
 )
 

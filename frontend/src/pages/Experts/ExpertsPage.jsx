@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock } from 'lucide-react'
-import { EXPERTS_DATA, FEATURED_SUPPLIERS, PRODUCTS } from '../../data/searchData'
+import { PRODUCTS } from '../../data/searchData'
+import { getProfiles } from '../../api/client'
 
 /* Shared inline styles — matches site-wide design language */
 const cardStyle = {
@@ -27,15 +28,46 @@ const btnTelegram = {
   border: 'none',
 }
 
+function normalizeProfile(p, lang) {
+  const bil = (en, km) => lang === 'km' ? (km || en || '') : (en || '')
+  return {
+    id:              p.id,
+    name:            bil(p.name_en, p.name_km),
+    nameKm:          p.name_km,
+    title:           bil(p.job_title_en, p.job_title_km),
+    img:             p.photo_url || null,
+    online:          p.online,
+    location:        { en: p.location_en || '', km: p.location_km || p.location_en || '' },
+    bio:             { en: p.bio_en || '', km: p.bio_km || p.bio_en || '' },
+    telegram:        p.telegram || '',
+    experience:      p.experience_years ?? '—',
+    rating:          p.rating != null ? Number(p.rating).toFixed(1) : '—',
+    specializations: p.specializations?.map(s => s.name).filter(Boolean) || [],
+    education:       bil(p.education_en, p.education_km) || '—',
+    languages:       p.languages ? p.languages.split(',').map(l => l.trim()) : [],
+    availability:    bil(p.availability_en, p.availability_km) || '—',
+    type:            p.type,
+  }
+}
+
 export default function ExpertsPage() {
   const { lang, t } = useLanguage()
-  const [tab, setTab] = useState('All')
-  const [search, setSearch] = useState('')
-  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
+  const [profiles, setProfiles]   = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [tab, setTab]             = useState('All')
+  const [search, setSearch]       = useState('')
+  const [contactForm, setContactForm]       = useState({ name: '', email: '', message: '' })
   const [contactSubmitted, setContactSubmitted] = useState(false)
   const [selectedExpert, setSelectedExpert] = useState(null)
-  const panelRef = useRef(null)
+  const panelRef     = useRef(null)
   const panelCloseRef = useRef(null)
+
+  useEffect(() => {
+    getProfiles()
+      .then(r => setProfiles(r.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   useEffect(() => {
     if (!selectedExpert) return
@@ -67,12 +99,15 @@ export default function ExpertsPage() {
   }
 
   const bil = (obj) => (typeof obj === 'object' ? obj[lang] || obj.en : obj)
-  const expertName = (expert) =>
-    lang === 'km' && expert.nameKm ? `${expert.nameKm} (${expert.name})` : expert.name
 
-  const EXPERTS = EXPERTS_DATA.map((e) => ({ ...e, title: t(e.titleKey) }))
+  const normalized  = profiles.map(p => normalizeProfile(p, lang))
+  const EXPERTS     = normalized.filter(p => p.type === 'EXPERT')
+  const SUPPLIERS   = normalized.filter(p => p.type === 'SUPPLIER')
+
+  const expertName = (e) => lang === 'km' && e.nameKm ? `${e.nameKm} (${e.name})` : e.name
+
   const filteredExperts = search.trim()
-    ? EXPERTS.filter((e) =>
+    ? EXPERTS.filter(e =>
         expertName(e).toLowerCase().includes(search.toLowerCase()) ||
         bil(e.location).toLowerCase().includes(search.toLowerCase())
       )
@@ -85,9 +120,9 @@ export default function ExpertsPage() {
   ]
 
   const stats = [
-    { val: '6+', label: t('experts_tab') },
-    { val: '2',  label: t('experts_suppliers_tab') },
-    { val: '4',  label: t('experts_section_treatments_title') },
+    { val: loading ? '…' : `${EXPERTS.length}`,   label: t('experts_tab') },
+    { val: loading ? '…' : `${SUPPLIERS.length}`, label: t('experts_suppliers_tab') },
+    { val: PRODUCTS.length,                        label: t('experts_section_treatments_title') },
   ]
 
   return (
@@ -190,7 +225,21 @@ export default function ExpertsPage() {
             </div>
             <div className="h-px mb-8" style={{ background: 'linear-gradient(to right, #558b2f, #c5a028, transparent)' }} />
 
-            {filteredExperts.length === 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="rounded-2xl p-5 animate-pulse space-y-3" style={{ border: '1px solid #e0e0e0' }}>
+                    <div className="flex items-start justify-between">
+                      <div className="w-16 h-16 rounded-2xl bg-neutral-100" />
+                      <div className="h-5 w-16 bg-neutral-100 rounded-full" />
+                    </div>
+                    <div className="h-3 bg-neutral-100 rounded w-1/2" />
+                    <div className="h-4 bg-neutral-100 rounded w-3/4" />
+                    <div className="h-3 bg-neutral-100 rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
+            ) : filteredExperts.length === 0 ? (
               <p className="text-neutral-400 text-sm py-10 text-center">{t('experts_no_results')}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -201,10 +250,12 @@ export default function ExpertsPage() {
                       <div className="flex items-start justify-between mb-4">
                         <div className="relative">
                           <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl overflow-hidden"
                             style={{ background: 'linear-gradient(135deg, #f7fbe7, #eef5d3)', border: '2px solid #d4e6a5' }}
                           >
-                            {expert.img}
+                            {expert.img
+                              ? <img src={expert.img} alt={expert.name} className="w-full h-full object-cover" />
+                              : '🧑‍🌾'}
                           </div>
                           {expert.online && (
                             <span
@@ -301,57 +352,86 @@ export default function ExpertsPage() {
             </div>
             <div className="h-px mb-8" style={{ background: 'linear-gradient(to right, #c5a028, #558b2f, transparent)' }} />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {FEATURED_SUPPLIERS.map((s) => (
-                <div key={s.name} className="bg-white hover-lift overflow-hidden flex flex-col" style={cardStyle}>
-                  {/* Green accent top bar */}
-                  <div className="h-1.5" style={{ background: 'linear-gradient(to right, #558b2f, #c5a028)' }} />
-                  <div className="p-6 flex flex-col flex-1">
-                    <div className="flex items-start justify-between gap-3">
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {[1, 2].map(i => (
+                  <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ border: '1px solid #e0e0e0', height: 200 }}>
+                    <div className="h-1.5 bg-neutral-200" />
+                    <div className="p-6 space-y-3">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                          style={{ backgroundColor: '#f7fbe7', border: '1px solid #d4e6a5' }}
-                        >
-                          {s.icon}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-neutral-900 text-[15px]">{s.name}</h3>
-                          <p className="text-xs flex items-center gap-1 text-neutral-500 mt-0.5">
-                            <MapPin size={11} /> {bil(s.location)}
-                          </p>
+                        <div className="w-12 h-12 rounded-xl bg-neutral-100" />
+                        <div className="space-y-2 flex-1">
+                          <div className="h-4 bg-neutral-100 rounded w-1/2" />
+                          <div className="h-3 bg-neutral-100 rounded w-1/3" />
                         </div>
                       </div>
-                      <span
-                        className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
-                      >
-                        ✓ {t('experts_verified')}
-                      </span>
-                    </div>
-                    <p className="mt-4 text-sm text-neutral-600 leading-relaxed">{bil(s.desc)}</p>
-                    <div className="mt-5 flex gap-2">
-                      <Link
-                        to="/experts"
-                        className="px-4 py-2 text-white text-xs font-semibold rounded-lg no-underline transition-opacity hover:opacity-85 flex items-center gap-1.5"
-                        style={{ backgroundColor: '#558b2f' }}
-                      >
-                        {t('suppliers_view')} <ArrowRight size={12} />
-                      </Link>
-                      <a
-                        href={`https://t.me/${s.telegram}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 text-xs font-semibold rounded-lg no-underline transition-colors flex items-center gap-1.5 hover:border-primary-300"
-                        style={{ border: '1px solid #d1d5db', color: '#374151' }}
-                      >
-                        <Send size={12} /> {t('suppliers_contact')}
-                      </a>
+                      <div className="h-3 bg-neutral-100 rounded w-full" />
+                      <div className="h-3 bg-neutral-100 rounded w-4/5" />
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : SUPPLIERS.length === 0 ? (
+              <div className="py-12 text-center text-neutral-400">
+                <p className="text-sm">No suppliers listed yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {SUPPLIERS.map((s) => (
+                  <div key={s.id} className="bg-white hover-lift overflow-hidden flex flex-col" style={cardStyle}>
+                    {/* Green accent top bar */}
+                    <div className="h-1.5" style={{ background: 'linear-gradient(to right, #558b2f, #c5a028)' }} />
+                    <div className="p-6 flex flex-col flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
+                            style={{ backgroundColor: '#f7fbe7', border: '1px solid #d4e6a5' }}
+                          >
+                            {s.img
+                              ? <img src={s.img} alt={s.name} className="w-full h-full object-cover" />
+                              : '🏪'}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-neutral-900 text-[15px]">{s.name}</h3>
+                            <p className="text-xs flex items-center gap-1 text-neutral-500 mt-0.5">
+                              <MapPin size={11} /> {bil(s.location)}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
+                        >
+                          ✓ {t('experts_verified')}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-sm text-neutral-600 leading-relaxed">{bil(s.bio)}</p>
+                      <div className="mt-5 flex gap-2">
+                        <Link
+                          to="/experts"
+                          className="px-4 py-2 text-white text-xs font-semibold rounded-lg no-underline transition-opacity hover:opacity-85 flex items-center gap-1.5"
+                          style={{ backgroundColor: '#558b2f' }}
+                        >
+                          {t('suppliers_view')} <ArrowRight size={12} />
+                        </Link>
+                        {s.telegram && (
+                          <a
+                            href={`https://t.me/${s.telegram}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 text-xs font-semibold rounded-lg no-underline transition-colors flex items-center gap-1.5 hover:border-primary-300"
+                            style={{ border: '1px solid #d1d5db', color: '#374151' }}
+                          >
+                            <Send size={12} /> {t('suppliers_contact')}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* ─── TREATMENTS SUB-SECTION ─── */}
             <div className="mt-14">

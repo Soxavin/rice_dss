@@ -19,11 +19,21 @@ JWT_SECRET      = os.getenv("JWT_SECRET", "change-me")
 JWT_ALGORITHM   = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_MIN  = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))
 
-# Initialise Firebase Admin SDK once (idempotent)
+# Initialise Firebase Admin SDK once (idempotent).
+# Wrapped in try/except so the module imports cleanly in CI environments where
+# no service account or application-default credentials are available.
+# Auth endpoints will return 503 if Firebase failed to initialise.
+_firebase_ready = False
 if not firebase_admin._apps:
-    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    cred = credentials.Certificate(cred_path) if cred_path else credentials.ApplicationDefault()
-    firebase_admin.initialize_app(cred)
+    try:
+        cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        cred = credentials.Certificate(cred_path) if cred_path else credentials.ApplicationDefault()
+        firebase_admin.initialize_app(cred)
+        _firebase_ready = True
+    except Exception:
+        pass
+else:
+    _firebase_ready = True
 
 bearer = HTTPBearer()
 
