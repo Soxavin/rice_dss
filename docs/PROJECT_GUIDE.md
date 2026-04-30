@@ -71,8 +71,12 @@ rice_dss/
 │                  These files are FROZEN — do not modify weights or thresholds.
 │
 ├── api/           REST API — exposes the DSS as HTTP endpoints via FastAPI
-│                  This is the INTERFACE for external clients (frontends, mobile apps).
-│                  Contains no logic — just receives requests and delegates to dss/.
+│                  Also serves as the content and user management API (PostgreSQL-backed).
+│                  DSS endpoints contain no logic — they delegate to dss/.
+│                  New routers handle auth, resources, profiles, and analysis history.
+│
+├── alembic/       Database migrations — Alembic manages the PostgreSQL schema
+│                  Run `alembic upgrade head` to apply migrations.
 │
 ├── ml/            ML pipeline — dataset loading, model training, inference
 │                  This is the IMAGE ANALYSIS component.
@@ -298,61 +302,68 @@ Every mode also logs the run via `dss_logger.log_run()` and appends a `mode_used
 
 ## 4. `api/` — REST API
 
-The API is a thin layer that exposes the DSS over HTTP. It contains **no diagnosis logic** — it only receives requests, validates them with Pydantic, delegates to `run_dss()`, and returns the result.
+The API has two responsibilities:
+1. **DSS endpoints** — a thin HTTP layer over the frozen DSS logic (original)
+2. **Content + user API** — PostgreSQL-backed endpoints for users, resources, profiles, and analysis history (added later)
+
+The original DSS endpoints contain **no diagnosis logic** — they only receive requests, validate them with Pydantic, delegate to `run_dss()`, and return the result. The new content endpoints add user management, content management, and analysis history.
 
 ### `api/__init__.py` — Package Marker
 Empty file that makes `api` a Python package.
 
-### `api/main.py` — FastAPI Application (10 Endpoints)
+### `api/main.py` — FastAPI Application
 
 **Live deployment:** `https://rice-dss-137747818788.asia-southeast1.run.app`
 
-**Endpoints:**
+The file registers two groups of routes:
+1. **Original DSS endpoints** (defined inline in main.py) — 12 endpoints covering diagnosis, image upload, explanation, and health check
+2. **New routers** (registered at the bottom via `app.include_router()`) — auth, resources, profiles, admin_users, admin_analysis
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/` | GET | API root — lists all available endpoints |
-| `/questionnaire` | POST | Questionnaire-only diagnosis |
-| `/ml-only` | POST | ML probabilities only |
-| `/hybrid` | POST | Full hybrid mode (recommended) |
-| `/predict-image` | POST | Upload a leaf photo → ML diagnosis |
-| `/hybrid-image` | POST | Upload photo + questionnaire JSON |
-| `/explain` | POST | Signal-level score breakdown |
-| `/logs/summary` | GET | Aggregated run statistics |
-| `/logs/runs` | GET | Recent run history |
-| `/health` | GET | System status + model availability |
-
-**Key features:**
+**Key features of the original endpoints:**
 - **CORS** — reads `CORS_ORIGINS` environment variable (comma-separated), defaults to `*` for development
 - **Image validation** — checks MIME type (JPEG/PNG/WebP only) and file size (10 MB max) on upload endpoints
 - **Lazy model loading** — the ML model is loaded on first request via `get_inference_model()` singleton, avoiding TensorFlow import at startup. Returns `None` (HTTP 503) if no model file exists.
-- **Root endpoint** — returns a JSON overview of the service and all available endpoints for discoverability
 
-**How the three JSON endpoints work (same pattern):**
-1. Receive `QuestionnaireRequest` payload (Pydantic validates the structure)
-2. Convert to plain dict via `_request_to_dict()`
-3. Call `run_dss(raw, mode=...)` with the appropriate mode
-4. Return the dict (FastAPI serialises it against `DSSResponse`)
+### `api/schemas/` — Pydantic Models
 
-**How image endpoints work:**
-1. Receive uploaded file via `UploadFile`
-2. Validate MIME type and file size
-3. Load ML model via `get_inference_model()`
-4. Call `model.predict_from_bytes()` → returns 3-key probability dict
-5. For `/predict-image`: run `run_dss(mode="ml")` with those probabilities
-6. For `/hybrid-image`: parse questionnaire JSON from Form field, inject ML probabilities, run `run_dss(mode="hybrid")`
+**Naming note:** The original `api/schemas.py` was a single file. When the `api/schemas/` directory was created, Python resolved the package directory before the file, silently shadowing it and causing `ImportError`. The fix:
+- `api/schemas_legacy.py` — the original DSS Pydantic models (renamed from `schemas.py`)
+- `api/schemas/__init__.py` — re-exports all original classes from `schemas_legacy`, so all existing import paths continue to work
+- `api/schemas/user.py`, `resource.py`, `profile.py`, `analysis.py` — new Pydantic schemas for the content API
 
-### `api/schemas.py` — Pydantic Request/Response Models
+**DSS schemas (in schemas_legacy.py):**
+- `QuestionnaireRequest` — incoming payload; all fields Optional, DSS handles missing values safely
+- `DSSResponse` — standard output: condition, score, confidence, recommendations, warnings
+- `ImagePredictionResponse` — extends DSSResponse with `ml_probabilities` + `gradcam_base64`
+- `ExplainResponse`, `SignalEntry`, `ConditionExplanation` — explainability endpoint types
 
-**What it does:** Defines the data contracts between the API and any client:
+### `api/database.py` — Database Connection
 
-- `QuestionnaireRequest` — incoming payload with all questionnaire fields + `ml_probabilities`. All fields are Optional (the DSS handles missing values safely).
-- `DSSResponse` — standard output format with condition, score, confidence, recommendations, warnings.
-- `ImagePredictionResponse` — extends `DSSResponse` with `ml_probabilities` field for `/predict-image`.
-- `ExplainResponse` — output from `/explain` endpoint.
-- `SignalEntry`, `ConditionExplanation` — nested models for explanation data.
+Sets up the async SQLAlchemy engine. Reads `DATABASE_URL` from environment:
+- If set (PostgreSQL): creates `asyncpg`-backed engine with SSL required
+- If not set (e.g., CI): falls back to in-memory SQLite (`sqlite+aiosqlite://`) so the module imports cleanly without a real database
 
-**Key design note:** Field names in `QuestionnaireRequest` MUST match the keys expected by `validate_answers()` in `dss/validation.py`. The `DSSResponse` mirrors the output of `generate_output()`.
+Exposes `engine`, `AsyncSessionLocal` (session factory), and `Base` (declarative base for ORM models).
+
+### `api/models/` — SQLAlchemy ORM Models
+
+- **`user.py`** — `User` model. The `firebase_uid` field is the bridge between Firebase Auth and PostgreSQL identity.
+- **`resource.py`** — `Resource`, `ResourceTranslation`, `Category` models. One resource can have both EN and KM translations via a one-to-many relationship.
+- **`profile.py`** — `Profile`, `Specialization`, `ProfileSpecialization`. Specializations are shared tags reused across multiple profiles (many-to-many).
+- **`analysis.py`** — `AnalysisHistory`. Uses PostgreSQL's native `JSONB` column for the `result` field so the full DSS response is stored without schema changes.
+
+### `api/routers/` — Route Handlers
+
+- **`auth.py`** — `POST /auth/me` (Firebase token → backend JWT + upsert user row) and `GET /auth/me` (return user profile). Firebase Admin SDK is initialised here; wrapped in `try/except` so missing credentials in CI do not crash the import.
+- **`resources.py`** — Public `GET /resources` (published only) and `GET /resources/{id}`; admin CRUD at `/admin/resources`. Scheduling logic: `_is_visible()` returns true for PUBLISHED status or SCHEDULED with `scheduled_at <= now()`.
+- **`profiles.py`** — Public `GET /profiles` (active only) and `GET /profiles/{id}`; admin CRUD at `/admin/profiles`. Specialization tags are synced on each update via `_sync_specializations()`.
+- **`admin_users.py`** — `GET /admin/users` and `PATCH /admin/users/{id}` for role and active-status management.
+- **`admin_analysis.py`** — User endpoints (`POST/GET/DELETE /analyses`) and admin view (`GET /admin/analysis`). User endpoints are scoped to the current user — users cannot read or delete other users' analyses.
+
+### `api/dependencies/` — Reusable FastAPI Dependencies
+
+- **`auth.py`** — `get_current_user()` decodes the backend JWT and returns the user; `require_admin()` additionally enforces `role == ADMIN`. Any protected route adds `_: User = Depends(require_admin)` to its signature.
+- **`db.py`** — `get_db()` yields an `AsyncSession` that auto-commits on success and rolls back on error.
 
 ---
 
@@ -643,14 +654,37 @@ The API is deployed on Google Cloud Run at:
 - **Swagger Docs**: `https://rice-dss-137747818788.asia-southeast1.run.app/docs`
 - **Health Check**: `https://rice-dss-137747818788.asia-southeast1.run.app/health`
 
-**Configuration:** Region `asia-southeast1` (Singapore — closest to Cambodia), 1Gi memory, unauthenticated access, `CORS_ORIGINS=*`.
+**Configuration:** Region `asia-southeast1` (Singapore — closest to Cambodia), 1Gi memory, unauthenticated access.
 
-**How it works:** Cloud Run builds the Docker image from source, pushes it to Artifact Registry, and serves it as a managed container. Cold starts take ~15-20s (TensorFlow loading); subsequent requests are fast.
+**Required environment variables (beyond original):**
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Neon PostgreSQL async connection string |
+| `JWT_SECRET` | Secret for signing backend JWTs |
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_EXPIRE_MINUTES` | `1440` (24 hours) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to Firebase service account JSON inside container |
+
+**Firebase service account:** Stored in Google Secret Manager (`firebase-service-account` secret) and mounted into the container at `/app/serviceAccountKey.json` via a volume mount. See `CHANGES.md` for setup commands.
 
 **To redeploy after changes:**
 ```bash
-gcloud run deploy rice-dss --source . --platform managed --region asia-southeast1 --memory 1Gi --allow-unauthenticated --set-env-vars "CORS_ORIGINS=*"
+gcloud run deploy rice-dss --source . --platform managed --region asia-southeast1 --memory 1Gi --allow-unauthenticated --set-env-vars "CORS_ORIGINS=https://rice-dss.vercel.app"
 ```
+
+### Neon PostgreSQL
+
+The live database is hosted on [Neon](https://neon.tech) (serverless PostgreSQL). Connection string format:
+```
+postgresql+asyncpg://<user>:<password>@<host>.neon.tech/neondb?ssl=require
+```
+
+The schema was created by running `alembic upgrade head` once against the live database. All 8 tables are in place: `users`, `categories`, `resources`, `resource_translations`, `profiles`, `specializations`, `profile_specializations`, `analysis_history`.
+
+### Vercel (Frontend Deployment)
+
+The React frontend is deployed on Vercel, auto-deploying on every push to `main`. A `frontend/vercel.json` catch-all rewrite (`/(.*) → /index.html`) ensures all SPA routes (including `/admin`) load correctly on direct navigation or page refresh.
 
 ### `Dockerfile`
 Builds a container image based on `python:3.12-slim` with TensorFlow CPU. Copies all project code (excluding data, venvs, caches via `.dockerignore`). Default command starts the API server on port 8000.
@@ -661,7 +695,7 @@ Defines two services:
 - **ui** — Only runs with `--profile demo`. Starts Streamlit on port 8501, depends on `api` service.
 
 ### `.dockerignore`
-Excludes from Docker build: `.venv*`, `data/`, `__pycache__/`, `.git/`, `*.pyc`, `.DS_Store`, `*.md` (except `requirements.txt`).
+Excludes from Docker build: `.venv*`, `data/`, `__pycache__/`, `.git/`, `*.pyc`, `.DS_Store`.
 
 ### `.github/workflows/ci.yml`
 GitHub Actions workflow that runs on every push/PR to `main`:
@@ -670,13 +704,17 @@ GitHub Actions workflow that runs on every push/PR to `main`:
 3. Installs dependencies + `tensorflow-cpu`
 4. Runs `pytest tests/ -v --tb=short`
 
+**CI stability note:** The `api.main` import is safe in CI (no `DATABASE_URL`, no Firebase credentials) because `database.py` falls back to in-memory SQLite and `auth.py` wraps Firebase init in `try/except`.
+
 ### `requirements.txt`
-Python package dependencies. Note: TensorFlow is NOT listed here (installed separately because it's platform-specific). The main packages are:
+Python package dependencies. Main packages:
 - `fastapi`, `uvicorn`, `python-multipart` — API server
 - `pydantic` — request/response validation
-- `httpx` — used by FastAPI's test client
-- `pytest`, `pytest-asyncio` — testing
-- `streamlit` — demo UI
+- `httpx`, `pytest`, `pytest-asyncio` — testing
+- `sqlalchemy`, `asyncpg`, `aiosqlite` — PostgreSQL (production) and SQLite (CI fallback)
+- `alembic` — database migrations
+- `firebase-admin` — Firebase token verification
+- `python-jose`, `passlib` — JWT signing and verification
 
 ### `run_local.py`
 Quick-start script for local development:

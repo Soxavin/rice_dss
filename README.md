@@ -56,8 +56,35 @@ rice_dss/
 │
 ├── api/                         REST API (FastAPI)
 │   ├── __init__.py
-│   ├── main.py                  12 endpoints + CORS + image upload
-│   └── schemas.py               Pydantic v2 request/response models
+│   ├── main.py                  12 DSS endpoints + CORS + image upload + router registration
+│   ├── database.py              Async SQLAlchemy engine (Neon PostgreSQL / SQLite fallback)
+│   ├── schemas/                 Pydantic v2 request/response models
+│   │   ├── __init__.py          Re-exports DSS schemas from schemas_legacy.py
+│   │   ├── schemas_legacy.py    Original DSS Pydantic models (renamed to avoid shadowing)
+│   │   ├── user.py              User/auth schemas
+│   │   ├── resource.py          Resource + translation schemas
+│   │   ├── profile.py           Profile + specialization schemas
+│   │   └── analysis.py          Analysis history schemas
+│   ├── models/                  SQLAlchemy ORM models
+│   │   ├── user.py              User model (firebase_uid bridge)
+│   │   ├── resource.py          Resource, ResourceTranslation, Category models
+│   │   ├── profile.py           Profile, Specialization, ProfileSpecialization models
+│   │   └── analysis.py          AnalysisHistory model (JSONB result column)
+│   ├── routers/                 FastAPI route handlers
+│   │   ├── auth.py              POST/GET /auth/me — Firebase token exchange
+│   │   ├── resources.py         GET /resources, /resources/:id + admin CRUD
+│   │   ├── profiles.py          GET /profiles, /profiles/:id + admin CRUD
+│   │   ├── admin_users.py       GET/PATCH /admin/users — user management
+│   │   └── admin_analysis.py    POST/GET/DELETE /analyses — history + admin view
+│   └── dependencies/            Reusable FastAPI dependencies
+│       ├── auth.py              get_current_user(), require_admin()
+│       └── db.py                get_db() — async session factory
+│
+├── alembic/                     Database migrations
+│   ├── versions/
+│   │   └── c68ef0ab3962_initial_schema.py   8-table initial schema
+│   ├── env.py
+│   └── alembic.ini
 │
 ├── ml/                          ML Pipeline (EfficientNetV2B0)
 │   ├── __init__.py
@@ -182,6 +209,8 @@ docker compose --profile demo up
 
 ## API Endpoints
 
+### DSS Diagnosis Endpoints
+
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | API root — lists all available endpoints |
@@ -198,6 +227,41 @@ docker compose --profile demo up
 | `/health` | GET | System status + model availability |
 
 All DSS endpoints accept an optional `?lang=km` query parameter to return Khmer output (default: `en`).
+
+### Auth Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/auth/me` | POST | Firebase ID token | Exchange Firebase token for backend JWT; creates user row on first login |
+| `/auth/me` | GET | Backend JWT | Return current user profile and role |
+
+### Content API (Public)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/resources` | GET | List all published/scheduled resources with translations |
+| `/resources/{id}` | GET | Single resource with translations |
+| `/profiles` | GET | List all active expert/supplier profiles |
+| `/profiles/{id}` | GET | Single active profile |
+
+### Analysis History (Authenticated Users)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/analyses` | POST | Save a DSS result for the current user |
+| `/analyses` | GET | Get own analysis history (paginated with `?limit=&offset=`) |
+| `/analyses/{id}` | DELETE | Delete one of your own analyses |
+| `/analyses` | DELETE | Clear all of your analyses |
+
+### Admin API (role=ADMIN required)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/admin/resources` | GET/POST/PATCH/DELETE | Manage all resources (all statuses) |
+| `/admin/profiles` | GET/POST/PATCH/DELETE | Manage expert/supplier profiles |
+| `/admin/users` | GET | List all registered users |
+| `/admin/users/{id}` | PATCH | Update user role or active status |
+| `/admin/analysis` | GET | View all analyses across all users |
 
 See [API_GUIDE.md](docs/API_GUIDE.md) for full integration documentation with curl examples and JS/TS code.
 
@@ -342,7 +406,7 @@ The production frontend is a React 18 + Vite + Tailwind v4 single-page applicati
 **Stack:**
 - React 18 + React Router v6
 - Vite 8.0.3 + `@tailwindcss/vite` (Tailwind v4)
-- Firebase v11 — Google + Email/Password auth; Firestore for user data persistence
+- Firebase v11 — Google + Email/Password auth; Firestore for farm profile only
 - Axios (proxied to `/api` locally, or `VITE_API_URL` in production)
 - Lucide React icons; Kantumruy Pro + Playfair Display fonts
 
@@ -369,6 +433,7 @@ VITE_API_URL=https://rice-dss-137747818788.asia-southeast1.run.app
 - Root directory: `frontend`
 - Set all `VITE_*` env vars in Vercel dashboard → Settings → Environment Variables
 - Add the Vercel domain to Firebase Console → Authentication → Authorized domains (required for Google sign-in)
+- `frontend/vercel.json` contains a catch-all rewrite (`/(.*) → /index.html`) so direct navigation to `/admin` and all other SPA routes works correctly
 
 **Firestore setup (one-time manual step):**
 1. Firebase Console → Firestore Database → Create database → region `asia-southeast1`
@@ -387,25 +452,31 @@ service cloud.firestore {
 **Key pages:**
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | Landing | Hero, services, how-it-works, educational resources, partners |
+| `/` | Landing | Hero (with "Try a Demo" shortcut), services, how-it-works, educational resources, partners |
 | `/detect` | Step 1 — Upload | Mode selector with per-mode detection capability grid + image upload |
 | `/detect/questions` | Step 2 — Questions | Conversational one-question-at-a-time questionnaire (19 Qs, smart branching) |
 | `/detect/results` | Step 3 — Results | Diagnosis card, confidence explainer, Grad-CAM viewer, recommendations |
-| `/profile` | User Profile | Farm information form + analysis history (Firestore-backed) |
-| `/experts` | Experts & Support | Agricultural experts, suppliers, contact form |
-| `/learn` | Learning Resources | Articles and video resources |
-| `/search` | Search Results | Full-text search across all content |
+| `/profile` | User Profile | Farm information form + analysis history (PostgreSQL-backed) |
+| `/learn` | Learning Resources | Articles and video resources (PostgreSQL-backed via `/resources` API) |
+| `/learn/article/:id` | Article Detail | Full article content rendered from TipTap HTML |
+| `/experts` | Experts & Support | Agricultural experts and suppliers (PostgreSQL-backed via `/profiles` API) |
+| `/search` | Search Results | Full-text search — live resources from API + static service shortcuts |
 | `/sign-in` / `/sign-up` | Auth | Firebase-backed sign in/up (Google + Email/Password) |
+| `/admin` | Admin Dashboard | Summary stats — requires role=ADMIN |
+| `/admin/resources` | Resource Manager | Create/edit/publish/delete learning resources |
+| `/admin/profiles` | Profile Manager | Create/edit expert and supplier profiles |
+| `/admin/users` | User Manager | View users, change roles, deactivate accounts |
+| `/admin/analysis` | Analysis Log | View all DSS runs across all users |
 
 **Detection flow (data passing between steps):**
 - Step 1 → Step 2: `sessionStorage['detect_mode']` + `sessionStorage['detect_images']` + `window.__detectFiles`
 - Step 2 → Backend: mode-aware API call — hybrid/ml use FormData image upload; questionnaire uses JSON body
 - Step 2 → Step 3: `sessionStorage['detect_result']` (full `DSSResponse` JSON)
-- Step 3: auto-saves result to Firestore `users/{uid}/analyses/{auto-id}` for authenticated users
+- Step 3: auto-saves result to PostgreSQL (`POST /analyses`) for authenticated users; skips if `is_demo: true`
 
-**Firestore data model:**
-- `users/{uid}/analyses/{auto-id}` — per-analysis record: mode, condition_key, confidence, score, recommendations, createdAt
-- `users/{uid}/profile/farm` — farm profile: variety, region, field_size, planting_method, notes
+**Data persistence:**
+- Analysis history → PostgreSQL via `/analyses` (migrated from Firestore)
+- Farm profile (variety, region, field size) → Firestore `users/{uid}/profile/farm` (not migrated)
 
 **Language system:**
 - EN/KM toggle with 130ms fade transition via `LanguageContext.jsx`
@@ -429,6 +500,15 @@ service cloud.firestore {
 gcloud auth login
 gcloud config set project YOUR_PROJECT_ID
 ```
+
+### Additional Requirements
+
+The backend now also requires:
+- **Neon PostgreSQL** — set `DATABASE_URL=postgresql+asyncpg://<neon_url>` on Cloud Run
+- **Firebase service account** — stored in Google Secret Manager, mounted at `/app/serviceAccountKey.json`; set `GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json`
+- **JWT secret** — set `JWT_SECRET`, `JWT_ALGORITHM=HS256`, `JWT_EXPIRE_MINUTES=1440`
+
+See [CHANGES.md](CHANGES.md) for full deployment steps and Secret Manager setup.
 
 ### Deploy
 

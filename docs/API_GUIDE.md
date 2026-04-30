@@ -33,6 +33,8 @@ CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
 
 ## Endpoints Overview
 
+### DSS Diagnosis Endpoints
+
 | Endpoint | Method | Purpose | Content-Type |
 |----------|--------|---------|--------------|
 | `/` | GET | API root — lists all endpoints | — |
@@ -47,6 +49,45 @@ CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
 | `/logs/summary` | GET | Aggregated run statistics | — |
 | `/logs/runs` | GET | Recent run history | — |
 | `/health` | GET | Health check | — |
+
+### Auth Endpoints
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/auth/me` | POST | `Authorization: Bearer <firebase_id_token>` | Exchange Firebase token for a backend JWT; creates user row on first call |
+| `/auth/me` | GET | `Authorization: Bearer <backend_jwt>` | Return current user profile and role |
+
+### Content API (No Auth Required)
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/resources` | GET | List all published resources with translations |
+| `/resources/{id}` | GET | Single resource with all translations |
+| `/profiles` | GET | List all active expert/supplier profiles |
+| `/profiles/{id}` | GET | Single active profile with specializations |
+
+### Analysis History (Backend JWT Required)
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/analyses` | POST | Save a DSS result for the current user |
+| `/analyses?limit=15&offset=0` | GET | Paginated analysis history for the current user |
+| `/analyses/{id}` | DELETE | Delete one of your own analyses |
+| `/analyses` | DELETE | Clear all of your analyses |
+
+### Admin Endpoints (role=ADMIN JWT Required)
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/admin/resources` | GET | All resources (all statuses) |
+| `/admin/resources` | POST | Create resource + translations |
+| `/admin/resources/{id}` | PATCH | Update resource or translations |
+| `/admin/resources/{id}` | DELETE | Delete resource (cascades to translations) |
+| `/admin/profiles` | GET/POST | List or create profiles |
+| `/admin/profiles/{id}` | PATCH/DELETE | Update or delete a profile |
+| `/admin/users` | GET | All registered users |
+| `/admin/users/{id}` | PATCH | Update user role or is_active |
+| `/admin/analysis` | GET | All analyses across all users (filterable by mode) |
 
 ---
 
@@ -414,4 +455,144 @@ const multiResponse = await fetch('http://localhost:8000/predict-images', {
 const multiResult = await multiResponse.json();
 console.log(multiResult.images_used);        // 3
 console.log(multiResult.ml_probabilities);   // averaged across all images
+```
+
+---
+
+## 9. Auth — Firebase Token Exchange
+
+The frontend exchanges a Firebase ID token for a backend JWT once per login. All
+subsequent requests to protected endpoints use the backend JWT.
+
+```javascript
+// Step 1: get Firebase ID token after sign-in
+const firebaseUser = firebase.auth().currentUser;
+const idToken = await firebaseUser.getIdToken();
+
+// Step 2: exchange for backend JWT
+const res = await fetch('https://rice-dss-137747818788.asia-southeast1.run.app/auth/me', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${idToken}` },
+});
+const { access_token } = await res.json();
+// access_token is a HS256 JWT, valid for 24 hours
+
+// Step 3: read user role
+const profile = await fetch('.../auth/me', {
+  headers: { 'Authorization': `Bearer ${access_token}` },
+});
+const { role } = await profile.json();  // "USER" or "ADMIN"
+```
+
+**Error codes:**
+- `401` — invalid or expired Firebase ID token
+- `403` — account is deactivated (`is_active = false`)
+
+---
+
+## 10. Content API — Resources
+
+Public endpoints — no authentication required.
+
+```javascript
+// List all published resources
+const res = await fetch('.../resources');
+const resources = await res.json();
+// resources = [{ id, type, category, thumbnail_url, published_at, translations: [...] }]
+
+// Each resource has translations array:
+const en = resource.translations.find(t => t.language === 'EN');
+// { language, title, description, content }
+// content is TipTap-generated HTML — render with dangerouslySetInnerHTML
+
+// Get a single resource
+const detail = await fetch(`.../resources/${id}`);
+```
+
+**Response shape:**
+```json
+[{
+  "id": "uuid",
+  "type": "ARTICLE",
+  "status": "PUBLISHED",
+  "thumbnail_url": "https://...",
+  "published_at": "2026-04-30T00:00:00Z",
+  "category": { "id": "uuid", "name": "Disease Management" },
+  "translations": [
+    { "language": "EN", "title": "...", "description": "...", "content": "<p>...</p>" },
+    { "language": "KM", "title": "...", "description": "...", "content": "<p>...</p>" }
+  ]
+}]
+```
+
+---
+
+## 11. Content API — Profiles
+
+Public endpoints — no authentication required.
+
+```javascript
+// List all active profiles (experts + suppliers)
+const res = await fetch('.../profiles');
+const profiles = await res.json();
+
+// Filter by type
+const experts   = profiles.filter(p => p.type === 'EXPERT');
+const suppliers = profiles.filter(p => p.type === 'SUPPLIER');
+```
+
+**Response shape:**
+```json
+{
+  "id": "uuid",
+  "type": "EXPERT",
+  "name_en": "Dr. Sophal Chan",
+  "name_km": "...",
+  "bio_en": "...",
+  "bio_km": "...",
+  "job_title_en": "Rice Pathologist",
+  "job_title_km": "...",
+  "location_en": "Phnom Penh",
+  "location_km": "...",
+  "telegram": "sophal_rice",
+  "experience_years": 12,
+  "rating": 4.8,
+  "online": true,
+  "photo_url": "https://...",
+  "languages": "Khmer,English",
+  "specializations": [
+    { "id": "uuid", "name": "Crop Disease Management" }
+  ]
+}
+```
+
+---
+
+## 12. Analysis History (Authenticated)
+
+All endpoints require `Authorization: Bearer <backend_jwt>`.
+
+```javascript
+const headers = { 'Authorization': `Bearer ${backendJwt}` };
+
+// Save a result
+await fetch('.../analyses', {
+  method: 'POST',
+  headers: { ...headers, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    mode: 'HYBRID',            // ML | QUESTIONNAIRE | HYBRID
+    result: dssResponseObject, // full DSS response
+    confidence: 0.85,
+  }),
+});
+
+// Get paginated history
+const history = await fetch('.../analyses?limit=15&offset=0', { headers });
+// Returns: [{ id, mode, result, confidence, created_at }]
+
+// Delete one entry
+await fetch(`.../analyses/${id}`, { method: 'DELETE', headers });
+
+// Clear all
+await fetch('.../analyses', { method: 'DELETE', headers });
 ```

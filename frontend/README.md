@@ -14,7 +14,7 @@
 | React Router | v6 | Client-side routing + navigation guards |
 | Vite | 8.0.3 | Build tool + dev server |
 | Tailwind CSS | v4.2.2 | Utility CSS via `@tailwindcss/vite` plugin |
-| Firebase | v11 | Authentication (Google + Email/Password) |
+| Firebase | v11 | Authentication (Google + Email/Password); Firestore for farm profile only |
 | Axios | — | API client (`src/api/client.js`) |
 | Lucide React | — | Icons |
 
@@ -70,39 +70,50 @@ The frontend is deployed to Vercel and linked to the `main` branch. Every `git p
 ## Project Structure
 
 ```
-frontend/src/
-├── api/
-│   └── client.js              Axios instance — baseURL from VITE_API_URL or /api proxy
-├── context/
-│   ├── AuthContext.jsx         Firebase auth state (user, isAuthenticated, login/logout)
-│   └── LanguageContext.jsx     EN/KM i18n — lang, switchLang, isTransitioning, t()
-├── components/layout/
-│   ├── Navbar.jsx              Sticky nav, Google avatar, Services dropdown, mobile menu
-│   ├── Footer.jsx              Links + language toggle
-│   └── Layout.jsx              Page wrapper — Navbar + <Outlet> with fade transition + Footer
-├── pages/
-│   ├── Landing.jsx             Hero (full-viewport), services, how-it-works, resources, CTA
-│   ├── SignIn.jsx              Firebase sign-in (Google + email/password)
-│   ├── SignUp.jsx              Firebase registration
-│   ├── SearchResults.jsx
-│   ├── CropIntegration.jsx
-│   ├── NotFound.jsx            404 page — shown for any unmatched route
-│   ├── Detection/
-│   │   ├── Step1Upload.jsx     Mode selector + image upload + rice-leaf warning
-│   │   ├── Step2Questions.jsx  Mode-aware questionnaire + nav guard
-│   │   └── Step3Results.jsx    Diagnosis card, Grad-CAM tabs, recommendations, skeleton loading
-│   ├── Learning/
-│   │   ├── ResourcesList.jsx
-│   │   ├── ArticleDetail.jsx
-│   │   └── VideoDetail.jsx
-│   └── Experts/
-│       └── ExpertsPage.jsx     Experts, suppliers, treatments — dark header banner layout
-├── data/
-│   └── translations.js         ~500+ keys, full EN + KM for all pages
-├── firebase.js                 Firebase app init — exports auth, googleProvider, facebookProvider
-├── App.jsx                     Routes + ScrollToTop
-├── main.jsx                    React entry point
-└── index.css                   Tailwind v4 @theme tokens + custom utilities
+frontend/
+├── vercel.json                 SPA catch-all rewrite rule (/* → /index.html)
+└── src/
+    ├── api/
+    │   ├── client.js              Axios instance — baseURL from VITE_API_URL or /api proxy
+    │   └── adminClient.js         Admin API calls (profiles CRUD, resource management)
+    ├── context/
+    │   ├── AuthContext.jsx         Firebase auth state (user, isAuthenticated, isAdmin, login/logout)
+    │   └── LanguageContext.jsx     EN/KM i18n — lang, switchLang, isTransitioning, t()
+    ├── components/
+    │   ├── layout/
+    │   │   ├── Navbar.jsx          Sticky nav, Google avatar, Services dropdown, mobile menu
+    │   │   ├── Footer.jsx          Links + language toggle
+    │   │   └── Layout.jsx          Page wrapper — Navbar + <Outlet> with fade transition + Footer
+    │   └── AdminRoute.jsx          Route guard — reads isAdmin from AuthContext, redirects non-admins to /
+    ├── pages/
+    │   ├── Landing.jsx             Hero (full-viewport), services, how-it-works, resources, CTA + demo button
+    │   ├── SignIn.jsx              Firebase sign-in (Google + email/password)
+    │   ├── SignUp.jsx              Firebase registration
+    │   ├── SearchResults.jsx
+    │   ├── CropIntegration.jsx
+    │   ├── NotFound.jsx            404 page — shown for any unmatched route
+    │   ├── Detection/
+    │   │   ├── Step1Upload.jsx     Mode selector + image upload + rice-leaf warning
+    │   │   ├── Step2Questions.jsx  Mode-aware questionnaire + nav guard
+    │   │   └── Step3Results.jsx    Diagnosis card, Grad-CAM tabs, recommendations, skeleton loading
+    │   ├── Learning/
+    │   │   ├── ResourcesList.jsx
+    │   │   ├── ArticleDetail.jsx
+    │   │   └── VideoDetail.jsx
+    │   ├── Experts/
+    │   │   └── ExpertsPage.jsx     Experts, suppliers, treatments — dark header banner layout
+    │   └── Admin/
+    │       ├── AdminDashboard.jsx  Tab shell: Users | Resources | Profiles | Analyses
+    │       ├── AdminUsers.jsx      User list + promote/demote
+    │       ├── AdminResources.jsx  Resource CRUD table
+    │       ├── AdminProfiles.jsx   Expert/supplier profile CRUD
+    │       └── AdminAnalyses.jsx   All users' analysis history
+    ├── data/
+    │   └── translations.js         ~700+ keys, full EN + KM for all pages
+    ├── firebase.js                 Firebase app init — exports auth, googleProvider, facebookProvider
+    ├── App.jsx                     Routes + ScrollToTop
+    ├── main.jsx                    React entry point
+    └── index.css                   Tailwind v4 @theme tokens + custom utilities
 ```
 
 ---
@@ -130,6 +141,7 @@ frontend/src/
 | Step 1 → Step 2 | Mode, image previews | `sessionStorage['detect_mode']`, `sessionStorage['detect_images']` |
 | Step 1 → Step 2 | Actual File objects | `window.__detectFiles` |
 | Step 2 → Step 3 | Full DSS response JSON | `sessionStorage['detect_result']` |
+| Step 3 | Save result | `POST /analyses` (PostgreSQL) — skipped when `is_demo: true` |
 
 Step 2 has a **navigation guard** — if `detect_mode` is not in sessionStorage, it redirects to `/detect` immediately.
 
@@ -148,6 +160,19 @@ Step 2 has a **navigation guard** — if `detect_mode` is not in sessionStorage,
 - Google sign-in: uses `user.photoURL` for avatar in Navbar (`referrerPolicy="no-referrer"` required)
 - Email users: letter-initial fallback avatar
 - Loading state: green spinner shown while Firebase checks session (prevents flash of unauthenticated state)
+- `isAdmin` flag: set by calling `GET /auth/me` after sign-in; controls `AdminRoute` access
+- **Analysis history is stored in PostgreSQL via `POST /analyses`** — Firestore is only used for farm profile (`users/{uid}/profile`)
+
+### Admin Dashboard
+
+- `AdminRoute.jsx` wraps all `/admin/*` routes — reads `isAdmin` from `AuthContext`, redirects non-admins to `/`
+- `adminClient.js` mirrors `client.js` but targets `/admin/*` routes; injects `Authorization: Bearer <token>` via Axios interceptor
+- `AdminDashboard.jsx` renders four tab panels (Users, Resources, Profiles, Analyses) driven by `activeTab` state
+
+### Demo Mode
+
+- Landing page "Try a Demo" button writes a pre-baked `DEMO_RESULT` constant to `sessionStorage['detect_result']` and navigates to `/detect/results`
+- `DEMO_RESULT` includes `is_demo: true` — Step3 detects this flag, shows an amber "Demo result" banner, and skips the PostgreSQL save
 
 ### OOD Warning (Step 1)
 
