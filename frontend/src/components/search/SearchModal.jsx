@@ -2,6 +2,27 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, X, ArrowRight } from 'lucide-react'
 import { SEARCH_INDEX } from '../../data/searchData'
+import { getResources } from '../../api/client'
+
+// Keep only service-type items from the static index (navigation shortcuts).
+// Articles and videos come from the live API so newly published content is searchable.
+const STATIC_ITEMS = SEARCH_INDEX.filter(item => item.type === 'service')
+
+function toSearchItem(resource) {
+  const en = resource.translations?.find(t => t.language === 'EN') || resource.translations?.[0] || {}
+  const km = resource.translations?.find(t => t.language === 'KM') || {}
+  const isVideo = resource.type?.toLowerCase() === 'video'
+  return {
+    id:      resource.id,
+    title:   en.title || '',
+    titleKm: km.title || en.title || '',
+    desc:    en.description || '',
+    tags:    [resource.category?.name, resource.type?.toLowerCase()].filter(Boolean),
+    type:    isVideo ? 'video' : 'article',
+    img:     resource.thumbnail_url || '/images/analysis-leaf.jpg',
+    link:    isVideo ? `/learn/video/${resource.id}` : `/learn/article/${resource.id}`,
+  }
+}
 
 const TYPE_LABEL = {
   article:  { label: 'Article',  bg: '#f0fdf4', color: '#16a34a' },
@@ -20,10 +41,10 @@ const GROUP_LABELS = {
   supplier: 'Suppliers',
 }
 
-function filterIndex(query) {
+function filterIndex(query, items) {
   if (!query.trim()) return []
   const q = query.toLowerCase()
-  return SEARCH_INDEX.filter((item) =>
+  return items.filter((item) =>
     item.title.toLowerCase().includes(q) ||
     item.titleKm.toLowerCase().includes(q) ||
     item.desc.toLowerCase().includes(q) ||
@@ -43,10 +64,20 @@ function groupResults(results) {
 export default function SearchModal({ open, onClose }) {
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
+  const [liveItems, setLiveItems] = useState([])
   const inputRef = useRef(null)
   const navigate = useNavigate()
 
-  const results = filterIndex(query)
+  // Fetch live resources once on first open; merge with static service shortcuts
+  useEffect(() => {
+    if (!open || liveItems.length > 0) return
+    getResources()
+      .then(r => setLiveItems((r.data || []).map(toSearchItem)))
+      .catch(() => {})
+  }, [open])
+
+  const searchable = [...STATIC_ITEMS, ...liveItems]
+  const results = filterIndex(query, searchable)
   const groups  = groupResults(results)
   const flat    = groups.flatMap((g) => g.items)
 

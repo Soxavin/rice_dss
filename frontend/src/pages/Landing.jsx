@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
 import {
   Search, Leaf, Users, BookOpen, ShoppingBag,
@@ -53,8 +53,42 @@ const btnWhiteOutline = {
   fontFamily: 'Roboto, sans-serif',
 }
 
+const DEMO_RESULT = {
+  is_demo: true,
+  status: 'diagnosed',
+  condition_key: 'blast',
+  primary_condition: 'Rice Blast',
+  confidence_level: 'high',
+  confidence_label: 'High Confidence',
+  score: 85,
+  all_scores: { blast: 85, brown_spot: 22, bacterial_blight: 12, iron_toxicity: 0, n_deficiency: 5, salt_toxicity: 0 },
+  mode_used: 'Questionnaire Only',
+  warnings: [],
+  secondary_conditions: [],
+  recommendations: {
+    immediate: [
+      'Apply tricyclazole fungicide (0.6 kg/ha) within 48 hours',
+      'Remove and destroy all visibly infected plant material',
+      'Temporarily drain the field to reduce leaf wetness',
+    ],
+    preventive: [
+      'Select blast-resistant rice varieties for next season',
+      'Reduce nitrogen fertiliser during the tillering stage',
+      'Monitor closely during high-humidity periods (flowering to grain fill)',
+    ],
+    consult: false,
+  },
+}
+
 export default function Landing() {
   const { t, lang } = useLanguage()
+  const navigate = useNavigate()
+
+  const handleTryDemo = () => {
+    sessionStorage.setItem('detect_result', JSON.stringify(DEMO_RESULT))
+    sessionStorage.setItem('detect_mode', 'questionnaire')
+    navigate('/detect/results')
+  }
 
   const services = [
     {
@@ -185,6 +219,15 @@ export default function Landing() {
                 >
                   {t('hero_learn_more')}
                 </Link>
+                <button
+                  onClick={handleTryDemo}
+                  className="inline-flex items-center gap-2 transition-colors cursor-pointer"
+                  style={{ border: 'none', background: 'none', color: '#558b2f', fontWeight: 600, fontSize: '14px', fontFamily: 'Roboto, sans-serif', padding: '10px 4px', textDecoration: 'underline', textUnderlineOffset: '3px' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#33691e' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#558b2f' }}
+                >
+                  {t('hero_try_demo')}
+                </button>
               </div>
               <div className="mt-8 flex items-center gap-6">
                 {[

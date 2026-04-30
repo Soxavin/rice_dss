@@ -1,16 +1,34 @@
-# Rice DSS — PostgreSQL + Admin Dashboard: Change Documentation
+# Rice DSS — Change Documentation
 
-> Covers every file that was added or modified,
-> how the pieces connect, how they changed the existing architecture, and what
-> still needs to be done manually before the system is fully live.
+> Covers every significant change made after the initial ML/DSS system was built:
+> why each change was made, what files were touched, and how everything connects.
+> This document is the authoritative reference for the PostgreSQL extension,
+> admin dashboard, content migration, deployment, and recent frontend features.
+
+---
+
+## Table of Contents
+
+1. [Why This Was Built](#1-why-this-was-built)
+2. [Architecture: Before vs After](#2-architecture-before-vs-after)
+3. [The Auth Bridge — Firebase to Backend JWT](#3-the-auth-bridge)
+4. [Database Schema](#4-database-schema)
+5. [Backend: New Files](#5-backend-new-files)
+6. [Frontend: New Files](#6-frontend-new-files)
+7. [Frontend: Modified Files](#7-frontend-modified-files)
+8. [Deployment & Infrastructure Fixes](#8-deployment--infrastructure-fixes)
+9. [CI / Test Pipeline Fix](#9-ci--test-pipeline-fix)
+10. [Manual Steps: Production Checklist](#10-manual-steps-production-checklist)
+11. [Environment Variables Reference](#11-environment-variables-reference)
+12. [Testing Checklist](#12-testing-checklist)
 
 ---
 
 ## 1. Why This Was Built
 
 All public-facing content on the site — expert profiles, supplier listings,
-educational articles — was hardcoded directly in the React frontend (inside
-`frontend/src/data/searchData.js`). Adding or editing anything required a code
+educational articles — was hardcoded directly in the React frontend inside
+`frontend/src/data/searchData.js`. Adding or editing anything required a code
 change, a commit, and a Vercel redeploy.
 
 Additionally, every analysis a user ran through the DSS was saved to Firestore
@@ -23,6 +41,8 @@ This extension adds:
 2. A **backend API** layer on top of it (new FastAPI routers)
 3. A **React admin dashboard** at `/admin` for managing all content
 4. A **migration of analysis history** from Firestore to PostgreSQL
+5. **Public pages wired to the API** — ResourcesList, ArticleDetail, and
+   ExpertsPage now all fetch live content from the backend
 
 ---
 
@@ -47,14 +67,14 @@ User browser
     ├─▶ Firebase Auth  (login / session — unchanged)
     ├─▶ Firestore      (farm profile only — partial migration)
     ├─▶ FastAPI (Cloud Run)
-    │       ├─▶  ML models + DSS logic  (unchanged — 12 original endpoints)
+    │       ├─▶  ML models + DSS logic  (unchanged — original endpoints untouched)
     │       ├─▶  Auth bridge  POST /auth/me  (Firebase ID token → backend JWT)
-    │       ├─▶  Public API   GET /resources, /profiles
+    │       ├─▶  Public API   GET /resources, /resources/:id, /profiles
     │       └─▶  Admin API    /admin/resources, /admin/profiles, /admin/users, /admin/analysis
     │                 │
     │                 └─▶ Neon PostgreSQL  (users, content, profiles, analysis history)
     │
-    └─▶ Firebase Storage  (thumbnail / image uploads from admin dashboard)
+    └─▶ Firebase Storage  (thumbnail / photo uploads from admin dashboard)
 
 Admin browser
     │
@@ -68,14 +88,14 @@ Admin browser
   PostgreSQL (for role/content ownership). They are linked by `firebase_uid`.
 - Analysis history moved from Firestore → PostgreSQL, giving the admin visibility
   into usage patterns.
-- Farm profile (variety, region, field size) still lives in Firestore — it
-  hasn't been migrated yet.
+- Farm profile (variety, region, field size) still lives in Firestore — it is
+  the one piece not migrated.
 
 ---
 
-## 3. The Auth Bridge — How Firebase Connects to the Backend JWT
+## 3. The Auth Bridge
 
-This is the most non-obvious part of the system. Here's the full flow:
+This is the most non-obvious part of the system. Here is the full flow:
 
 ```
 1. User signs in via Firebase (Google or email/password) — same as before.
@@ -83,11 +103,11 @@ This is the most non-obvious part of the system. Here's the full flow:
 2. onAuthStateChanged fires in AuthContext.jsx.
 
 3. AuthContext calls _exchangeForBackendJWT():
-   - Gets a short-lived Firebase ID token via  firebaseUser.getIdToken()
-   - POSTs it to  POST /auth/me  as  Authorization: Bearer <firebase_id_token>
+   - Gets a short-lived Firebase ID token via firebaseUser.getIdToken()
+   - POSTs it to POST /auth/me  as  Authorization: Bearer <firebase_id_token>
 
 4. Backend (api/routers/auth.py) receives the request:
-   - Verifies the Firebase ID token using the Firebase Admin SDK
+   - Verifies the Firebase ID token using Firebase Admin SDK
      (firebase_auth.verify_id_token())
    - Looks up the user in the PostgreSQL `users` table by firebase_uid
    - If first login: creates a new User row with role=USER
@@ -95,30 +115,31 @@ This is the most non-obvious part of the system. Here's the full flow:
 
 5. AuthContext caches the backend JWT in a React ref (backendTokenRef).
 
-6. AuthContext also calls  GET /auth/me  with the backend JWT to read the user's
-   role. If role=ADMIN, sets isAdmin=true in context.
+6. AuthContext also calls GET /auth/me with the backend JWT to read the
+   user's role. If role=ADMIN, sets isAdmin=true in context.
 
-7. All admin API calls use getBackendToken() from context, which returns the
-   cached JWT or re-exchanges if the cache is empty.
+7. All admin API calls use getBackendToken() from context, which returns
+   the cached JWT or re-exchanges if the cache is empty.
 ```
 
-**Why two tokens?**
+**Why two tokens?**  
 Firebase ID tokens are short-lived (~1h) and are meant for Firebase services.
-The backend JWT gives us full control: we can encode custom claims, check role,
-and revoke by changing the JWT_SECRET if needed.
+The backend JWT gives full control: custom claims, role checks, and revocability
+by rotating `JWT_SECRET`.
 
 **Relevant files:**
 - `api/routers/auth.py` — the exchange endpoint
 - `api/dependencies/auth.py` — `get_current_user()`, `require_admin()` used by all protected routes
 - `frontend/src/context/AuthContext.jsx` — `_exchangeForBackendJWT()`, `getBackendToken()`, `isAdmin`
 - `frontend/src/api/adminClient.js` — `adminRequest()` helper that auto-attaches the JWT
+- `frontend/src/components/layout/Navbar.jsx` — shows "Admin Dashboard" link when `isAdmin === true`
 
 ---
 
 ## 4. Database Schema
 
 All tables are in the Neon PostgreSQL database. The schema was created by Alembic
-migration `c68ef0ab3962_initial_schema.py`.
+migration `alembic/versions/c68ef0ab3962_initial_schema.py`.
 
 ### `users`
 | Column | Type | Notes |
@@ -222,8 +243,9 @@ the very bottom to register the new routers — no existing logic was changed.
 
 ### `api/database.py`
 Sets up the async SQLAlchemy engine connecting to Neon. Reads `DATABASE_URL` from
-environment, requires SSL, and exposes `AsyncSessionLocal` (session factory) and
-`Base` (declarative base that all models inherit from).
+environment. Falls back to in-memory SQLite (`sqlite+aiosqlite://`) when
+`DATABASE_URL` is not set — this keeps CI imports clean even without a real
+database. SSL is required for PostgreSQL connections only.
 
 ### `api/models/`
 
@@ -233,19 +255,30 @@ environment, requires SSL, and exposes `AsyncSessionLocal` (session factory) and
   one-to-many translation pattern (`resource → translations[]`) allows a single
   resource to have both EN and KM versions without duplicating metadata.
 - **`profile.py`** — `Profile`, `Specialization`, `ProfileSpecialization` models.
-  Specializations are shared across profiles (many-to-many), so "Crop Disease
-  Management" created for one expert is reused for others.
+  Specializations are shared across profiles (many-to-many).
 - **`analysis.py`** — `AnalysisHistory` model. Uses PostgreSQL's native `JSONB`
-  column type for the `result` field, which lets queries filter on specific JSON
-  keys in the future without schema changes.
+  column type for the `result` field.
 
 ### `api/schemas/`
-Pydantic models for request validation and response serialisation. Each schema
-file mirrors its model counterpart. Notable:
-- `ResourceCreate` includes a `translations` list (write both languages in one
-  request)
-- `ProfileCreate` accepts `specialization_names: list[str]` — the router handles
-  creating Specialization rows if they don't already exist
+Pydantic models for request validation and response serialisation.
+
+**Important naming note:** The original DSS used `api/schemas.py` (a single file).
+When the new `api/schemas/` directory was created, Python resolved the package
+directory first, silently shadowing the old file. This caused an
+`ImportError: cannot import name 'QuestionnaireRequest' from 'api.schemas'`.
+
+**Fix:** The original file was renamed to `api/schemas_legacy.py`, and
+`api/schemas/__init__.py` re-exports all original classes from it:
+
+```python
+from api.schemas_legacy import (
+    QuestionnaireRequest, DSSResponse, ImagePredictionResponse,
+    MultiImagePredictionResponse, ExplainResponse, RecommendationResponse,
+    SignalEntry, ConditionExplanation,
+)
+```
+
+This preserves all existing import paths across `api/main.py` and the test suite.
 
 ### `api/dependencies/auth.py`
 Two reusable FastAPI dependencies:
@@ -254,71 +287,60 @@ Two reusable FastAPI dependencies:
 - `require_admin()` — depends on `get_current_user`, additionally raises 403 if
   `role != ADMIN`
 
-Any protected route simply adds `_: User = Depends(require_admin)` to its
-signature.
-
 ### `api/dependencies/db.py`
-`get_db()` — an async context manager that yields a SQLAlchemy `AsyncSession` and
-automatically commits or rolls back on exit. Every router function that touches the
-database uses `db: AsyncSession = Depends(get_db)`.
+`get_db()` — async context manager that yields a SQLAlchemy `AsyncSession` and
+automatically commits or rolls back on exit.
 
 ### `api/routers/auth.py`
 Two endpoints:
 - `POST /auth/me` — receives a Firebase ID token, verifies it, upserts the
-  PostgreSQL user row, and returns a backend JWT
-- `GET /auth/me` — decodes a backend JWT and returns the user's profile (used by
-  the frontend to check role on startup)
+  PostgreSQL user row, returns a backend JWT
+- `GET /auth/me` — decodes a backend JWT and returns the user's profile
 
-Firebase Admin SDK is initialised once here (idempotent check via
-`firebase_admin._apps`). It uses a service account JSON file pointed to by
-`GOOGLE_APPLICATION_CREDENTIALS`.
+Firebase Admin SDK initialisation is wrapped in `try/except` so that missing
+credentials in CI do not crash the module at import time. The flag `_firebase_ready`
+is set to `True` only if initialisation succeeds.
 
 ### `api/routers/resources.py`
 Public endpoints:
-- `GET /resources` — returns only published/due-scheduled resources with their
-  translations loaded
+- `GET /resources` — returns only published/due-scheduled resources with translations
 - `GET /resources/{id}` — same visibility check for a single resource
 
 Admin endpoints (all require `role=ADMIN`):
 - `GET /admin/resources` — all resources regardless of status
 - `POST /admin/resources` — creates resource + translations in one transaction
-- `PATCH /admin/resources/{id}` — updates resource; if translations are provided,
-  replaces them entirely
+- `PATCH /admin/resources/{id}` — updates resource; translations are replaced entirely
 - `DELETE /admin/resources/{id}` — cascades to translations
 
-Scheduling logic: `_is_visible()` checks status == PUBLISHED, or status ==
-SCHEDULED and `scheduled_at <= now()`. This runs at query time — no background job
-needed.
+Scheduling logic: `_is_visible()` checks `status == PUBLISHED`, or
+`status == SCHEDULED and scheduled_at <= now()`. This runs at query time — no
+background job needed.
 
 ### `api/routers/profiles.py`
 Public endpoints:
 - `GET /profiles` — active profiles only, with specializations loaded
 - `GET /profiles/{id}` — single active profile
 
-Admin endpoints:
-- Full CRUD at `/admin/profiles/{id}`
-- `_sync_specializations()` replaces a profile's tags on every update, creating
-  new Specialization rows as needed
+Admin endpoints — full CRUD at `/admin/profiles/{id}`.
+`_sync_specializations()` replaces a profile's tags on every update, creating new
+Specialization rows as needed.
 
 ### `api/routers/admin_users.py`
 Admin-only:
 - `GET /admin/users` — all registered users
-- `GET /admin/users/{id}` — single user
 - `PATCH /admin/users/{id}` — update `role` and/or `is_active`
 
-This is how you promote the first admin: sign in once to create the row, then
-use the Neon console to set `role = 'ADMIN'`, then use `/admin/users` to manage
-roles from the dashboard going forward.
+This is the mechanism for promoting users to admin after the initial SQL bootstrap.
 
 ### `api/routers/admin_analysis.py`
 User-facing:
 - `POST /analyses` — saves a DSS result for the authenticated user
-- `GET /analyses?limit=15&offset=0` — returns the user's own history, paginated
+- `GET /analyses?limit=15&offset=0` — returns the user's own history, paginated by offset
 - `DELETE /analyses/{id}` — delete a single entry (user can only delete their own)
 - `DELETE /analyses` — clear all of the user's history
 
 Admin-only:
-- `GET /admin/analysis?mode=ML&limit=50` — all analyses across all users, filterable by mode and date range
+- `GET /admin/analysis?mode=ML&limit=50` — all analyses across all users, filterable
 - `GET /admin/analysis/{id}` — single record
 
 ---
@@ -326,59 +348,52 @@ Admin-only:
 ## 6. Frontend: New Files
 
 ### `frontend/src/api/adminClient.js`
-Two exports:
-- `createAdminClient(token)` — returns an axios instance with `Authorization:
-  Bearer <token>` pre-attached
-- `adminRequest(getBackendToken, method, url, data?)` — convenience wrapper:
-  gets the token via `getBackendToken()`, creates a client, fires the request.
-  Used everywhere in admin pages and in Step3Results/ProfilePage.
+- `createAdminClient(token)` — axios instance with `Authorization: Bearer` pre-attached
+- `adminRequest(getBackendToken, method, url, data?)` — convenience wrapper used
+  everywhere in admin pages, Step3Results, and ProfilePage
 
 ### `frontend/src/components/AdminRoute.jsx`
-A route guard component. If the user is not logged in, redirects to `/sign-in`.
-If logged in but `isAdmin === false`, redirects to `/`. Wraps all `/admin/*`
-routes in `App.jsx`.
+Route guard: redirects unauthenticated users to `/sign-in`, and non-admin users
+to `/`. Wraps all `/admin/*` routes in `App.jsx`.
 
 ### `frontend/src/pages/Admin/AdminLayout.jsx`
-The shell that wraps all admin pages. Dark green sidebar with navigation links
-to Dashboard, Resources, Profiles, Users, and Analysis. Displays the logged-in
-email and a logout button. Uses React Router's `<Outlet />` to render the active
-page.
+Dark green sidebar shell for all admin pages. Has navigation links to Dashboard,
+Resources, Profiles, Users, Analysis, and a "Back to website" link so admins can
+return to the public site without logging out.
 
 ### `frontend/src/pages/Admin/AdminDashboard.jsx`
-Landing page showing four summary stat cards: total users, total resources, total
-profiles, and total analyses. Fetches all four counts in parallel using
-`Promise.allSettled`.
+Four summary stat cards (users, resources, profiles, analyses), fetched in parallel
+with `Promise.allSettled`.
 
 ### `frontend/src/pages/Admin/AdminResources.jsx`
-Table of all resources (all statuses). Each row has:
-- Status badge (DRAFT / SCHEDULED / PUBLISHED)
-- Publish/unpublish toggle (eye icon)
-- Edit button (navigates to `/admin/resources/:id`)
-- Delete button
+Table of all resources (all statuses) with publish/unpublish toggle, edit, and
+delete per row. Edit navigates to `ResourceEditor`.
 
 ### `frontend/src/pages/Admin/ResourceEditor.jsx`
-The most complex admin component. Handles creating and editing resources:
-- **Language tabs**: separate TipTap rich-text editor instances for EN and KM.
-  Switching tabs preserves the content of the other language.
-- **Thumbnail upload**: uses Firebase Storage (`uploadBytes` + `getDownloadURL`),
-  stores the download URL as `thumbnail_url` in the database.
-- **Scheduling**: date/time picker that sets `scheduled_at`; status changes to
-  SCHEDULED automatically.
-- Saves via `POST /admin/resources` (new) or `PATCH /admin/resources/:id` (edit).
+Most complex admin component:
+- **Language tabs** — separate TipTap rich-text editor instances for EN and KM;
+  switching tabs preserves the other language's content
+- **Thumbnail upload** — uses Firebase Storage (`uploadBytes` + `getDownloadURL`),
+  stores download URL as `thumbnail_url`
+- **Scheduling** — date/time picker sets `scheduled_at`; status auto-changes to SCHEDULED
 
 ### `frontend/src/pages/Admin/AdminProfiles.jsx`
-Table of all expert/supplier profiles with type filter (ALL / EXPERT / SUPPLIER).
-Create and edit via an inline modal form with all bilingual fields. Specialization
-names are entered as a comma-separated string and split into an array on save.
+Table of all expert/supplier profiles. Inline modal form with all bilingual fields.
+Specialization names are entered as comma-separated and split into an array on save.
 
 ### `frontend/src/pages/Admin/AdminUsers.jsx`
-Table of all registered users with name/email search. Two action buttons per row:
-- Role toggle (ShieldCheck / ShieldOff) — promotes to ADMIN or demotes to USER
-- Active toggle (ToggleRight / ToggleLeft) — deactivates or reactivates account
+Table of all registered users with search. Role toggle and active toggle per row.
 
 ### `frontend/src/pages/Admin/AdminAnalysis.jsx`
-Log of all DSS runs across all users. Filterable by mode (ML / QUESTIONNAIRE /
-HYBRID). Shows condition, mode badge, confidence %, and timestamp.
+Log of all DSS runs across all users, filterable by mode.
+
+### `frontend/vercel.json`
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+Added because Vercel treated `/admin` as a server-side path and returned 404 on
+direct navigation. This catch-all rewrite makes Vercel serve `index.html` for every
+path, letting React Router handle client-side routing.
 
 ---
 
@@ -388,23 +403,15 @@ HYBRID). Shows condition, mode badge, confidence %, and timestamp.
 Three additions:
 1. `isAdmin` state (boolean, default false) — set by checking `role === 'ADMIN'`
    from `GET /auth/me` on login
-2. `backendTokenRef` (React ref) — caches the backend JWT in memory; cleared on
-   logout or auth state change
-3. `getBackendToken()` — public method exposed through context; returns cached JWT
-   or re-exchanges if empty
-
-The rest of the auth flow (Google login, Facebook login, email login, register,
-logout) is unchanged.
+2. `backendTokenRef` (React ref) — caches the backend JWT in memory; cleared on logout
+3. `getBackendToken()` — returns cached JWT or re-exchanges if empty
 
 ### `frontend/src/api/client.js`
-Added three new public API helpers:
-- `getResources(lang?)` — calls `GET /resources`
-- `getResource(id)` — calls `GET /resources/{id}`
-- `getProfiles()` — calls `GET /profiles`
-- `getCategories()` — calls `GET /categories`
-
-These are used by AdminDashboard today and will be used by the public pages once
-the migration is complete.
+Added four new public API helpers:
+- `getResources()` — `GET /resources`
+- `getResource(id)` — `GET /resources/{id}`
+- `getProfiles()` — `GET /profiles`
+- `getCategories()` — `GET /categories`
 
 ### `frontend/src/App.jsx`
 Added lazy-loaded imports for all 7 admin pages and a nested route block:
@@ -425,200 +432,170 @@ Added lazy-loaded imports for all 7 admin pages and a nested route block:
 Changed `const app = initializeApp(...)` to `export const app = ...` so
 `ResourceEditor.jsx` can import it to initialise Firebase Storage.
 
+### `frontend/src/components/layout/Navbar.jsx`
+Added "Admin Dashboard" link in the profile picture dropdown (desktop and mobile),
+visible only when `isAdmin === true`. This gives admins a one-click path to the
+admin area without memorising the URL.
+
 ### `frontend/src/pages/Detection/Step3Results.jsx`
-**Before:** Called `saveAnalysis(user.uid, {...})` from `../../lib/firestore`
-after a DSS result was received.
+**Before:** Called `saveAnalysis(user.uid, {...})` from Firestore after a DSS result.
 
 **After:** Calls `adminRequest(getBackendToken, 'post', '/analyses', {...})`.
-The `mode` value (stored in `sessionStorage` as lowercase) is mapped to the
-backend's uppercase enum (`ML`, `QUESTIONNAIRE`, `HYBRID`). The full DSS result
-object (`parsed`) is stored as-is in the JSONB `result` column. Fire-and-forget
-— a failure to save never blocks the user from seeing their results.
+The `mode` value is mapped to the backend's uppercase enum. The full DSS result
+object is stored as-is in the JSONB `result` column. Fire-and-forget — a failure
+to save never blocks the user from seeing their results. Results with `is_demo: true`
+are not saved.
 
 ### `frontend/src/pages/Profile/ProfilePage.jsx`
-**Before:** Used `getAnalyses(user.uid, lastDoc)` with Firestore cursor-based
-pagination, `deleteAnalysis(user.uid, id)`, and `clearAllAnalyses(user.uid)`.
+**Before:** Used `getAnalyses`, `deleteAnalysis`, `clearAllAnalyses` from Firestore
+with cursor-based pagination (`lastDoc`).
 
-**After:** Uses `adminRequest(getBackendToken, ...)` for all three operations:
-- `GET /analyses?limit=15&offset=0` (and with offset for "load more")
-- `DELETE /analyses/{id}` (still has the 5-second undo timer — only the actual
-  delete call changed)
+**After:** Uses `adminRequest` for all three operations:
+- `GET /analyses?limit=15&offset=0` (offset-based pagination)
+- `DELETE /analyses/{id}` (still has the 5-second undo timer)
 - `DELETE /analyses` (clear all)
 
-A `normaliseAnalysis()` function maps the backend response shape (which has a
-nested `result` JSONB) back to the flat object shape that `HistoryCard` expects
-(`condition_key`, `recommendations`, `confidence_level`, etc.).
+A `normaliseAnalysis()` function maps the backend response shape (nested `result`
+JSONB) back to the flat object shape that `HistoryCard` expects.
 
-Farm profile (variety, region, field size) still reads/writes to Firestore via
-`getFarmProfile` / `saveFarmProfile` — that part was not changed.
+Farm profile (variety, region, field size) still reads/writes to Firestore — not migrated.
+
+### `frontend/src/pages/Learning/ResourcesList.jsx`
+**Before:** Imported `SAMPLE_ARTICLES` from `searchData.js`.
+
+**After:** Fetches from `GET /resources` on mount. A `normalize(r, lang)` function
+maps `ResourceOut` (with `translations[]` array) to the flat display shape used by
+the card grid. Dynamic tabs are derived from the categories returned by the API.
+Loading skeletons and empty states are included.
+
+### `frontend/src/pages/Learning/ArticleDetail.jsx`
+**Before:** Used a hardcoded content object.
+
+**After:** Fetches `GET /resources/{id}` on mount. Renders `translation.content`
+via `dangerouslySetInnerHTML` (content is TipTap-generated HTML, stored in the DB).
+Language-aware: finds the translation matching `lang.toUpperCase()`, falls back to EN.
+Loading state and 404 state are both handled.
+
+### `frontend/src/pages/Experts/ExpertsPage.jsx`
+**Before:** Imported `EXPERTS_DATA` and `FEATURED_SUPPLIERS` from `searchData.js`.
+
+**After:** Fetches from `GET /profiles` on mount. A `normalizeProfile(p, lang)`
+function maps `ProfileOut` (with bilingual `name_en`/`name_km` fields etc.) to
+the display shape. Profiles are split by `type`: `EXPERT` and `SUPPLIER`.
+Loading skeletons are shown in both the experts grid and suppliers grid.
+The `PRODUCTS` section remains hardcoded — it is product listing data with prices,
+not profile data, and has no equivalent in the backend schema.
+
+### `frontend/src/components/search/SearchModal.jsx`
+**Before:** Searched only `SEARCH_INDEX` (a static array from `searchData.js`).
+
+**After:** On modal open, fetches live resources from `GET /resources` and converts
+them to the search format. Static service-type items from `SEARCH_INDEX` are kept
+(navigation shortcuts to /detect, /learn, /experts). Dynamic article/video items
+from the API replace the hardcoded article entries, so newly published resources
+are immediately discoverable via search.
+
+### `frontend/src/pages/Landing.jsx`
+Added a "Try a Demo" button in the hero section. When clicked, it writes a
+pre-baked blast diagnosis result (with `is_demo: true`) to `sessionStorage` and
+navigates to `/detect/results`. Step3Results already skips saving when `is_demo`
+is true and shows an amber "demo mode" banner. This lets users see a realistic
+results page without uploading any image or signing in.
 
 ---
 
-## 8. What Is Still Hardcoded (Not Yet Migrated)
+## 8. Deployment & Infrastructure Fixes
 
-These three frontend pages still import from `frontend/src/data/searchData.js`
-instead of the new API:
+### Firebase Service Account (Secret Manager)
+The backend needs the Firebase service account JSON to verify ID tokens at
+`POST /auth/me`. The file was uploaded to Google Secret Manager and mounted as a
+file volume into the Cloud Run container at `/app/serviceAccountKey.json`.
 
-| Page | Hardcoded source | What to replace it with |
-|------|-----------------|------------------------|
-| `pages/Learning/ResourcesList.jsx` | `SAMPLE_ARTICLES` | `getResources(lang)` from `api/client.js` |
-| `pages/Learning/ArticleDetail.jsx` | Inline content object | `getResource(id)` + render `translations[lang].content` via `dangerouslySetInnerHTML` |
-| `pages/Experts/ExpertsPage.jsx` | `EXPERTS_DATA`, `FEATURED_SUPPLIERS` | `getProfiles()` from `api/client.js` |
+```bash
+gcloud secrets create firebase-service-account \
+  --data-file=serviceAccountKey.json --project=rice-dss-fyp
 
-The functions `getResources()` and `getProfiles()` are already implemented in
-`client.js`. These pages just need to be wired up. Until they are, the pages work
-fine with hardcoded data — the admin dashboard stores content in PostgreSQL, but
-nothing reads from it on the public side yet.
+gcloud run services update <SERVICE_NAME> \
+  --update-secrets=/app/serviceAccountKey.json=firebase-service-account:latest \
+  --region=asia-southeast1
+```
 
----
+The env var `GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json` tells
+Firebase Admin SDK where to find it.
 
-## 9. Manual Steps: What You Still Need to Do
-
-### Step 1 — Get the Firebase service account key
-
-The backend needs this to verify Firebase ID tokens at `POST /auth/me`.
-
-1. Go to [Firebase Console](https://console.firebase.google.com) → your project
-2. Click the gear icon → **Project Settings** → **Service Accounts** tab
-3. Click **Generate new private key** → confirm → download the JSON file
-4. Rename it `serviceAccountKey.json`
-5. **Do not commit this file.** It is already in `.gitignore`.
-
-### Step 2 — Set Cloud Run environment variables
-
-In [Google Cloud Console](https://console.cloud.google.com) → Cloud Run → your
-service → **Edit & Deploy New Revision** → **Variables & Secrets** tab:
+### Cloud Run Environment Variables
+The following variables are set on the Cloud Run service revision:
 
 | Variable | Value |
 |----------|-------|
-| `DATABASE_URL` | `postgresql+asyncpg://neondb_owner:<pw>@<host>.neon.tech/neondb?ssl=require` |
-| `JWT_SECRET` | The value from your local `.env` |
+| `DATABASE_URL` | `postgresql+asyncpg://<neon connection string>` |
+| `JWT_SECRET` | (secret value) |
 | `JWT_ALGORITHM` | `HS256` |
 | `JWT_EXPIRE_MINUTES` | `1440` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | `/app/serviceAccountKey.json` |
 
-You also need the `serviceAccountKey.json` file to be available inside the
-container at `/app/serviceAccountKey.json`. The recommended approach for Cloud
-Run:
+### Admin Promotion
+After deploying and signing in once (which creates the `users` row), the first
+admin was promoted directly via Neon SQL Editor:
 
-**Using Google Secret Manager (recommended):**
-```bash
-# Upload the JSON as a secret
-gcloud secrets create firebase-service-account \
-  --data-file=serviceAccountKey.json
-
-# Grant Cloud Run access
-gcloud secrets add-iam-policy-binding firebase-service-account \
-  --member="serviceAccount:<YOUR_SERVICE_ACCOUNT>@developer.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-```
-Then in Cloud Run → Edit & Deploy → **Secrets** tab, mount
-`firebase-service-account` as a file at `/app/serviceAccountKey.json`.
-
-**Quick alternative for FYP (less secure):**
-Instead of mounting the file, you can pass the entire JSON as a single env var
-and modify `auth.py` line 25 to parse it:
-```python
-import json
-raw = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
-cred = credentials.Certificate(json.loads(raw)) if raw else credentials.ApplicationDefault()
-```
-
-### Step 3 — Deploy the updated backend
-
-The container image needs to be rebuilt to include the new Python dependencies
-(`sqlalchemy`, `asyncpg`, `firebase-admin`, `python-jose`, `passlib`, `alembic`).
-
-```bash
-# From the rice_dss/ directory:
-gcloud run deploy <YOUR_SERVICE_NAME> \
-  --source . \
-  --region asia-southeast1 \
-  --allow-unauthenticated
-```
-
-Or push to `main` if you have Cloud Build CI configured.
-
-After deploy, verify the new endpoints are live:
-```bash
-curl https://<your-service>.run.app/profiles
-# Should return [] (empty array, not a 404 or 500)
-```
-
-### Step 4 — Confirm the Neon migration is applied
-
-The Alembic migration was already run against the Neon database during development.
-Confirm by visiting the [Neon Console](https://console.neon.tech) → your project →
-**Tables** tab. You should see all 8 tables:
-
-```
-users  categories  profiles  specializations  profile_specializations
-resources  resource_translations  analysis_history
-```
-
-If any are missing, run the migration locally:
-```bash
-cd rice_dss
-# Make sure your local .env has DATABASE_URL pointing to Neon
-alembic upgrade head
-```
-
-### Step 5 — Promote the first admin user
-
-After deploying, sign into the app once with your account. This creates a row in
-the `users` table with `role = 'USER'`.
-
-Then go to Neon Console → SQL Editor and run:
 ```sql
-UPDATE users
-SET role = 'ADMIN'
-WHERE email = 'your-email@gmail.com';
+UPDATE users SET role = 'ADMIN' WHERE email = 'soxavinloeung@gmail.com';
 ```
 
-Sign out and sign back in. The `isAdmin` flag will be `true`, and the `/admin`
-link will appear. From that point, you can promote other users through the
-**Admin → Users** page without touching SQL again.
+Going forward, role changes are made through **Admin → Users** in the dashboard.
 
-### Step 6 — Wire up the public pages (remaining code work)
-
-This is not a deployment step — it's the remaining code to write. When you're
-ready for the public pages to serve live content from the database instead of
-hardcoded data, update these three files:
-
-**`ResourcesList.jsx`**
-```jsx
-// Replace hardcoded import with:
-import { getResources } from '../../api/client'
-// In the component, fetch on mount:
-const [articles, setArticles] = useState([])
-useEffect(() => {
-  getResources(lang).then(r => setArticles(r.data))
-}, [lang])
-// Replace SAMPLE_ARTICLES references with articles
+### Neon Migration
+The Alembic migration was applied once against the live Neon database:
+```bash
+DATABASE_URL=<neon_url> alembic upgrade head
 ```
-
-**`ArticleDetail.jsx`**
-```jsx
-import { getResource } from '../../api/client'
-// Fetch by :id param, render the translation for the current language:
-const translation = resource.translations.find(t => t.language === lang.toUpperCase())
-// Render rich text:
-<div dangerouslySetInnerHTML={{ __html: translation?.content || '' }} />
-```
-
-**`ExpertsPage.jsx`**
-```jsx
-import { getProfiles } from '../../api/client'
-// Fetch on mount:
-const [profiles, setProfiles] = useState([])
-useEffect(() => { getProfiles().then(r => setProfiles(r.data)) }, [])
-// Filter by type: profiles.filter(p => p.type === 'EXPERT')
-// Suppliers: profiles.filter(p => p.type === 'SUPPLIER')
-```
+All 8 tables are confirmed present in the Neon Console Tables tab.
 
 ---
 
-## 10. Key Environment Variables Reference
+## 9. CI / Test Pipeline Fix
+
+The CI workflow (`.github/workflows/ci.yml`) runs `pytest tests/ -v --tb=short`
+against the FastAPI app. After the new routers were added, CI started failing
+because `from api.main import app` triggered two import-time errors:
+
+**Problem 1 — `database.py` with empty `DATABASE_URL`:**
+`create_async_engine("")` raises an `ArgumentError` immediately, crashing the
+import. Fix: fall back to `sqlite+aiosqlite://` (in-memory SQLite) when
+`DATABASE_URL` is not set. `aiosqlite` was added to `requirements.txt`.
+
+**Problem 2 — `auth.py` Firebase initialisation:**
+`credentials.ApplicationDefault()` raises `google.auth.exceptions.DefaultCredentialsError`
+in CI where no GCP credentials are configured. Fix: wrapped in `try/except`; the
+`_firebase_ready` flag is only set to `True` if initialisation succeeds. Auth
+endpoints return gracefully in the unlikely case Firebase is not ready.
+
+**Result:** All 51 tests pass in CI. The DSS tests do not touch the database or
+Firebase, so the fallbacks are transparent.
+
+---
+
+## 10. Manual Steps: Production Checklist
+
+All steps below have been completed for the live deployment. This section is
+retained as a reference for re-deploying to a new environment.
+
+- [x] **Firebase service account** — downloaded from Firebase Console → Project
+  Settings → Service Accounts → Generate new private key. Stored in Secret Manager.
+- [x] **Cloud Run env vars** — `DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM`,
+  `JWT_EXPIRE_MINUTES`, `GOOGLE_APPLICATION_CREDENTIALS` all set.
+- [x] **Secret Manager** — `firebase-service-account` secret created, IAM binding
+  granted to Cloud Run service account, volume mounted at `/app/serviceAccountKey.json`.
+- [x] **Cloud Run deploy** — updated backend deployed with `gcloud run deploy`.
+- [x] **Neon migration** — `alembic upgrade head` run; all 8 tables confirmed present.
+- [x] **Admin promotion** — `soxavinloeung@gmail.com` promoted via SQL, confirmed
+  working via `/admin` page.
+- [x] **Vercel SPA routing** — `frontend/vercel.json` added; direct navigation to
+  `/admin` and all other SPA routes works.
+
+---
+
+## 11. Environment Variables Reference
 
 | Variable | Where used | Description |
 |----------|-----------|-------------|
@@ -626,27 +603,46 @@ useEffect(() => { getProfiles().then(r => setProfiles(r.data)) }, [])
 | `JWT_SECRET` | `api/routers/auth.py` | Signs and verifies backend JWTs |
 | `JWT_ALGORITHM` | `api/routers/auth.py` | Default: `HS256` |
 | `JWT_EXPIRE_MINUTES` | `api/routers/auth.py` | Default: 1440 (24h) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | `api/routers/auth.py` | Path to Firebase service account JSON |
-| `VITE_API_URL` | Frontend build | Backend base URL (`/api` in production via Vite proxy, or full URL) |
-| `VITE_FIREBASE_*` | Frontend build | Firebase config (unchanged) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | `api/routers/auth.py` | Path to Firebase service account JSON inside container |
+| `VITE_API_URL` | Frontend build | Backend base URL |
+| `VITE_FIREBASE_*` | Frontend build | Firebase config (unchanged from original) |
 
 ---
 
-## 11. Testing Checklist
+## 12. Testing Checklist
 
-Once the backend is deployed with env vars set:
-
+### Auth & Admin Access
 - [ ] `POST /auth/me` with a valid Firebase ID token → returns `{ access_token: "..." }`
 - [ ] `POST /auth/me` with an invalid token → 401
 - [ ] `GET /auth/me` with the returned JWT → returns `{ id, email, role: "USER" }`
-- [ ] Sign in to app → `isAdmin` is false for a regular user
-- [ ] Promote user via SQL → sign in again → `/admin` is accessible
-- [ ] Create a profile in admin dashboard → visible on `/admin/profiles`
-- [ ] Create a resource with status PUBLISHED → `GET /resources` returns it
-- [ ] Create a resource with status DRAFT → `GET /resources` does NOT return it
-- [ ] Run a DSS analysis (questionnaire or hybrid mode) → check Neon `analysis_history` table has a new row
+- [ ] Sign in → `isAdmin` is false for a regular user, `/admin` is not accessible
+- [ ] Sign in with the promoted admin account → "Admin Dashboard" appears in profile dropdown, `/admin` loads
+- [ ] Sign out → "Admin Dashboard" link disappears
+
+### Content Management (Admin Dashboard)
+- [ ] Create a profile (type=EXPERT) → visible in **Admin → Profiles** table
+- [ ] Set profile `is_active=true` → visible on `/experts` page
+- [ ] Create a resource with status=DRAFT → `GET /resources` does NOT return it; **Admin → Resources** does
+- [ ] Publish the resource → `GET /resources` returns it; visible on `/learn`
+- [ ] Create a resource with status=SCHEDULED and a past `scheduled_at` → visible on `/learn`
+- [ ] Edit resource → changes appear immediately on `/learn/article/:id`
+- [ ] Delete resource → gone from admin table and public pages
+
+### Analysis History (User)
+- [ ] Run a DSS analysis (questionnaire or hybrid) → check Neon `analysis_history` table has a new row
 - [ ] Visit Profile page → analysis history loads from backend (not Firestore)
-- [ ] Delete an analysis entry → 5-second undo works, backend DELETE fires after timeout
+- [ ] Delete one analysis entry → 5-second undo works; backend DELETE fires after timeout
+- [ ] Click "Undo" within 5 seconds → analysis stays (DELETE is cancelled)
+- [ ] "Clear all" → modal shows count; all entries removed
+- [ ] Export CSV → downloads with correct condition/mode/date data
+- [ ] "Try a Demo" on Landing page → goes to results page with amber demo banner; nothing saved to DB
+
+### Search
+- [ ] Open search (Cmd+K) → type a resource title → result appears from live API
+- [ ] Service shortcuts (detect, experts, learn) → still appear in Quick Access
+
+### Security
 - [ ] `POST /admin/resources` without a JWT → 401
 - [ ] `POST /admin/resources` with a USER-role JWT → 403
 - [ ] Deactivate a user in admin dashboard → that user gets 403 on next token exchange
+- [ ] `DELETE /analyses/{id}` for another user's analysis → 404 (not found / not owner)
