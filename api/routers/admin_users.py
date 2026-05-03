@@ -46,6 +46,10 @@ async def update_user(
     if not target:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
+    # Cannot modify own account via admin panel
+    if target.id == current_user.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot modify your own account")
+
     # Only SUPER_ADMIN can change roles
     if body.role is not None and current_user.role != UserRole.SUPER_ADMIN:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only super admins can change roles")
