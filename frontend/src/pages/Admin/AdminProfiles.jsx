@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import { adminRequest } from '../../api/adminClient'
 
 const TYPE_STYLE = {
-  EXPERT:   { color: '#1e40af', bg: '#dbeafe' },
-  SUPPLIER: { color: '#92400e', bg: '#fef3c7' },
+  EXPERT:   { color: '#1e40af', bg: '#dbeafe', label: 'Expert' },
+  SUPPLIER: { color: '#92400e', bg: '#fef3c7', label: 'Supplier' },
 }
 
 const EMPTY_FORM = {
@@ -17,11 +18,33 @@ const EMPTY_FORM = {
   specialization_names: '',
 }
 
+const inputStyle = { borderColor: '#e0e0e0', backgroundColor: '#fafafa', borderRadius: 8 }
+
+function Field({ label, field, type = 'text', rows, form, setForm }) {
+  return (
+    <div>
+      <label className="text-xs font-semibold block mb-1" style={{ color: '#616161' }}>{label}</label>
+      {rows ? (
+        <textarea rows={rows} value={form[field] ?? ''}
+          onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
+          className="w-full border px-3 py-2 text-sm resize-none outline-none"
+          style={inputStyle} />
+      ) : (
+        <input type={type} value={form[field] ?? ''}
+          onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
+          className="w-full border px-3 py-2 text-sm outline-none"
+          style={inputStyle} />
+      )}
+    </div>
+  )
+}
+
 export default function AdminProfiles() {
   const { getBackendToken } = useAuth()
+  const { showToast } = useToast()
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading]   = useState(true)
-  const [modal, setModal]       = useState(null)  // null | 'new' | profile object
+  const [modal, setModal]       = useState(null)
   const [form, setForm]         = useState(EMPTY_FORM)
   const [saving, setSaving]     = useState(false)
   const [filter, setFilter]     = useState('ALL')
@@ -31,6 +54,8 @@ export default function AdminProfiles() {
     try {
       const r = await adminRequest(getBackendToken, 'get', '/admin/profiles')
       setProfiles(r.data)
+    } catch {
+      showToast('Failed to load profiles', 'error')
     } finally {
       setLoading(false)
     }
@@ -38,10 +63,7 @@ export default function AdminProfiles() {
 
   useEffect(() => { load() }, [])
 
-  function openNew() {
-    setForm(EMPTY_FORM)
-    setModal('new')
-  }
+  function openNew() { setForm(EMPTY_FORM); setModal('new') }
 
   function openEdit(p) {
     setForm({
@@ -54,6 +76,7 @@ export default function AdminProfiles() {
   }
 
   async function handleSave() {
+    if (!form.name_en.trim()) { showToast('English name is required', 'error'); return }
     setSaving(true)
     try {
       const body = {
@@ -66,92 +89,136 @@ export default function AdminProfiles() {
       }
       if (modal === 'new') {
         await adminRequest(getBackendToken, 'post', '/admin/profiles', body)
+        showToast('Profile created')
       } else {
         await adminRequest(getBackendToken, 'patch', `/admin/profiles/${modal.id}`, body)
+        showToast('Profile updated')
       }
       setModal(null)
       load()
+    } catch {
+      showToast('Failed to save profile', 'error')
     } finally {
       setSaving(false)
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Delete this profile?')) return
-    await adminRequest(getBackendToken, 'delete', `/admin/profiles/${id}`)
-    load()
+    if (!window.confirm('Delete this profile? This cannot be undone.')) return
+    try {
+      await adminRequest(getBackendToken, 'delete', `/admin/profiles/${id}`)
+      showToast('Profile deleted')
+      load()
+    } catch {
+      showToast('Failed to delete profile', 'error')
+    }
   }
 
   const visible = filter === 'ALL' ? profiles : profiles.filter(p => p.type === filter)
-
-  const Field = ({ label, field, type = 'text', rows }) => (
-    <div>
-      <label className="text-xs font-semibold text-neutral-600 block mb-1">{label}</label>
-      {rows ? (
-        <textarea rows={rows} value={form[field] ?? ''} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
-          className="w-full rounded-lg border px-3 py-2 text-sm resize-none" style={{ borderColor: '#e0e0e0' }} />
-      ) : (
-        <input type={type} value={form[field] ?? ''} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
-          className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }} />
-      )}
-    </div>
-  )
+  const fp = (field) => ({ label: field, field, form, setForm })
 
   return (
     <div className="p-8">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Profiles</h1>
           <p className="text-sm mt-0.5" style={{ color: '#757575' }}>Experts and suppliers shown on /experts</p>
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white border-none cursor-pointer" style={{ backgroundColor: '#558b2f' }}>
+        <button onClick={openNew}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer transition-opacity hover:opacity-90"
+          style={{ backgroundColor: '#558b2f', boxShadow: '0 2px 8px rgba(85,139,47,0.3)' }}>
           <Plus size={16} /> New Profile
         </button>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {['ALL', 'EXPERT', 'SUPPLIER'].map(t => (
-          <button key={t} onClick={() => setFilter(t)}
-            className="px-3 py-1 rounded-full text-xs font-semibold border-none cursor-pointer"
-            style={filter === t ? { backgroundColor: '#558b2f', color: '#fff' } : { backgroundColor: '#f0f0f0', color: '#424242' }}>
-            {t}
+      {/* Filter tabs */}
+      <div className="flex gap-2 mb-5">
+        {[['ALL', 'All'], ['EXPERT', 'Experts'], ['SUPPLIER', 'Suppliers']].map(([val, lbl]) => (
+          <button key={val} onClick={() => setFilter(val)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer"
+            style={filter === val
+              ? { backgroundColor: '#558b2f', color: '#fff', border: 'none' }
+              : { backgroundColor: '#f5f5f5', color: '#616161', border: '1px solid #e8e8e8' }}>
+            {lbl} ({val === 'ALL' ? profiles.length : profiles.filter(p => p.type === val).length})
           </button>
         ))}
       </div>
 
+      {/* Table */}
       {loading ? (
-        <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-14 rounded-xl animate-pulse" style={{ backgroundColor: '#f0f0f0' }} />)}</div>
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-14 rounded-xl animate-pulse" style={{ backgroundColor: '#f0f0f0' }} />
+          ))}
+        </div>
       ) : (
-        <div className="rounded-2xl overflow-hidden bg-white" style={{ border: '1px solid #e0e0e0' }}>
+        <div className="rounded-2xl overflow-hidden bg-white" style={{ border: '1px solid #e0e0e0', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafafa' }}>
-                <th className="text-left px-5 py-3 font-semibold text-neutral-600">Name</th>
-                <th className="text-left px-4 py-3 font-semibold text-neutral-600">Type</th>
-                <th className="text-left px-4 py-3 font-semibold text-neutral-600">Title</th>
-                <th className="px-4 py-3" />
+              <tr style={{ borderBottom: '1px solid #e8e8e8', backgroundColor: '#fafafa' }}>
+                <th className="text-left px-5 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Name</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Type</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Title</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Specializations</th>
+                <th className="px-4 py-3.5" />
               </tr>
             </thead>
             <tbody>
               {visible.map(p => {
-                const s = TYPE_STYLE[p.type]
+                const s = TYPE_STYLE[p.type] ?? TYPE_STYLE.EXPERT
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td className="px-5 py-3 font-medium">{p.name_en}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: s.bg, color: s.color }}>{p.type}</span>
+                  <tr key={p.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        {p.photo_url
+                          ? <img src={p.photo_url} alt="" className="w-8 h-8 rounded-full object-cover" style={{ border: '1px solid #e0e0e0' }} referrerPolicy="no-referrer" />
+                          : <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: s.bg, color: s.color }}>{p.type === 'EXPERT' ? '🧑‍🌾' : '🏪'}</div>
+                        }
+                        <span className="font-medium text-neutral-900">{p.name_en}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-neutral-500">{p.job_title_en ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 justify-end">
-                        <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg border-none cursor-pointer hover:bg-neutral-100"><Pencil size={15} style={{ color: '#9e9e9e' }} /></button>
-                        <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg border-none cursor-pointer hover:bg-red-50"><Trash2 size={15} style={{ color: '#ef4444' }} /></button>
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                        style={{ backgroundColor: s.bg, color: s.color }}>
+                        {s.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-sm" style={{ color: '#616161' }}>{p.job_title_en ?? '—'}</td>
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                        style={p.is_active ? { backgroundColor: '#dcfce7', color: '#166534' } : { backgroundColor: '#f5f5f5', color: '#9e9e9e' }}>
+                        {p.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-xs" style={{ color: '#9e9e9e' }}>
+                      {p.specializations?.length ? p.specializations.map(s => s.name).join(', ') : '—'}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button onClick={() => openEdit(p)} title="Edit"
+                          className="p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-neutral-100"
+                          style={{ border: 'none', background: 'none' }}>
+                          <Pencil size={15} style={{ color: '#9e9e9e' }} />
+                        </button>
+                        <button onClick={() => handleDelete(p.id)} title="Delete"
+                          className="p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-red-50"
+                          style={{ border: 'none', background: 'none' }}>
+                          <Trash2 size={15} style={{ color: '#ef4444' }} />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 )
               })}
-              {!visible.length && <tr><td colSpan={4} className="px-5 py-10 text-center text-neutral-400">No profiles yet.</td></tr>}
+              {!visible.length && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-sm" style={{ color: '#9e9e9e' }}>
+                    No profiles yet. Create one above.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -159,49 +226,74 @@ export default function AdminProfiles() {
 
       {/* Modal */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-lg font-bold mb-5">{modal === 'new' ? 'New Profile' : 'Edit Profile'}</h2>
-            <div className="grid grid-cols-2 gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto"
+            style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #f0f0f0' }}>
+              <h2 className="text-lg font-bold text-neutral-900">
+                {modal === 'new' ? 'New Profile' : `Edit — ${form.name_en || 'Profile'}`}
+              </h2>
+              <button onClick={() => setModal(null)} className="p-1.5 rounded-lg cursor-pointer hover:bg-neutral-100"
+                style={{ border: 'none', background: 'none' }}>
+                <X size={18} style={{ color: '#9e9e9e' }} />
+              </button>
+            </div>
+
+            <div className="p-6 grid grid-cols-2 gap-4">
+              {/* Type + visibility */}
               <div>
-                <label className="text-xs font-semibold text-neutral-600 block mb-1">Type</label>
-                <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }}>
+                <label className="text-xs font-semibold block mb-1" style={{ color: '#616161' }}>Type</label>
+                <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
+                  className="w-full border px-3 py-2 text-sm outline-none" style={inputStyle}>
                   <option value="EXPERT">Expert</option>
                   <option value="SUPPLIER">Supplier</option>
                 </select>
               </div>
-              <Field label="Photo URL" field="photo_url" />
-              <Field label="Name (EN)" field="name_en" />
-              <Field label="Name (KM)" field="name_km" />
-              <Field label="Job Title (EN)" field="job_title_en" />
-              <Field label="Job Title (KM)" field="job_title_km" />
-              <Field label="Location (EN)" field="location_en" />
-              <Field label="Location (KM)" field="location_km" />
-              <Field label="Availability (EN)" field="availability_en" />
-              <Field label="Availability (KM)" field="availability_km" />
-              <Field label="Experience (years)" field="experience_years" type="number" />
-              <Field label="Rating (0–5)" field="rating" type="number" />
-              <Field label="Telegram handle" field="telegram" />
-              <Field label="Contact email" field="contact_email" type="email" />
-              <Field label="Languages (comma-sep)" field="languages" />
-              <Field label="Specializations (comma-sep)" field="specialization_names" />
-              <div className="col-span-2"><Field label="Education (EN)" field="education_en" rows={2} /></div>
-              <div className="col-span-2"><Field label="Education (KM)" field="education_km" rows={2} /></div>
-              <div className="col-span-2"><Field label="Bio (EN)" field="bio_en" rows={3} /></div>
-              <div className="col-span-2"><Field label="Bio (KM)" field="bio_km" rows={3} /></div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="online" checked={form.online} onChange={e => setForm(p => ({ ...p, online: e.target.checked }))} />
-                <label htmlFor="online" className="text-sm">Currently online</label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="active" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} />
-                <label htmlFor="active" className="text-sm">Active (visible on site)</label>
+              <Field label="Photo URL" field="photo_url" form={form} setForm={setForm} />
+              <Field label="Name (EN) *" field="name_en" form={form} setForm={setForm} />
+              <Field label="Name (KM)" field="name_km" form={form} setForm={setForm} />
+              <Field label="Job Title (EN)" field="job_title_en" form={form} setForm={setForm} />
+              <Field label="Job Title (KM)" field="job_title_km" form={form} setForm={setForm} />
+              <Field label="Location (EN)" field="location_en" form={form} setForm={setForm} />
+              <Field label="Location (KM)" field="location_km" form={form} setForm={setForm} />
+              <Field label="Availability (EN)" field="availability_en" form={form} setForm={setForm} />
+              <Field label="Availability (KM)" field="availability_km" form={form} setForm={setForm} />
+              <Field label="Experience (years)" field="experience_years" type="number" form={form} setForm={setForm} />
+              <Field label="Rating (0–5)" field="rating" type="number" form={form} setForm={setForm} />
+              <Field label="Telegram" field="telegram" form={form} setForm={setForm} />
+              <Field label="Contact Email" field="contact_email" type="email" form={form} setForm={setForm} />
+              <Field label="Languages (comma-sep)" field="languages" form={form} setForm={setForm} />
+              <Field label="Specializations (comma-sep)" field="specialization_names" form={form} setForm={setForm} />
+              <div className="col-span-2"><Field label="Education (EN)" field="education_en" rows={2} form={form} setForm={setForm} /></div>
+              <div className="col-span-2"><Field label="Education (KM)" field="education_km" rows={2} form={form} setForm={setForm} /></div>
+              <div className="col-span-2"><Field label="Bio (EN)" field="bio_en" rows={3} form={form} setForm={setForm} /></div>
+              <div className="col-span-2"><Field label="Bio (KM)" field="bio_km" rows={3} form={form} setForm={setForm} /></div>
+
+              {/* Checkboxes */}
+              <div className="col-span-2 flex gap-6 pt-1">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={form.online} onChange={e => setForm(p => ({ ...p, online: e.target.checked }))} />
+                  Currently online
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} />
+                  Active (visible on site)
+                </label>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl text-sm border cursor-pointer" style={{ borderColor: '#e0e0e0' }}>Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-semibold text-white border-none cursor-pointer disabled:opacity-60" style={{ backgroundColor: '#558b2f' }}>
-                {saving ? 'Saving…' : 'Save'}
+
+            {/* Modal footer */}
+            <div className="flex justify-end gap-3 px-6 py-4" style={{ borderTop: '1px solid #f0f0f0' }}>
+              <button onClick={() => setModal(null)}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
+                style={{ border: '1.5px solid #e0e0e0', background: '#fff', color: '#424242' }}>
+                Cancel
+              </button>
+              <button onClick={handleSave} disabled={saving}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer disabled:opacity-60"
+                style={{ backgroundColor: '#558b2f', boxShadow: '0 2px 8px rgba(85,139,47,0.3)' }}>
+                {saving ? 'Saving…' : modal === 'new' ? 'Create Profile' : 'Save Changes'}
               </button>
             </div>
           </div>

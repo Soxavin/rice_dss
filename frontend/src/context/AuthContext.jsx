@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
   const [user, setUser]           = useState(null)
   const [loading, setLoading]     = useState(true)
   const [isAdmin, setIsAdmin]     = useState(false)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const backendTokenRef           = useRef(null)  // cached backend JWT
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export function AuthProvider({ children }) {
       setUser(firebaseUser)
       backendTokenRef.current = null  // clear cache on auth change
       setIsAdmin(false)
+      setIsSuperAdmin(false)
 
       if (firebaseUser) {
         try {
@@ -35,6 +37,7 @@ export function AuthProvider({ children }) {
               headers: { Authorization: `Bearer ${token}` },
             }).then(r => r.ok ? r.json() : null)
             if (me?.role === 'ADMIN') setIsAdmin(true)
+            if (me?.role === 'SUPER_ADMIN') { setIsAdmin(true); setIsSuperAdmin(true) }
           }
         } catch {
           // non-fatal — admin features simply won't be accessible
@@ -78,6 +81,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     backendTokenRef.current = null
     setIsAdmin(false)
+    setIsSuperAdmin(false)
     return signOut(auth)
   }
 
@@ -92,7 +96,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, isAuthenticated, isAdmin, getBackendToken,
+      user, isAuthenticated, isAdmin, isSuperAdmin, getBackendToken,
       loginWithGoogle, loginWithFacebook, loginWithEmail, registerWithEmail, logout,
     }}>
       {children}

@@ -9,7 +9,7 @@ from api.dependencies.db import get_db
 from api.dependencies.auth import get_current_user, require_admin
 from api.models.analysis import AnalysisHistory, AnalysisMode
 from api.models.user import User
-from api.schemas.analysis import AnalysisCreate, AnalysisOut
+from api.schemas.analysis import AnalysisCreate, AnalysisOut, AdminAnalysisOut
 
 router = APIRouter()
 
@@ -85,7 +85,7 @@ async def clear_all_analyses(
 
 # ─── Admin endpoints ──────────────────────────────────────────────────────────
 
-@router.get("/analysis", response_model=list[AnalysisOut])
+@router.get("/analysis", response_model=list[AdminAnalysisOut])
 async def admin_list_analyses(
     limit: int = Query(50, le=200),
     mode: AnalysisMode | None = Query(None),
@@ -94,15 +94,25 @@ async def admin_list_analyses(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ):
-    q = select(AnalysisHistory).order_by(AnalysisHistory.created_at.desc()).limit(limit)
+    q = (
+        select(AnalysisHistory, User.email.label("user_email"))
+        .outerjoin(User, AnalysisHistory.user_id == User.id)
+        .order_by(AnalysisHistory.created_at.desc())
+        .limit(limit)
+    )
     if mode:
         q = q.where(AnalysisHistory.mode == mode)
     if from_date:
         q = q.where(AnalysisHistory.created_at >= from_date)
     if to_date:
         q = q.where(AnalysisHistory.created_at <= to_date)
-    result = await db.execute(q)
-    return result.scalars().all()
+    rows = await db.execute(q)
+    results = []
+    for record, user_email in rows:
+        out = AdminAnalysisOut.model_validate(record)
+        out.user_email = user_email
+        results.append(out)
+    return results
 
 
 @router.get("/analysis/{analysis_id}", response_model=AnalysisOut)

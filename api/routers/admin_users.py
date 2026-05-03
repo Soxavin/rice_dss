@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import require_admin
-from api.models.user import User
+from api.models.user import User, UserRole
 from api.schemas.user import UserOut, UserUpdate
 
 router = APIRouter()
@@ -39,16 +39,25 @@ async def update_user(
     user_id: uuid.UUID,
     body: UserUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ):
     result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
+    target = result.scalar_one_or_none()
+    if not target:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
+    # Only SUPER_ADMIN can change roles
+    if body.role is not None and current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only super admins can change roles")
+
+    # ADMIN cannot modify other ADMINs or SUPER_ADMINs
+    if (current_user.role == UserRole.ADMIN
+            and target.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Cannot modify admin or super admin accounts")
+
     for field, val in body.model_dump(exclude_unset=True).items():
-        setattr(user, field, val)
+        setattr(target, field, val)
 
     await db.commit()
-    await db.refresh(user)
-    return user
+    await db.refresh(target)
+    return target
