@@ -2,23 +2,24 @@ import { useState, useEffect } from 'react'
 import { Lock, ToggleLeft, ToggleRight, ChevronDown } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { adminRequest } from '../../api/adminClient'
 
-const ROLE_BADGE = {
-  SUPER_ADMIN: { bg: '#fef9e7', color: '#92700a', label: 'Super Admin' },
-  ADMIN:       { bg: '#f0f7e6', color: '#33691e', label: 'Admin' },
-  USER:        { bg: '#f0f0f0', color: '#424242', label: 'User' },
+const ROLE_BADGE_STYLE = {
+  SUPER_ADMIN: { bg: '#fef9e7', color: '#92700a' },
+  ADMIN:       { bg: '#f0f7e6', color: '#33691e' },
+  USER:        { bg: '#f0f0f0', color: '#424242' },
 }
 
-const STATUS_BADGE = {
-  true:  { bg: '#dcfce7', color: '#166534', label: 'Active' },
-  false: { bg: '#fef2f2', color: '#991b1b', label: 'Inactive' },
+const STATUS_BADGE_STYLE = {
+  true:  { bg: '#dcfce7', color: '#166534' },
+  false: { bg: '#fef2f2', color: '#991b1b' },
 }
 
 const TABS = ['All', 'SUPER_ADMIN', 'ADMIN', 'USER']
 
 // Confirmation modal
-function ConfirmModal({ message, onConfirm, onCancel }) {
+function ConfirmModal({ message, onConfirm, onCancel, cancelLabel, confirmLabel }) {
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, maxWidth: 380, width: '90%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
@@ -27,12 +28,12 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
           <button onClick={onCancel}
             className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
             style={{ border: '1.5px solid #e0e0e0', background: '#fff', color: '#424242' }}>
-            Cancel
+            {cancelLabel}
           </button>
           <button onClick={onConfirm}
             className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer text-white"
             style={{ backgroundColor: '#c62828', border: 'none' }}>
-            Confirm
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -43,6 +44,7 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
 export default function AdminUsers() {
   const { getBackendToken, user: currentUser, isSuperAdmin } = useAuth()
   const { showToast } = useToast()
+  const { t } = useLanguage()
   const [users, setUsers]     = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
@@ -55,7 +57,7 @@ export default function AdminUsers() {
       const r = await adminRequest(getBackendToken, 'get', '/admin/users')
       setUsers(r.data)
     } catch {
-      showToast('Failed to load users', 'error')
+      showToast(t('admin_users_toast_load_fail'), 'error')
     } finally {
       setLoading(false)
     }
@@ -64,27 +66,28 @@ export default function AdminUsers() {
   useEffect(() => { load() }, [])
 
   async function setRole(u, newRole) {
+    const roleLabel = t(`admin_role_${newRole.toLowerCase()}`)
     try {
       await adminRequest(getBackendToken, 'patch', `/admin/users/${u.id}`, { role: newRole })
-      showToast(`${u.name || u.email} is now ${ROLE_BADGE[newRole]?.label}`)
+      showToast(`${u.name || u.email} ${t('admin_users_toast_role_ok')} ${roleLabel}`)
       load()
     } catch (e) {
-      showToast(e?.response?.data?.detail || 'Failed to change role', 'error')
+      showToast(e?.response?.data?.detail || t('admin_users_toast_role_fail'), 'error')
     }
   }
 
   async function toggleActive(u) {
-    const action = u.is_active ? 'deactivate' : 'activate'
+    const confirmKey = u.is_active ? 'admin_users_confirm_deactivate' : 'admin_users_confirm_activate'
     setConfirm({
-      message: `Are you sure you want to ${action} ${u.name || u.email}?`,
+      message: `${t(confirmKey)} ${u.name || u.email}?`,
       onConfirm: async () => {
         setConfirm(null)
         try {
           await adminRequest(getBackendToken, 'patch', `/admin/users/${u.id}`, { is_active: !u.is_active })
-          showToast(`Account ${u.is_active ? 'deactivated' : 'activated'}`)
+          showToast(u.is_active ? t('admin_users_toast_status_deactivated') : t('admin_users_toast_status_activated'))
           load()
         } catch (e) {
-          showToast(e?.response?.data?.detail || 'Failed to update account', 'error')
+          showToast(e?.response?.data?.detail || t('admin_users_toast_status_fail'), 'error')
         }
       },
     })
@@ -117,18 +120,20 @@ export default function AdminUsers() {
           message={confirm.message}
           onConfirm={confirm.onConfirm}
           onCancel={() => setConfirm(null)}
+          cancelLabel={t('admin_users_confirm_cancel')}
+          confirmLabel={t('admin_users_confirm_ok')}
         />
       )}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Users</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#757575' }}>Manage roles and account status</p>
+          <h1 className="text-2xl font-bold text-neutral-900">{t('admin_users_title')}</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#757575' }}>{t('admin_users_subtitle')}</p>
         </div>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search by name or email…"
+          placeholder={t('admin_users_search')}
           className="rounded-xl border px-3 py-2 text-sm w-60 outline-none"
           style={{ borderColor: '#e0e0e0', backgroundColor: '#fafafa' }}
         />
@@ -136,13 +141,13 @@ export default function AdminUsers() {
 
       {/* Role filter tabs */}
       <div className="flex gap-2 mb-5">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)}
+        {TABS.map(tab_ => (
+          <button key={tab_} onClick={() => setTab(tab_)}
             className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors"
-            style={tab === t
+            style={tab === tab_
               ? { backgroundColor: '#558b2f', color: '#fff', border: 'none' }
               : { backgroundColor: '#f5f5f5', color: '#616161', border: '1px solid #e0e0e0' }}>
-            {t === 'All' ? 'All' : ROLE_BADGE[t]?.label} ({tabCounts[t]})
+            {tab_ === 'All' ? t('admin_profiles_all') : t(`admin_role_${tab_.toLowerCase()}`)} ({tabCounts[tab_]})
           </button>
         ))}
       </div>
@@ -152,10 +157,10 @@ export default function AdminUsers() {
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: '1px solid #e8e8e8', backgroundColor: '#fafafa' }}>
-              <th className="text-left px-5 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">User</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Role</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Status</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Joined</th>
+              <th className="text-left px-5 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_users_col_user')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_users_col_role')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_users_col_status')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_users_col_joined')}</th>
               <th className="px-4 py-3.5" />
             </tr>
           </thead>
@@ -171,8 +176,10 @@ export default function AdminUsers() {
                 </tr>
               ))
             ) : visible.map(u => {
-              const roleBadge   = ROLE_BADGE[u.role] ?? ROLE_BADGE.USER
-              const statusBadge = STATUS_BADGE[u.is_active]
+              const roleBadge   = ROLE_BADGE_STYLE[u.role] ?? ROLE_BADGE_STYLE.USER
+              const statusBadge = STATUS_BADGE_STYLE[u.is_active]
+              const roleLabel   = t(`admin_role_${u.role.toLowerCase()}`)
+              const statusLabel = u.is_active ? t('admin_users_active') : t('admin_users_inactive')
               const own = isOwnAccount(u)
               const editable = canModify(u)
 
@@ -182,7 +189,7 @@ export default function AdminUsers() {
                   <td className="px-5 py-3.5">
                     <p className="font-medium text-neutral-900">
                       {u.name ?? '—'}
-                      {own && <span className="ml-1.5 text-xs" style={{ color: '#9e9e9e' }}>(you)</span>}
+                      {own && <span className="ml-1.5 text-xs" style={{ color: '#9e9e9e' }}>{t('admin_users_you')}</span>}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: '#9e9e9e' }}>{u.email}</p>
                   </td>
@@ -197,16 +204,16 @@ export default function AdminUsers() {
                           className="rounded-full text-xs font-semibold pr-6 pl-2.5 py-1 appearance-none cursor-pointer outline-none"
                           style={{ backgroundColor: roleBadge.bg, color: roleBadge.color, border: 'none' }}
                         >
-                          <option value="USER">User</option>
-                          <option value="ADMIN">Admin</option>
-                          <option value="SUPER_ADMIN">Super Admin</option>
+                          <option value="USER">{t('admin_role_user')}</option>
+                          <option value="ADMIN">{t('admin_role_admin')}</option>
+                          <option value="SUPER_ADMIN">{t('admin_role_super_admin')}</option>
                         </select>
                         <ChevronDown size={11} style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', color: roleBadge.color, pointerEvents: 'none' }} />
                       </div>
                     ) : (
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
                         style={{ backgroundColor: roleBadge.bg, color: roleBadge.color }}>
-                        {roleBadge.label}
+                        {roleLabel}
                       </span>
                     )}
                   </td>
@@ -215,7 +222,7 @@ export default function AdminUsers() {
                   <td className="px-4 py-3.5">
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
                       style={{ backgroundColor: statusBadge.bg, color: statusBadge.color }}>
-                      {statusBadge.label}
+                      {statusLabel}
                     </span>
                   </td>
 
@@ -227,13 +234,13 @@ export default function AdminUsers() {
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-1.5 justify-end">
                       {!editable || own ? (
-                        <div className="p-1.5 rounded-lg" title={own ? 'Cannot modify your own account' : 'Protected account'}>
+                        <div className="p-1.5 rounded-lg" title={own ? t('admin_users_tip_own') : t('admin_users_tip_protected')}>
                           <Lock size={14} style={{ color: '#d0d0d0' }} />
                         </div>
                       ) : (
                         <button
                           onClick={() => toggleActive(u)}
-                          title={u.is_active ? 'Deactivate account' : 'Activate account'}
+                          title={u.is_active ? t('admin_users_tip_deactivate') : t('admin_users_tip_activate')}
                           className="p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-neutral-100"
                           style={{ border: 'none', background: 'none' }}
                         >
@@ -250,7 +257,7 @@ export default function AdminUsers() {
             {!loading && visible.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-5 py-12 text-center text-sm" style={{ color: '#9e9e9e' }}>
-                  No users found.
+                  {t('admin_users_empty')}
                 </td>
               </tr>
             )}

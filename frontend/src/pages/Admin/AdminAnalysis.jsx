@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Download } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { adminRequest } from '../../api/adminClient'
 
 const MODE_STYLE = {
@@ -44,6 +45,7 @@ function exportCSV(records) {
 export default function AdminAnalysis() {
   const { getBackendToken } = useAuth()
   const { showToast } = useToast()
+  const { t } = useLanguage()
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [modeFilter, setModeFilter] = useState('')
@@ -62,7 +64,7 @@ export default function AdminAnalysis() {
         const r = await adminRequest(getBackendToken, 'get', `/admin/analysis?${params}`)
         setRecords(r.data)
       } catch {
-        showToast('Failed to load analyses', 'error')
+        showToast(t('admin_analysis_toast_fail'), 'error')
       } finally {
         setLoading(false)
       }
@@ -75,16 +77,16 @@ export default function AdminAnalysis() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Analysis Logs</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#757575' }}>All DSS diagnosis runs stored in PostgreSQL</p>
+          <h1 className="text-2xl font-bold text-neutral-900">{t('admin_analysis_title')}</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#757575' }}>{t('admin_analysis_subtitle')}</p>
         </div>
         <button
-          onClick={() => { exportCSV(records); showToast('CSV exported') }}
+          onClick={() => { exportCSV(records); showToast(t('admin_analysis_toast_exported')) }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors hover:opacity-90"
           style={{ border: '1.5px solid #558b2f', color: '#33691e', background: '#fff' }}
           disabled={!records.length}
         >
-          <Download size={15} /> Export CSV
+          <Download size={15} /> {t('admin_analysis_export')}
         </button>
       </div>
 
@@ -105,23 +107,23 @@ export default function AdminAnalysis() {
 
         {/* Date range */}
         <div className="flex items-center gap-2 ml-2">
-          <label className="text-xs font-medium" style={{ color: '#9e9e9e' }}>From</label>
+          <label className="text-xs font-medium" style={{ color: '#9e9e9e' }}>{t('admin_analysis_from')}</label>
           <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
             className="rounded-xl border px-2.5 py-1.5 text-xs outline-none"
             style={{ borderColor: '#e0e0e0', backgroundColor: '#fafafa' }} />
-          <label className="text-xs font-medium" style={{ color: '#9e9e9e' }}>To</label>
+          <label className="text-xs font-medium" style={{ color: '#9e9e9e' }}>{t('admin_analysis_to')}</label>
           <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
             className="rounded-xl border px-2.5 py-1.5 text-xs outline-none"
             style={{ borderColor: '#e0e0e0', backgroundColor: '#fafafa' }} />
           {(fromDate || toDate) && (
             <button onClick={() => { setFromDate(''); setToDate('') }}
               className="text-xs cursor-pointer" style={{ color: '#9e9e9e', background: 'none', border: 'none' }}>
-              Clear
+              {t('admin_analysis_clear')}
             </button>
           )}
         </div>
 
-        <span className="ml-auto text-xs" style={{ color: '#9e9e9e' }}>{records.length} records</span>
+        <span className="ml-auto text-xs" style={{ color: '#9e9e9e' }}>{records.length} {t('admin_analysis_records')}</span>
       </div>
 
       {/* Table */}
@@ -129,11 +131,11 @@ export default function AdminAnalysis() {
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: '1px solid #e8e8e8', backgroundColor: '#fafafa' }}>
-              <th className="text-left px-5 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Condition</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Mode</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Confidence</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">User</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Date</th>
+              <th className="text-left px-5 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_analysis_col_condition')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_analysis_col_mode')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_analysis_col_confidence')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_analysis_col_user')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_analysis_col_date')}</th>
             </tr>
           </thead>
           <tbody>
@@ -169,7 +171,7 @@ export default function AdminAnalysis() {
                     {r.confidence != null ? `${(r.confidence * 100).toFixed(0)}%` : '—'}
                   </td>
                   <td className="px-4 py-3.5 text-xs" style={{ color: '#757575' }}>
-                    {r.user_email ?? <span style={{ color: '#bdbdbd' }}>unknown</span>}
+                    {r.user_email ?? <span style={{ color: '#bdbdbd' }}>{t('admin_analysis_unknown')}</span>}
                   </td>
                   <td className="px-4 py-3.5 text-xs" style={{ color: '#9e9e9e' }}>
                     {new Date(r.created_at).toLocaleString()}
@@ -180,7 +182,7 @@ export default function AdminAnalysis() {
             {!loading && records.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-5 py-12 text-center text-sm" style={{ color: '#9e9e9e' }}>
-                  No analyses logged yet.
+                  {t('admin_analysis_empty')}
                 </td>
               </tr>
             )}

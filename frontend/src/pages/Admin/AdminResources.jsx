@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { adminRequest } from '../../api/adminClient'
 
 const STATUS_STYLE = {
-  PUBLISHED: { color: '#166534', bg: '#dcfce7', label: 'Published' },
-  SCHEDULED: { color: '#92400e', bg: '#fef3c7', label: 'Scheduled' },
-  DRAFT:     { color: '#374151', bg: '#f3f4f6', label: 'Draft' },
+  PUBLISHED: { color: '#166534', bg: '#dcfce7' },
+  SCHEDULED: { color: '#92400e', bg: '#fef3c7' },
+  DRAFT:     { color: '#374151', bg: '#f3f4f6' },
 }
 const TYPE_STYLE = {
   ARTICLE: { color: '#1e40af', bg: '#dbeafe' },
@@ -22,6 +23,7 @@ export default function AdminResources() {
   const navigate = useNavigate()
   const { getBackendToken } = useAuth()
   const { showToast } = useToast()
+  const { t } = useLanguage()
   const [resources, setResources] = useState([])
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
@@ -34,7 +36,7 @@ export default function AdminResources() {
       const r = await adminRequest(getBackendToken, 'get', '/admin/resources')
       setResources(r.data)
     } catch {
-      showToast('Failed to load resources', 'error')
+      showToast(t('admin_res_toast_load_fail'), 'error')
     } finally {
       setLoading(false)
     }
@@ -46,21 +48,21 @@ export default function AdminResources() {
     const newStatus = resource.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
     try {
       await adminRequest(getBackendToken, 'patch', `/admin/resources/${resource.id}`, { status: newStatus })
-      showToast(`Resource ${newStatus === 'PUBLISHED' ? 'published' : 'unpublished'}`)
+      showToast(newStatus === 'PUBLISHED' ? t('admin_res_toast_published') : t('admin_res_toast_unpublished'))
       load()
     } catch {
-      showToast('Failed to update status', 'error')
+      showToast(t('admin_res_toast_status_fail'), 'error')
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this resource? This cannot be undone.')) return
+    if (!window.confirm(t('admin_res_confirm_delete'))) return
     try {
       await adminRequest(getBackendToken, 'delete', `/admin/resources/${id}`)
-      showToast('Resource deleted')
+      showToast(t('admin_res_toast_deleted'))
       load()
     } catch {
-      showToast('Failed to delete resource', 'error')
+      showToast(t('admin_res_toast_delete_fail'), 'error')
     }
   }
 
@@ -80,13 +82,13 @@ export default function AdminResources() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Resources</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#757575' }}>Articles and videos shown on /learn</p>
+          <h1 className="text-2xl font-bold text-neutral-900">{t('admin_res_title')}</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#757575' }}>{t('admin_res_subtitle')}</p>
         </div>
         <button onClick={() => navigate('/admin/resources/new')}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer transition-opacity hover:opacity-90"
           style={{ backgroundColor: '#558b2f', boxShadow: '0 2px 8px rgba(85,139,47,0.3)' }}>
-          <Plus size={16} /> New Resource
+          <Plus size={16} /> {t('admin_res_new')}
         </button>
       </div>
 
@@ -97,7 +99,7 @@ export default function AdminResources() {
           <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9e9e9e', pointerEvents: 'none' }} />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search titles…"
+            placeholder={t('admin_res_search')}
             className="rounded-xl border pl-8 pr-3 py-1.5 text-sm outline-none"
             style={{ borderColor: '#e0e0e0', backgroundColor: '#fafafa', width: 200 }}
           />
@@ -105,26 +107,26 @@ export default function AdminResources() {
 
         {/* Status filter */}
         <div className="flex gap-1.5">
-          {STATUS_TABS.map(t => (
-            <button key={t} onClick={() => setStatusTab(t)}
+          {STATUS_TABS.map(s => (
+            <button key={s} onClick={() => setStatusTab(s)}
               className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer"
-              style={statusTab === t
+              style={statusTab === s
                 ? { backgroundColor: '#558b2f', color: '#fff', border: 'none' }
                 : { backgroundColor: '#f5f5f5', color: '#616161', border: '1px solid #e8e8e8' }}>
-              {t === 'All' ? 'All Status' : STATUS_STYLE[t]?.label}
+              {s === 'All' ? t('admin_res_all_status') : t(`admin_res_${s.toLowerCase()}`)}
             </button>
           ))}
         </div>
 
         {/* Type filter */}
         <div className="flex gap-1.5">
-          {TYPE_TABS.map(t => (
-            <button key={t} onClick={() => setTypeTab(t)}
+          {TYPE_TABS.map(ty => (
+            <button key={ty} onClick={() => setTypeTab(ty)}
               className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer"
-              style={typeTab === t
+              style={typeTab === ty
                 ? { backgroundColor: '#1565c0', color: '#fff', border: 'none' }
                 : { backgroundColor: '#f5f5f5', color: '#616161', border: '1px solid #e8e8e8' }}>
-              {t === 'All' ? 'All Types' : t.charAt(0) + t.slice(1).toLowerCase()}
+              {ty === 'All' ? t('admin_res_all_types') : t(`admin_res_${ty.toLowerCase()}`)}
             </button>
           ))}
         </div>
@@ -135,10 +137,10 @@ export default function AdminResources() {
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: '1px solid #e8e8e8', backgroundColor: '#fafafa' }}>
-              <th className="text-left px-5 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Title</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Type</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Status</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">Category</th>
+              <th className="text-left px-5 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_res_col_title')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_res_col_type')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_res_col_status')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-neutral-500 text-xs uppercase tracking-wide">{t('admin_res_col_category')}</th>
               <th className="px-4 py-3.5" />
             </tr>
           </thead>
@@ -164,32 +166,32 @@ export default function AdminResources() {
                   <td className="px-4 py-3.5">
                     <span className="px-2 py-0.5 rounded-full text-xs font-semibold capitalize"
                       style={{ backgroundColor: ty.bg, color: ty.color }}>
-                      {r.type.charAt(0) + r.type.slice(1).toLowerCase()}
+                      {t(`admin_res_${r.type.toLowerCase()}`)}
                     </span>
                   </td>
                   <td className="px-4 py-3.5">
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
                       style={{ backgroundColor: s.bg, color: s.color }}>
-                      {s.label}
+                      {t(`admin_res_${r.status.toLowerCase()}`)}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-xs" style={{ color: '#9e9e9e' }}>{getCategory(r)}</td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-1 justify-end">
                       <button onClick={() => togglePublish(r)}
-                        title={r.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                        title={r.status === 'PUBLISHED' ? t('admin_res_tip_unpublish') : t('admin_res_tip_publish')}
                         className="p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-neutral-100"
                         style={{ border: 'none', background: 'none' }}>
                         {r.status === 'PUBLISHED'
                           ? <EyeOff size={15} style={{ color: '#9e9e9e' }} />
                           : <Eye    size={15} style={{ color: '#558b2f' }} />}
                       </button>
-                      <button onClick={() => navigate(`/admin/resources/${r.id}`)} title="Edit"
+                      <button onClick={() => navigate(`/admin/resources/${r.id}`)} title={t('admin_res_tip_edit')}
                         className="p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-neutral-100"
                         style={{ border: 'none', background: 'none' }}>
                         <Pencil size={15} style={{ color: '#9e9e9e' }} />
                       </button>
-                      <button onClick={() => handleDelete(r.id)} title="Delete"
+                      <button onClick={() => handleDelete(r.id)} title={t('admin_res_tip_delete')}
                         className="p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-red-50"
                         style={{ border: 'none', background: 'none' }}>
                         <Trash2 size={15} style={{ color: '#ef4444' }} />
@@ -202,7 +204,7 @@ export default function AdminResources() {
             {!loading && visible.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-5 py-12 text-center text-sm" style={{ color: '#9e9e9e' }}>
-                  {resources.length === 0 ? 'No resources yet. Create one above.' : 'No results match your filters.'}
+                  {resources.length === 0 ? t('admin_res_empty_none') : t('admin_res_empty_filter')}
                 </td>
               </tr>
             )}

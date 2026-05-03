@@ -4,28 +4,31 @@ import {
   BarChart2, LogOut, ArrowLeft, Shield,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { ToastProvider } from '../../context/ToastContext'
 
-const NAV = [
-  { to: '/admin',           label: 'Dashboard',  icon: LayoutDashboard, end: true },
-  { to: '/admin/resources', label: 'Resources',  icon: FileText },
-  { to: '/admin/profiles',  label: 'Profiles',   icon: UserCheck },
-  { to: '/admin/users',     label: 'Users',      icon: Users },
-  { to: '/admin/analysis',  label: 'Analysis',   icon: BarChart2 },
-]
-
-const ROLE_BADGE = {
-  SUPER_ADMIN: { label: 'Super Admin', bg: '#c5a028', color: '#fff' },
-  ADMIN:       { label: 'Admin',       bg: '#558b2f', color: '#fff' },
-  USER:        { label: 'User',        bg: '#616161', color: '#fff' },
+const ROLE_BADGE_STYLE = {
+  SUPER_ADMIN: { bg: '#c5a028', color: '#fff' },
+  ADMIN:       { bg: '#558b2f', color: '#fff' },
+  USER:        { bg: '#616161', color: '#fff' },
 }
 
 export default function AdminLayout() {
   const { logout, user, isSuperAdmin, isAdmin } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
+  const NAV = [
+    { to: '/admin',           label: t('admin_nav_dashboard'), icon: LayoutDashboard, end: true },
+    { to: '/admin/resources', label: t('admin_nav_resources'), icon: FileText },
+    { to: '/admin/profiles',  label: t('admin_nav_profiles'),  icon: UserCheck },
+    { to: '/admin/users',     label: t('admin_nav_users'),     icon: Users },
+    { to: '/admin/analysis',  label: t('admin_nav_analysis'),  icon: BarChart2 },
+  ]
+
   const role = isSuperAdmin ? 'SUPER_ADMIN' : isAdmin ? 'ADMIN' : 'USER'
-  const badge = ROLE_BADGE[role]
+  const badgeStyle = ROLE_BADGE_STYLE[role]
+  const badgeLabel = isSuperAdmin ? t('admin_role_super_admin') : isAdmin ? t('admin_role_admin') : t('admin_role_user')
 
   const handleLogout = async () => {
     await logout()
@@ -45,7 +48,7 @@ export default function AdminLayout() {
               </div>
               <div>
                 <p className="text-white font-bold text-sm leading-tight">Srov Meas</p>
-                <p className="text-xs" style={{ color: '#8aaa50' }}>Admin Panel</p>
+                <p className="text-xs" style={{ color: '#8aaa50' }}>{t('admin_nav_panel')}</p>
               </div>
             </div>
           </div>
@@ -56,7 +59,7 @@ export default function AdminLayout() {
             className="flex items-center gap-2 mx-3 mt-3 mb-1 px-3 py-2 rounded-lg text-xs font-medium no-underline transition-colors hover:bg-white/10"
             style={{ color: '#8aaa50' }}
           >
-            <ArrowLeft size={13} /> Back to website
+            <ArrowLeft size={13} /> {t('admin_nav_back')}
           </Link>
 
           {/* Navigation */}
@@ -90,9 +93,9 @@ export default function AdminLayout() {
               <p className="text-xs truncate mt-0.5" style={{ color: '#8aaa50' }}>{user?.email}</p>
               <span
                 className="inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-semibold"
-                style={{ backgroundColor: badge.bg, color: badge.color, fontSize: 10 }}
+                style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.color, fontSize: 10 }}
               >
-                {badge.label}
+                {badgeLabel}
               </span>
             </div>
             <button
@@ -101,7 +104,7 @@ export default function AdminLayout() {
               style={{ color: '#c5dc8a', border: 'none', background: 'none' }}
             >
               <LogOut size={15} />
-              Sign out
+              {t('admin_nav_signout')}
             </button>
           </div>
         </aside>

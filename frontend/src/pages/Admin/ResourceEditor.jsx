@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { ArrowLeft, Save, Upload } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { adminRequest } from '../../api/adminClient'
 import { getCategories } from '../../api/client'
 import { app as firebaseApp } from '../../firebase'
@@ -19,6 +20,7 @@ export default function ResourceEditor() {
   const isEdit  = Boolean(id)
   const navigate = useNavigate()
   const { getBackendToken } = useAuth()
+  const { t } = useLanguage()
 
   const [tab, setTab]                 = useState('en')
   const [status, setStatus]           = useState('DRAFT')
@@ -71,7 +73,7 @@ export default function ResourceEditor() {
   }
 
   async function handleSave() {
-    if (!titles.en.trim()) { setError('English title is required'); return }
+    if (!titles.en.trim()) { setError(t('admin_editor_err_title')); return }
     setSaving(true)
     setError(null)
     try {
@@ -94,7 +96,7 @@ export default function ResourceEditor() {
       }
       navigate('/admin/resources')
     } catch (err) {
-      setError(err.response?.data?.detail ?? 'Save failed')
+      setError(err.response?.data?.detail ?? t('admin_editor_err_save'))
     } finally {
       setSaving(false)
     }
@@ -105,10 +107,10 @@ export default function ResourceEditor() {
   return (
     <div className="p-8 max-w-4xl">
       <button onClick={() => navigate('/admin/resources')} className="flex items-center gap-1.5 text-sm mb-6 bg-transparent border-none cursor-pointer hover:underline" style={{ color: '#757575' }}>
-        <ArrowLeft size={15} /> Back to Resources
+        <ArrowLeft size={15} /> {t('admin_editor_back')}
       </button>
 
-      <h1 className="text-2xl font-bold mb-6">{isEdit ? 'Edit Resource' : 'New Resource'}</h1>
+      <h1 className="text-2xl font-bold mb-6">{isEdit ? t('admin_editor_title_edit') : t('admin_editor_title_new')}</h1>
 
       {error && (
         <div className="mb-4 p-3 rounded-xl text-sm" style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }}>{error}</div>
@@ -118,39 +120,39 @@ export default function ResourceEditor() {
         {/* Left — metadata */}
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">Type</label>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_type')}</label>
             <select value={type} onChange={e => setType(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }}>
-              <option value="ARTICLE">Article</option>
-              <option value="VIDEO">Video</option>
+              <option value="ARTICLE">{t('admin_editor_opt_article')}</option>
+              <option value="VIDEO">{t('admin_editor_opt_video')}</option>
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">Status</label>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_status')}</label>
             <select value={status} onChange={e => setStatus(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }}>
-              <option value="DRAFT">Draft</option>
-              <option value="SCHEDULED">Scheduled</option>
-              <option value="PUBLISHED">Published</option>
+              <option value="DRAFT">{t('admin_editor_opt_draft')}</option>
+              <option value="SCHEDULED">{t('admin_editor_opt_scheduled')}</option>
+              <option value="PUBLISHED">{t('admin_editor_opt_published')}</option>
             </select>
           </div>
           {status === 'SCHEDULED' && (
             <div>
-              <label className="text-xs font-semibold text-neutral-600 block mb-1">Publish At</label>
+              <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_publish_at')}</label>
               <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }} />
             </div>
           )}
           <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">Category</label>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_category')}</label>
             <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }}>
-              <option value="">None</option>
+              <option value="">{t('admin_editor_opt_none')}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">Thumbnail</label>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_thumbnail')}</label>
             {thumbnail && <img src={thumbnail} alt="thumbnail" className="w-full rounded-lg mb-2 object-cover" style={{ height: 80 }} />}
             <label className="flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-lg border" style={{ borderColor: '#e0e0e0', color: '#558b2f' }}>
               <Upload size={14} />
-              {uploadingImg ? 'Uploading…' : 'Upload image'}
+              {uploadingImg ? t('admin_editor_uploading') : t('admin_editor_upload')}
               <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} disabled={uploadingImg} />
             </label>
           </div>
@@ -170,17 +172,17 @@ export default function ResourceEditor() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">Title ({tab.toUpperCase()}) *</label>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_title')} ({tab.toUpperCase()}) *</label>
             <input value={titles[tab]} onChange={e => setTitles(p => ({ ...p, [tab]: e.target.value }))}
-              className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }} placeholder="Article title" />
+              className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#e0e0e0' }} placeholder={t('admin_editor_ph_title')} />
           </div>
           <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">Short description ({tab.toUpperCase()})</label>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_summary')} ({tab.toUpperCase()})</label>
             <textarea rows={2} value={descs[tab]} onChange={e => setDescs(p => ({ ...p, [tab]: e.target.value }))}
-              className="w-full rounded-lg border px-3 py-2 text-sm resize-none" style={{ borderColor: '#e0e0e0' }} placeholder="Brief summary shown in card view" />
+              className="w-full rounded-lg border px-3 py-2 text-sm resize-none" style={{ borderColor: '#e0e0e0' }} placeholder={t('admin_editor_ph_summary')} />
           </div>
           <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">Content ({tab.toUpperCase()})</label>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">{t('admin_editor_f_content')} ({tab.toUpperCase()})</label>
             <div className="rounded-xl border overflow-hidden" style={{ borderColor: '#e0e0e0', minHeight: 300 }}>
               <div className="px-2 py-1.5 flex gap-1 flex-wrap" style={{ borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafafa' }}>
                 {[
@@ -210,7 +212,7 @@ export default function ResourceEditor() {
           className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white border-none cursor-pointer disabled:opacity-60"
           style={{ backgroundColor: '#558b2f' }}>
           <Save size={15} />
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('admin_editor_saving') : t('admin_editor_save')}
         </button>
       </div>
     </div>
