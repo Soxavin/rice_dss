@@ -15,7 +15,7 @@ const ROLE_BADGE_STYLE = {
 
 export default function AdminLayout() {
   const { logout, user, isSuperAdmin, isAdmin } = useAuth()
-  const { t } = useLanguage()
+  const { t, lang, switchLang } = useLanguage()
   const navigate = useNavigate()
 
   const NAV = [
@@ -97,6 +97,20 @@ export default function AdminLayout() {
               >
                 {badgeLabel}
               </span>
+            </div>
+            <div className="flex gap-1.5 mb-2 px-3">
+              {['en', 'km'].map(l => (
+                <button
+                  key={l}
+                  onClick={() => switchLang(l)}
+                  className="flex-1 py-1 rounded-md text-xs font-semibold cursor-pointer transition-colors"
+                  style={lang === l
+                    ? { backgroundColor: '#558b2f', color: '#fff', border: 'none' }
+                    : { backgroundColor: 'transparent', color: '#8aaa50', border: '1px solid #3a5a1e' }}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
             </div>
             <button
               onClick={handleLogout}

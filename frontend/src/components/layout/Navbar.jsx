@@ -225,7 +225,7 @@ export default function Navbar() {
                           onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
                         >
                           <LayoutDashboard size={15} style={{ color: '#558b2f' }} />
-                          Admin Dashboard
+                          {t('nav_admin_dashboard')}
                         </Link>
                       )}
                       <div className="border-t border-neutral-100" />
@@ -350,7 +350,7 @@ export default function Navbar() {
                 </Link>
                 {isAdmin && (
                   <Link to="/admin" className="flex items-center gap-2 text-sm font-medium no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" style={{ color: '#558b2f' }} onClick={() => setMobileOpen(false)}>
-                    <LayoutDashboard size={15} style={{ color: '#558b2f' }} /> Admin Dashboard
+                    <LayoutDashboard size={15} style={{ color: '#558b2f' }} /> {t('nav_admin_dashboard')}
                   </Link>
                 )}
                 <Link to="/detect" className="block text-center text-sm font-medium text-white no-underline px-4 py-2.5 rounded-lg" style={{ backgroundColor: '#558b2f' }} onClick={() => setMobileOpen(false)}>

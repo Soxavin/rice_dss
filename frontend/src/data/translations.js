@@ -660,6 +660,7 @@ export const translations = {
     detail_find_more: 'Find More',
 
     nav_logout: 'Logout',
+    nav_admin_dashboard: 'Admin Dashboard',
     step_label: 'Step',
 
     // Expert role labels
@@ -1675,6 +1676,7 @@ export const translations = {
     detail_find_more: 'រកបន្ថែម',
 
     nav_logout: 'ចាកចេញ',
+    nav_admin_dashboard: 'ផ្ទាំងអ្នកគ្រប់គ្រង',
     step_label: 'ជំហានទី',
 
     // Expert role labels
