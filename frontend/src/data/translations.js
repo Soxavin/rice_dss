@@ -661,6 +661,20 @@ export const translations = {
 
     nav_logout: 'Logout',
     nav_admin_dashboard: 'Admin Dashboard',
+
+    // Error / empty states (public pages)
+    detect_err_generic: 'Analysis failed. Please check your connection and try again.',
+    detect_upload_size_error: 'One or more files exceed the 10 MB limit.',
+    experts_load_error: 'Failed to load profiles. Please try again.',
+    learn_load_error: 'Failed to load resources. Please try again.',
+    learn_empty_search: 'No results for your search.',
+    learn_empty_all: 'No resources published yet.',
+    notfound_title: 'Page Not Found',
+    notfound_subtitle: "This page doesn't exist or has been moved. Let's get you back to your rice field.",
+    notfound_cta: 'Go to Homepage',
+    article_not_found: 'Article not found',
+    article_not_found_sub: "This article may have been removed or isn't published yet.",
+    article_no_content: 'No content available in this language.',
     step_label: 'Step',
 
     // Expert role labels
@@ -1677,6 +1691,20 @@ export const translations = {
 
     nav_logout: 'ចាកចេញ',
     nav_admin_dashboard: 'ផ្ទាំងអ្នកគ្រប់គ្រង',
+
+    // Error / empty states (public pages)
+    detect_err_generic: 'ការវិភាគបានបរាជ័យ។ សូមពិនិត្យការតភ្ជាប់ និងព្យាយាមម្តងទៀត។',
+    detect_upload_size_error: 'ឯកសារមួយ ឬច្រើនលើសពី 10 MB។',
+    experts_load_error: 'មិនអាចទាញយកប្រវត្តិរូបបានទេ។ សូមព្យាយាមម្តងទៀត។',
+    learn_load_error: 'មិនអាចទាញយកធនធានបានទេ។ សូមព្យាយាមម្តងទៀត។',
+    learn_empty_search: 'គ្មានលទ្ធផលត្រូវនឹងការស្វែងរករបស់អ្នកទេ។',
+    learn_empty_all: 'មិនទាន់មានធនធានត្រូវបានផ្សព្វផ្សាយ។',
+    notfound_title: 'រកមិនឃើញទំព័រ',
+    notfound_subtitle: 'ទំព័រនេះមិនមានឬត្រូវបានផ្លាស់ប្ដូរ។ ត្រឡប់ទៅកសិដ្ឋានស្រូវវិញ។',
+    notfound_cta: 'ទៅទំព័រដើម',
+    article_not_found: 'រកមិនឃើញអត្ថបទ',
+    article_not_found_sub: 'អត្ថបទនេះអាចត្រូវបានដកចេញ ឬមិនទាន់ត្រូវបានផ្សព្វផ្សាយ។',
+    article_no_content: 'មិនមានមាតិកាជាភាសានេះទេ។',
     step_label: 'ជំហានទី',
 
     // Expert role labels

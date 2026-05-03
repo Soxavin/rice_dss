@@ -18,6 +18,7 @@ export default function Step1Upload() {
     return stateMode && MODES.includes(stateMode) ? stateMode : 'hybrid'
   })
   const [isNavigating, setIsNavigating] = useState(false)
+  const [uploadError, setUploadError] = useState(null)
   const [questionnaireDepth, setQuestionnaireDepth] = useState('quick')
 
   // Camera modal state
@@ -37,8 +38,9 @@ export default function Step1Upload() {
       .map((f) => ({ file: f, preview: URL.createObjectURL(f), name: f.name }))
     const oversized = Array.from(files).filter(f => f.type.startsWith('image/') && f.size > MAX_SIZE)
     if (oversized.length > 0) {
-      // Surface oversized file warning via alert (simple, no extra state)
-      alert(`${oversized.map(f => f.name).join(', ')}: file too large (max 10 MB)`)
+      setUploadError(t('detect_upload_size_error'))
+    } else {
+      setUploadError(null)
     }
     setImages((prev) => [...prev, ...newImages].slice(0, 5))
   }, [images.length])
@@ -274,6 +276,12 @@ export default function Step1Upload() {
         </div>
 
       </div>
+
+      {uploadError && (
+        <div className="mt-4 p-3 rounded-xl text-sm" style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }}>
+          {uploadError}
+        </div>
+      )}
 
       <div className={`mt-6 grid grid-cols-1 ${mode !== 'questionnaire' ? 'lg:grid-cols-3' : ''} gap-8`}>
 

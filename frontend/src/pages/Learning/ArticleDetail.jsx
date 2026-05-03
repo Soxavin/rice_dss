@@ -43,8 +43,8 @@ export default function ArticleDetail() {
   if (notFound || !resource) return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
       <p className="text-5xl mb-4">📄</p>
-      <h1 className="text-xl font-bold text-neutral-900 mb-2">Article not found</h1>
-      <p className="text-neutral-500 text-sm mb-6">This article may have been removed or isn't published yet.</p>
+      <h1 className="text-xl font-bold text-neutral-900 mb-2">{t('article_not_found')}</h1>
+      <p className="text-neutral-500 text-sm mb-6">{t('article_not_found_sub')}</p>
       <Link to="/learn" className="inline-flex items-center gap-2 text-sm font-medium no-underline" style={{ color: '#558b2f' }}>
         <ArrowLeft size={14} /> Back to Learning Resources
       </Link>
@@ -118,7 +118,7 @@ export default function ArticleDetail() {
               />
             ) : (
               <div className="py-12 text-center text-neutral-400">
-                <p className="text-sm">No content available in this language.</p>
+                <p className="text-sm">{t('article_no_content')}</p>
               </div>
             )}
 

@@ -30,10 +30,10 @@ export default function NotFound() {
       </div>
 
       <h1 className="font-heading text-3xl font-bold italic text-neutral-900">
-        Page Not Found
+        {t('notfound_title')}
       </h1>
       <p className="mt-3 text-neutral-500 text-sm max-w-sm leading-relaxed">
-        This page doesn't exist or has been moved. Let's get you back to your rice field.
+        {t('notfound_subtitle')}
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3 justify-center">
@@ -42,14 +42,7 @@ export default function NotFound() {
           className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white rounded-xl no-underline transition-opacity hover:opacity-90"
           style={{ backgroundColor: '#558b2f', boxShadow: '0 2px 8px rgba(85,139,47,0.3)' }}
         >
-          Go Home <ArrowRight size={15} />
-        </Link>
-        <Link
-          to="/detect"
-          className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl no-underline transition-colors hover:bg-primary-50"
-          style={{ border: '2px solid #558b2f', color: '#33691e' }}
-        >
-          Start Analysis
+          {t('notfound_cta')} <ArrowRight size={15} />
         </Link>
       </div>
     </div>

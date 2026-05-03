@@ -73,11 +73,6 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-xs text-footer-text">{t('footer_copyright')}</p>
-          <div className="flex gap-4">
-            <a href="#" className="text-xs text-footer-text hover:text-white no-underline transition-colors">{t('footer_privacy')}</a>
-            <a href="#" className="text-xs text-footer-text hover:text-white no-underline transition-colors">{t('footer_terms')}</a>
-            <a href="#" className="text-xs text-footer-text hover:text-white no-underline transition-colors">{t('footer_cookies')}</a>
-          </div>
         </div>
       </div>
     </footer>

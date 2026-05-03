@@ -473,29 +473,7 @@ export default function Step2Questions() {
       if (status === 422 && detail) {
         setApiError(detail)
       } else {
-        sessionStorage.setItem('detect_result', JSON.stringify({
-          is_demo: true,
-          status: 'assessed',
-          primary_condition: 'ជំងឺប្លាស (Rice Blast)',
-          condition_key: 'blast',
-          confidence_label: t('demo_confidence_label'),
-          confidence_level: 'high',
-          score: 0.84,
-          all_scores: { blast: 0.84, brown_spot: 0.32, bacterial_blight: 0.15, iron_toxicity: 0.0, n_deficiency: 0.05, salt_toxicity: 0.0 },
-          recommendations: {
-            immediate: [t('demo_rec_blast_1'), t('demo_rec_blast_2')],
-            preventive: [t('demo_prev_blast_1'), t('demo_prev_blast_2')],
-            monitoring: t('demo_monitoring_blast'),
-            consult: answers.growth_stage === 'flowering',
-          },
-          secondary_conditions: [],
-          warnings: [],
-          mode_used: mode === 'questionnaire' ? t('demo_mode_questionnaire')
-                   : mode === 'ml'            ? t('demo_mode_ml')
-                   :                            t('demo_mode_hybrid'),
-          disclaimer: t('demo_disclaimer'),
-        }))
-        if (mountedRef.current) navigate('/detect/results')
+        setApiError(t('detect_err_generic'))
       }
     } finally {
       setLoading(false)

@@ -54,6 +54,7 @@ export default function ExpertsPage() {
   const { lang, t } = useLanguage()
   const [profiles, setProfiles]   = useState([])
   const [loading, setLoading]     = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [tab, setTab]             = useState('All')
   const [search, setSearch]       = useState('')
   const [contactForm, setContactForm]       = useState({ name: '', email: '', message: '' })
@@ -65,7 +66,7 @@ export default function ExpertsPage() {
   useEffect(() => {
     getProfiles()
       .then(r => setProfiles(r.data || []))
-      .catch(() => {})
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -127,6 +128,13 @@ export default function ExpertsPage() {
 
   return (
     <div>
+      {loadError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="p-3 rounded-xl text-sm" style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }}>
+            {t('experts_load_error')}
+          </div>
+        </div>
+      )}
       {/* ═══════════════ PAGE HEADER BANNER ═══════════════ */}
       <div
         className="relative overflow-hidden py-14 px-4"

@@ -30,13 +30,14 @@ export default function ResourcesList() {
   const { t, lang } = useLanguage()
   const [resources, setResources] = useState([])
   const [loading, setLoading]     = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [tab, setTab]             = useState('all')
   const [search, setSearch]       = useState('')
 
   useEffect(() => {
     getResources()
       .then(r => setResources(r.data || []))
-      .catch(() => {})
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -91,6 +92,11 @@ export default function ResourcesList() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {loadError && (
+        <div className="mb-4 p-3 rounded-xl text-sm" style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }}>
+          {t('learn_load_error')}
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900 italic">
@@ -136,7 +142,7 @@ export default function ResourcesList() {
           <section>
             <h2 className="text-lg font-bold text-neutral-900 mb-4">{t('learn_recommended')}</h2>
             {loading ? <Skeleton /> : filtered.length === 0 ? (
-              <Empty message={search ? 'No results for your search.' : 'No resources published yet.'} />
+              <Empty message={search ? t('learn_empty_search') : t('learn_empty_all')} />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filtered.slice(0, 2).map(item => (
