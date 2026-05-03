@@ -17,9 +17,9 @@ export default function Footer() {
               onMouseDown={(e) => e.preventDefault()}
             >
               <img
-                src="/images/logo.png"
+                src="/images/Srov Meas Logo White.png"
                 alt="Srov Meas"
-                className="h-9 w-auto"
+                className="h-15 w-auto"
                 draggable="false"
                 onDragStart={(e) => e.preventDefault()}
               />

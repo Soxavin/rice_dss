@@ -30,6 +30,7 @@ env/
 # Environment variables
 .env
 .env.*
+serviceAccountKey.json
 
 # ML model weights (large files — store separately)
 # Production model (rice_disease_model.keras ~27MB) is committed for Cloud Run

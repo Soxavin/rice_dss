@@ -210,7 +210,7 @@ export default function ResourcesList() {
           )}
 
           {/* Browse by Categories */}
-          {!loading && categories.length > 0 && (
+          {!loading && (
             <section>
               <h2 className="font-heading text-2xl font-bold text-neutral-900 italic">{t('learn_browse_categories')}</h2>
               {categories.map(cat => (

@@ -80,7 +80,7 @@ export default function SignIn() {
 
         <div className="relative z-10 flex flex-col h-full p-10">
           {/* Logo */}
-          <img src="/images/logo.png" alt="Srov Meas" className="h-10 w-auto max-w-[160px]" />
+          <img src="/images/Srov Meas Logo White.png" alt="Srov Meas" className="h-14 w-auto max-w-[140px]" />
 
           {/* Middle — hero text */}
           <div className="flex-1 flex flex-col justify-center">

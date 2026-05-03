@@ -41,6 +41,8 @@ from dss.validation import validate_answers
 from dss.explainer import explain_scores
 from dss.logger import dss_logger
 from translations import translate_output
+from dotenv import load_dotenv
+load_dotenv()
 
 
 # =============================================================================

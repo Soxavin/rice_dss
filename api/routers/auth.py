@@ -89,3 +89,7 @@ async def get_me(
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
     return user
+
+
+print("Firebase ready:", _firebase_ready)
+print("DB URL:", os.getenv("DATABASE_URL"))
