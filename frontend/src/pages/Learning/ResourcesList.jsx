@@ -99,7 +99,7 @@ export default function ResourcesList() {
       )}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900 italic">
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-neutral-900">
             {t('learn_title')}
           </h1>
           <p className="mt-2 text-neutral-600">{t('learn_subtitle')}</p>
@@ -140,7 +140,7 @@ export default function ResourcesList() {
 
           {/* Recommended */}
           <section>
-            <h2 className="text-lg font-bold text-neutral-900 mb-4">{t('learn_recommended')}</h2>
+            <h2 className="text-2xl font-bold text-neutral-900 mb-4">{t('learn_recommended')}</h2>
             {loading ? <Skeleton /> : filtered.length === 0 ? (
               <Empty message={search ? t('learn_empty_search') : t('learn_empty_all')} />
             ) : (
@@ -153,12 +153,12 @@ export default function ResourcesList() {
                     style={{ border: '1px solid #e0e0e0', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
                   >
                     <div className="relative">
-                      <img src={item.img} alt={title(item)} className="w-full h-44 object-cover"
-                        onError={e => { e.target.src = '/images/analysis-leaf.jpg' }} />
+                      <img src={item.thumbnail_url || item.image || '/images/hero-bg.jpg'} alt={title(item)} className="w-full h-44 object-cover"
+                        onError={e => { e.target.src = '/images/hero-bg.jpg' }} />
                       {item.type === 'video' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                           <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                            <Play size={20} className="text-primary-600 ml-0.5" />
+                            <Play size={50} className="text-primary-600 ml-0.5" />
                           </div>
                         </div>
                       )}
@@ -169,12 +169,12 @@ export default function ResourcesList() {
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors leading-snug">
+                      <h3 className="font-semibold text-xl text-neutral-900 group-hover:text-primary-600 transition-colors leading-snug">
                         {title(item)}
                       </h3>
                       {item.description && <p className="mt-1 text-xs text-neutral-500 line-clamp-2">{item.description}</p>}
-                      <span className="mt-2 text-xs text-primary-600 font-medium flex items-center gap-1">
-                        {item.type === 'video' ? t('learn_watch_video') : t('learn_read_article')} <ArrowRight size={12} />
+                      <span className="mt-6 text-xs text-primary-600 font-medium flex items-center gap-1">
+                        {item.type === 'video' ? t('learn_watch_video') : t('learn_read_article')} 
                       </span>
                     </div>
                   </Link>
@@ -186,21 +186,23 @@ export default function ResourcesList() {
           {/* Latest Updates */}
           {!loading && filtered.length > 2 && (
             <section>
-              <h2 className="text-lg font-bold text-neutral-900 mb-4">{t('learn_latest')}</h2>
+              <h2 className="text-xl font-bold text-neutral-900 mb-4">{t('learn_latest')}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {filtered.slice(2, 5).map(item => (
+                {filtered.slice(2,5).map(item => (
                   <Link
                     key={item.id}
                     to={item.type === 'video' ? `/learn/video/${item.id}` : `/learn/article/${item.id}`}
                     className="group bg-white rounded-lg overflow-hidden no-underline transition-colors"
                     style={{ border: '1px solid #e0e0e0' }}
                   >
-                    <img src={item.img} alt={title(item)} className="w-full h-32 object-cover"
-                      onError={e => { e.target.src = '/images/analysis-leaf.jpg' }} />
-                    <div className="p-3">
-                      <h4 className="text-sm font-medium text-neutral-900 group-hover:text-primary-600 leading-snug">{title(item)}</h4>
-                      <span className="mt-1 text-xs text-primary-600 font-medium flex items-center gap-1">
-                        {item.type === 'video' ? t('learn_watch_video') : t('learn_read_article')} <ArrowRight size={12} />
+                    <img src={item.thumbnail_url || item.image || '/images/hero-bg.jpg'} alt={title(item)} className="w-full h-32 object-cover"
+                      onError={e => { e.target.src = '/images/hero-bg.jpg' }} />
+                    <div className="p-4">
+                      <h4 className="text-sm font-medium text-neutral-900 group-hover:text-primary-600 leading-snug">
+                        {title(item)}
+                      </h4>
+                      <span className="mt-6 text-xs text-primary-600 font-medium flex items-center gap-1">
+                        {item.type === 'VIDEO' ? t('learn_watch_video') : t('learn_read_article')} 
                       </span>
                     </div>
                   </Link>
@@ -209,34 +211,38 @@ export default function ResourcesList() {
             </section>
           )}
 
-          {/* Browse by Categories */}
-          {!loading && (
+          {/* Explore More Articles */}
+          {!loading && filtered.length > 5 && (
             <section>
-              <h2 className="font-heading text-2xl font-bold text-neutral-900 italic">{t('learn_browse_categories')}</h2>
-              {categories.map(cat => (
-                <div key={cat.key} className="mt-6">
-                  <h3 className="font-semibold text-neutral-800">{cat.name}</h3>
-                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {cat.items.slice(0, 3).map(item => (
-                      <Link
-                        key={item.id}
-                        to={`/learn/article/${item.id}`}
-                        className="group bg-white rounded-lg overflow-hidden no-underline"
-                        style={{ border: '1px solid #e0e0e0' }}
-                      >
-                        <img src={item.img} alt={title(item)} className="w-full h-32 object-cover"
-                          onError={e => { e.target.src = '/images/analysis-leaf.jpg' }} />
-                        <div className="p-3">
-                          <h4 className="text-sm font-medium text-neutral-900 group-hover:text-primary-600 leading-snug">{title(item)}</h4>
-                          <span className="text-xs text-primary-600 font-medium flex items-center gap-1 mt-1">
-                            {t('learn_read_article')} <ArrowRight size={12} />
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <h2 className="font-heading text-xl font-bold text-neutral-900">{t('learn_explore_more')}</h2>
+
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filtered.slice(5).map(item => (
+                  <Link
+                    key={item.id}
+                    to={`/learn/article/${item.id}`}
+                    className="group bg-white rounded-lg overflow-hidden no-underline"
+                    style={{ border: '1px solid #e0e0e0' }}
+                  >
+                    <img
+                      src={item.thumbnail_url || item.image || '/images/hero-bg.jpg'}
+                      alt={title(item)}
+                      className="w-full h-32 object-cover"
+                      onError={e => { e.target.src = '/images/analysis-leaf.jpg' }}
+                    />
+
+                    <div className="p-3">
+                      <h4 className="text-sm font-medium text-neutral-900 group-hover:text-primary-600 leading-snug">
+                        {title(item)}
+                      </h4>
+
+                      <span className="text-xs text-primary-600 font-medium flex items-center gap-1 mt-6">
+                        {t('learn_read_article')} 
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </section>
           )}
         </div>
