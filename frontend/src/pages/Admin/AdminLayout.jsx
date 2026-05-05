@@ -1,7 +1,7 @@
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, FileText, UserCheck,
-  BarChart2, LogOut, ArrowLeft, Shield,
+  BarChart2, LogOut, ArrowLeft, Shield, Package,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -22,6 +22,7 @@ export default function AdminLayout() {
     { to: '/admin',           label: t('admin_nav_dashboard'), icon: LayoutDashboard, end: true },
     { to: '/admin/resources', label: t('admin_nav_resources'), icon: FileText },
     { to: '/admin/profiles',  label: t('admin_nav_profiles'),  icon: UserCheck },
+    { to: '/admin/products',  label: t('admin_nav_products'),  icon: Package },
     { to: '/admin/users',     label: t('admin_nav_users'),     icon: Users },
     { to: '/admin/analysis',  label: t('admin_nav_analysis'),  icon: BarChart2 },
   ]

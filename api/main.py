@@ -673,10 +673,11 @@ async def health_check():
 # NEW ROUTERS — admin dashboard + content API
 # All existing DSS endpoints above are untouched.
 # =============================================================================
-from api.routers import auth, resources, profiles, admin_users, admin_analysis  # noqa: E402
+from api.routers import auth, resources, profiles, admin_users, admin_analysis, products  # noqa: E402
 
 app.include_router(auth.router,            prefix="/auth",   tags=["Auth"])
 app.include_router(resources.router,                         tags=["Resources"])
 app.include_router(profiles.router,                          tags=["Profiles"])
+app.include_router(products.router,                          tags=["Products"])
 app.include_router(admin_users.router,     prefix="/admin",  tags=["Admin"])
 app.include_router(admin_analysis.router,  prefix="/admin",  tags=["Admin"])

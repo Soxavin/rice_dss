@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
-import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock } from 'lucide-react'
+import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock, Package } from 'lucide-react'
 import { PRODUCTS } from '../../data/searchData'
-import { getProfiles } from '../../api/client'
+import { getProfiles, getProducts } from '../../api/client'
 
 /* Shared inline styles — matches site-wide design language */
 const cardStyle = {
@@ -60,6 +59,8 @@ export default function ExpertsPage() {
   const [contactForm, setContactForm]       = useState({ name: '', email: '', message: '' })
   const [contactSubmitted, setContactSubmitted] = useState(false)
   const [selectedExpert, setSelectedExpert] = useState(null)
+  const [supplierProducts, setSupplierProducts] = useState([])
+  const [productsLoading, setProductsLoading]   = useState(false)
   const panelRef     = useRef(null)
   const panelCloseRef = useRef(null)
 
@@ -82,6 +83,18 @@ export default function ExpertsPage() {
       const t = setTimeout(() => panelCloseRef.current?.focus(), 60)
       return () => clearTimeout(t)
     }
+  }, [selectedExpert])
+
+  useEffect(() => {
+    if (!selectedExpert || selectedExpert.type !== 'SUPPLIER') {
+      setSupplierProducts([])
+      return
+    }
+    setProductsLoading(true)
+    getProducts(selectedExpert.id)
+      .then(r => setSupplierProducts(r.data || []))
+      .catch(() => setSupplierProducts([]))
+      .finally(() => setProductsLoading(false))
   }, [selectedExpert])
 
   const handlePanelKeyDown = (e) => {
@@ -416,13 +429,13 @@ export default function ExpertsPage() {
                       </div>
                       <p className="mt-4 text-sm text-neutral-600 leading-relaxed">{bil(s.bio)}</p>
                       <div className="mt-5 flex gap-2">
-                        <Link
-                          to="/experts"
-                          className="px-4 py-2 text-white text-xs font-semibold rounded-lg no-underline transition-opacity hover:opacity-85 flex items-center gap-1.5"
+                        <button
+                          onClick={() => setSelectedExpert(s)}
+                          className="px-4 py-2 text-white text-xs font-semibold rounded-lg transition-opacity hover:opacity-85 flex items-center gap-1.5 cursor-pointer border-none"
                           style={{ backgroundColor: '#558b2f' }}
                         >
                           {t('suppliers_view')} <ArrowRight size={12} />
-                        </Link>
+                        </button>
                         {s.telegram && (
                           <a
                             href={`https://t.me/${s.telegram}`}
@@ -661,17 +674,19 @@ export default function ExpertsPage() {
                   </p>
                 </div>
 
-                {/* Stats inline */}
-                <div className="shrink-0 flex gap-4 pl-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.15)' }}>
-                  <div className="text-center">
-                    <p className="text-base font-bold text-white">{selectedExpert.experience}</p>
-                    <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{t('experts_profile_years_exp')}</p>
+                {/* Stats inline — experts only */}
+                {selectedExpert.type === 'EXPERT' && (
+                  <div className="shrink-0 flex gap-4 pl-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.15)' }}>
+                    <div className="text-center">
+                      <p className="text-base font-bold text-white">{selectedExpert.experience}</p>
+                      <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{t('experts_profile_years_exp')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-base font-bold text-white">{selectedExpert.rating} ⭐</p>
+                      <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{selectedExpert.reviews} {t('experts_profile_reviews')}</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-base font-bold text-white">{selectedExpert.rating} ⭐</p>
-                    <p className="text-[10px] leading-tight" style={{ color: '#a8c89a' }}>{selectedExpert.reviews} {t('experts_profile_reviews')}</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -699,27 +714,86 @@ export default function ExpertsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
-                    <Star size={13} /> {t('experts_profile_education')}
-                  </h3>
-                  <p className="text-sm text-neutral-700">{selectedExpert.education}</p>
-                </div>
+                {selectedExpert.type === 'EXPERT' && (
+                  <>
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                        <Star size={13} /> {t('experts_profile_education')}
+                      </h3>
+                      <p className="text-sm text-neutral-700">{selectedExpert.education}</p>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
-                      <Globe size={13} /> {t('experts_profile_languages')}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                          <Globe size={13} /> {t('experts_profile_languages')}
+                        </h3>
+                        <p className="text-sm text-neutral-700">{selectedExpert.languages.join(', ')}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                          <Clock size={13} /> {t('experts_profile_availability')}
+                        </h3>
+                        <p className="text-sm text-neutral-700">{selectedExpert.availability}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Products section — suppliers only */}
+                {selectedExpert.type === 'SUPPLIER' && (
+                  <div className="sm:col-span-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
+                      <Package size={13} /> {t('experts_products_title')}
                     </h3>
-                    <p className="text-sm text-neutral-700">{selectedExpert.languages.join(', ')}</p>
+                    {productsLoading ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {[1, 2, 3, 4].map(i => (
+                          <div key={i} className="rounded-xl animate-pulse h-24" style={{ backgroundColor: '#f0f0f0' }} />
+                        ))}
+                      </div>
+                    ) : supplierProducts.length === 0 ? (
+                      <p className="text-sm text-neutral-400 italic">{t('experts_products_empty')}</p>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {supplierProducts.map((p) => (
+                          <div key={p.id} className="rounded-xl p-3 flex flex-col gap-1.5" style={{ border: '1px solid #e8f5e9', backgroundColor: '#f9fdf5' }}>
+                            {p.image_url ? (
+                              <img src={p.image_url} alt={p.name_en} className="w-full h-20 object-cover rounded-lg" style={{ border: '1px solid #e0e0e0' }} />
+                            ) : (
+                              <div className="w-full h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f0f7e6', border: '1px solid #c5e09a' }}>
+                                <Package size={28} style={{ color: '#558b2f' }} />
+                              </div>
+                            )}
+                            <p className="text-xs font-semibold text-neutral-900 leading-snug">
+                              {lang === 'km' ? (p.name_km || p.name_en) : p.name_en}
+                            </p>
+                            {p.category && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full self-start"
+                                style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
+                                {p.category}
+                              </span>
+                            )}
+                            <p className="text-xs font-bold mt-auto" style={{ color: p.price ? '#558b2f' : '#9ca3af' }}>
+                              {p.price || t('experts_price_on_request')}
+                            </p>
+                            {selectedExpert.telegram && (
+                              <a
+                                href={`https://t.me/${selectedExpert.telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${p.name_en}. Please send me details.`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold text-white rounded-lg no-underline transition-opacity hover:opacity-85"
+                                style={{ backgroundColor: '#0088cc' }}
+                              >
+                                <Send size={10} /> {t('suppliers_inquire')}
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: '#558b2f' }}>
-                      <Clock size={13} /> {t('experts_profile_availability')}
-                    </h3>
-                    <p className="text-sm text-neutral-700">{selectedExpert.availability}</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 

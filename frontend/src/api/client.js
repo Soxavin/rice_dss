@@ -42,5 +42,8 @@ export const getResources  = (lang = 'en') => client.get(`/resources?lang=${lang
 export const getResource   = (id, lang = 'en') => client.get(`/resources/${id}?lang=${lang}`)
 export const getProfiles   = () => client.get('/profiles')
 export const getCategories = () => client.get('/categories')
+export const getProducts   = (profileId) =>
+  client.get('/products', { params: profileId ? { profile_id: profileId } : {} })
+export const getProduct    = (id) => client.get(`/products/${id}`)
 
 export default client

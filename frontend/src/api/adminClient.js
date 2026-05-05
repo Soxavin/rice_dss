@@ -26,3 +26,9 @@ export async function adminRequest(getBackendToken, method, url, data = undefine
   const client = createAdminClient(token)
   return client[method](url, data)
 }
+
+// Product admin helpers
+export const adminGetProducts    = (gbt) => adminRequest(gbt, 'get',    '/admin/products')
+export const adminCreateProduct  = (gbt, data) => adminRequest(gbt, 'post',  '/admin/products', data)
+export const adminUpdateProduct  = (gbt, id, data) => adminRequest(gbt, 'patch', `/admin/products/${id}`, data)
+export const adminDeleteProduct  = (gbt, id) => adminRequest(gbt, 'delete', `/admin/products/${id}`)

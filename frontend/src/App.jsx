@@ -28,6 +28,7 @@ const AdminResources = lazy(() => import('./pages/Admin/AdminResources'))
 const ResourceEditor = lazy(() => import('./pages/Admin/ResourceEditor'))
 const AdminProfiles  = lazy(() => import('./pages/Admin/AdminProfiles'))
 const AdminAnalysis  = lazy(() => import('./pages/Admin/AdminAnalysis'))
+const AdminProducts  = lazy(() => import('./pages/Admin/AdminProducts'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -67,6 +68,7 @@ export default function App() {
                 <Route path="resources/new" element={<ResourceEditor />} />
                 <Route path="resources/:id" element={<ResourceEditor />} />
                 <Route path="profiles" element={<AdminProfiles />} />
+                <Route path="products" element={<AdminProducts />} />
                 <Route path="analysis" element={<AdminAnalysis />} />
               </Route>
             </Routes>
