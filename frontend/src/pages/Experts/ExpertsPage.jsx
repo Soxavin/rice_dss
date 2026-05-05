@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
-import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock, Package } from 'lucide-react'
+import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock, Package, FlaskConical } from 'lucide-react'
+import { PRODUCTS } from '../../data/searchData'
 import { getProfiles, getProducts } from '../../api/client'
 
 /* Shared inline styles — matches site-wide design language */
@@ -25,6 +26,16 @@ const btnTelegram = {
   fontSize: '12px',
   border: 'none',
 }
+
+const productImages = {
+  "Vigor BioYield+": "/images/product1-bioyield.png",
+  "Vigor BioLatex": "/images/product2-biolatex.png",
+  "Vigor BioControl": "/images/product3-biocontrol.png",
+  "Vigor BioBooster": "/images/product4-biobooster.png",
+  "Vigor BioGuard": "/images/product5-bioguard.png",
+  "Vigor BioCombat": "/images/product6-biocombat.png",
+  "Vigor BioGo": "/images/product7-biogo.png",
+};
 
 function normalizeProfile(p, lang) {
   const bil = (en, km) => lang === 'km' ? (km || en || '') : (en || '')
@@ -63,6 +74,7 @@ export default function ExpertsPage() {
   const [allProducts, setAllProducts]           = useState([])
   const panelRef     = useRef(null)
   const panelCloseRef = useRef(null)
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     Promise.all([getProfiles(), getProducts()])
@@ -99,6 +111,20 @@ export default function ExpertsPage() {
       .catch(() => setSupplierProducts([]))
       .finally(() => setProductsLoading(false))
   }, [selectedExpert])
+
+  useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/products");
+      const data = await res.json();
+      setProducts(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchProducts();
+}, []);
 
   const handlePanelKeyDown = (e) => {
     if (e.key !== 'Tab' || !panelRef.current) return
@@ -455,93 +481,117 @@ export default function ExpertsPage() {
                   </div>
                 ))}
               </div>
-            )}
+            )}    
+          </section>
+        )}
+          
 
-            {/* ─── TREATMENTS SUB-SECTION ─── */}
-            <div className="mt-14">
-              <div className="flex items-start gap-3 mb-4">
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl"
-                  style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)', border: '1px solid #ddd6fe' }}
-                >
-                  🧪
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-neutral-900">{t('experts_section_treatments_title')}</h3>
-                  <p className="text-sm text-neutral-500 mt-0.5">{t('experts_section_treatments_desc')}</p>
-                </div>
+          {/* ─── TREATMENTS / PRODUCTS SECTION ─── */}
+          {(tab === 'All' || tab === 'Products') && (
+          <section className="mt-14">
+            {/* Header */}
+            <div className="flex items-start gap-3 mb-4">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl"
+                style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)', border: '1px solid #ddd6fe' }}
+              >
+                <FlaskConical size={20} />
               </div>
-              <div className="h-px mb-8" style={{ background: 'linear-gradient(to right, #7c3aed, #558b2f, transparent)' }} />
+              <div>
+                <h3 className="text-xl font-bold text-neutral-900">
+                  {t('experts_section_treatments_title')}
+                </h3>
+                <p className="text-sm text-neutral-500 mt-0.5">
+                  {t('experts_section_treatments_desc')}
+                </p>
+              </div>
+            </div>
 
-              {allProducts.length === 0 ? (
-                <p className="text-sm text-neutral-400 text-center py-8">{t('experts_products_empty')}</p>
+            <div
+              className="h-px mb-8"
+              style={{ background: 'linear-gradient(to right, #e8be3f, #558b2f)' }}
+            />
+
+            {/* card */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {products.length === 0 ? (
+                <p className="text-sm text-neutral-400">No products available.</p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {allProducts.map((p) => {
-                    const supplierProfile = profiles.find(pr => pr.id === p.profile_id)
-                    const telegram = supplierProfile?.telegram || ''
-                    const name = lang === 'km' ? (p.name_km || p.name_en) : p.name_en
-                    const desc = lang === 'km' ? (p.desc_km || p.desc_en) : p.desc_en
-                    const supplierName = lang === 'km'
-                      ? (supplierProfile?.name_km || supplierProfile?.name_en || '—')
-                      : (supplierProfile?.name_en || '—')
-                    return (
-                      <div key={p.id} className="bg-white hover-lift flex flex-col overflow-hidden" style={cardStyle}>
-                        {/* Product image area */}
-                        <div
-                          className="h-28 flex items-center justify-center relative"
-                          style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #f0f0f0' }}
-                        >
-                          {p.image_url
-                            ? <img src={p.image_url} alt={name} className="w-full h-full object-cover" />
-                            : <Package size={40} style={{ color: '#558b2f', opacity: 0.35 }} />
-                          }
-                          {p.category && (
-                            <span
-                              className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-md"
-                              style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}
-                            >
-                              {p.category}
-                            </span>
-                          )}
-                        </div>
+                products.slice(0, 8).map((p) => (
+                <div
+                  key={p.id}
+                  className="
+                    bg-white rounded-xl overflow-hidden flex flex-col border border-gray-400 min-h-[320px]
+                    transition-all duration-300 ease-out
+                    hover:shadow-xl hover:-translate-y-1
+                  "
+                >
+                  {/* Image */}
+                  <div className="w-full h-38 bg-neutral-20 flex items-center justify-center overflow-hidden p-2">
+                    <img
+                      src={
+                        p.image_url ||
+                        productImages[p.name_en] ||
+                        "/images/hero-bg.jpg"
+                      }
+                      alt={p.name_en}
+                      className="max-h-full max-w-full object-contain"
+                      onError={(e) => (e.target.src = "/images/hero-bg.jpg")}
+                    />
+                  </div>
 
-                        {/* Product info */}
-                        <div className="p-4 flex flex-col flex-1">
-                          <h4 className="font-semibold text-neutral-900 text-sm leading-snug">{name}</h4>
-                          <p className="text-xs text-neutral-400 mt-0.5">{supplierName}</p>
-                          {desc && (
-                            <p className="mt-1.5 text-xs text-neutral-500 leading-relaxed" style={{
-                              display: '-webkit-box', WebkitLineClamp: 3,
-                              WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                            }}>
-                              {desc}
-                            </p>
-                          )}
-                          {p.price
-                            ? <p className="mt-2 font-bold text-xl" style={{ color: '#558b2f' }}>{p.price}</p>
-                            : <p className="mt-2 text-xs text-neutral-400 italic">{t('experts_price_on_request')}</p>
-                          }
-                          {telegram && (
-                            <a
-                              href={`https://t.me/${telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${p.name_en}. Please send me details and pricing.`)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-auto pt-3 w-full inline-flex items-center justify-center gap-1.5 py-2.5 text-white text-xs font-semibold rounded-xl no-underline transition-opacity hover:opacity-85 cursor-pointer"
-                              style={{ backgroundColor: '#558b2f' }}
-                            >
-                              <ShoppingBag size={13} /> {p.price ? t('suppliers_buy') : t('suppliers_inquire')}
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {/* Content */}
+                  <div className="p-6 flex flex-col flex-1 min-h-[200px]">
+                    
+                    {/* Top content */}
+                    <div className="space-y-4">
+                      {/* Category */}
+                      <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-md w-fit">
+                        {p.category}
+                      </span>
+
+                      {/* Title */}
+                      <h4 className="mt-3 text-lg font-semibold text-neutral-900 leading-snug">
+                        {p.name_en}
+                      </h4>
+
+                      {/* Description */}
+                      {p.desc_en && (
+                        <p className="text-xs text-neutral-600 leading-relaxed line-clamp-2">
+                          {p.desc_en}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* CTA */}
+                    <div className="mt-6">
+                      <a
+                        href={`https://t.me/${p.telegram}?text=${encodeURIComponent(
+                          `Hi, I'm interested in ${p.name_en}. Please send me details.`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all"
+                        style={{ backgroundColor: '#558b2f' }}
+                      >
+                        <ShoppingBag size={14} />
+                        Telegram
+                      </a>
+                    </div>
+
+                  </div>
                 </div>
+
+
+
+                ))
               )}
             </div>
           </section>
-        )}
+          )}
+           
+            
+        
 
         {/* ═══════════════ CONTACT & JOIN CTA ═══════════════ */}
         <section

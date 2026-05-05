@@ -534,7 +534,7 @@ export const translations = {
     suppliers_subtitle: 'Connect with specialized agronomists and premium resource suppliers to maximize your harvest potential.',
     suppliers_view: 'View Products',
     suppliers_contact: 'Contact',
-    suppliers_essential: 'Essential Treatments',
+    suppliers_essential: 'Products',
     suppliers_essential_desc: 'Curated biological and organic solutions for crop health we can verify.',
     suppliers_view_catalog: 'View Catalog',
     suppliers_buy: 'Buy Now',
@@ -562,7 +562,7 @@ export const translations = {
     experts_message_placeholder: 'Describe what you\'re looking for or any questions...',
     experts_section_experts_desc: 'Verified agronomists and plant pathologists available for direct consultation.',
     experts_section_suppliers_desc: 'Certified agri-supply companies stocking approved treatments and tools.',
-    experts_section_treatments_title: 'Essential Treatments',
+    experts_section_treatments_title: 'Products',
     experts_section_treatments_desc: 'Curated biological and approved solutions for the conditions we detect.',
 
     // Search
@@ -1622,7 +1622,7 @@ export const translations = {
     experts_message_placeholder: 'សូមពិពណ៌នាអំពីអ្វីដែលអ្នកកំពុងស្វែងរក ឬសំណួរណាមួយ…',
     experts_section_experts_desc: 'អ្នកកសិកម្មជំនាញ និងអ្នកជំនាញជំងឺរុក្ខជាតិដែលព្រមប្រឹក្សាផ្ទាល់។',
     experts_section_suppliers_desc: 'ក្រុមហ៊ុនផ្គត់ផ្គង់ដំណាំដែលផ្ដល់ការព្យាបាលដែលបានអនុម័ត។',
-    experts_section_treatments_title: 'ការព្យាបាលសំខាន់ៗ',
+    experts_section_treatments_title: 'ផលិតផល',
     experts_section_treatments_desc: 'ដំណោះស្រាយជីវសាស្ត្រ និងដំណោះស្រាយដែលបានជ្រើសសម្រាប់ជំងឺដែលយើងរកឃើញ។',
     experts_cant_find_desc: 'ផ្ញើសំណួរដោយផ្ទាល់ទៅកាន់បណ្ដាញអ្នកជំនាញរបស់យើង។ ក្រុមការងាររបស់យើង នឹងភ្ជាប់អ្នកទៅកាន់អ្នកជំនាញដែលសមស្របសម្រាប់ស្ថានភាពជាក់លាក់របស់អ្នក។',
     experts_join_desc: 'តើអ្នកជាអ្នកជំនាញកសិកម្ម ឬអ្នកផ្គត់ផ្គង់មែនទេ? សូមចុះឈ្មោះចូលក្នុង សហគមន៍របស់យើង។',
