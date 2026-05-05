@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock, Package } from 'lucide-react'
-import { PRODUCTS } from '../../data/searchData'
 import { getProfiles, getProducts } from '../../api/client'
 
 /* Shared inline styles — matches site-wide design language */
@@ -61,12 +60,16 @@ export default function ExpertsPage() {
   const [selectedExpert, setSelectedExpert] = useState(null)
   const [supplierProducts, setSupplierProducts] = useState([])
   const [productsLoading, setProductsLoading]   = useState(false)
+  const [allProducts, setAllProducts]           = useState([])
   const panelRef     = useRef(null)
   const panelCloseRef = useRef(null)
 
   useEffect(() => {
-    getProfiles()
-      .then(r => setProfiles(r.data || []))
+    Promise.all([getProfiles(), getProducts()])
+      .then(([profRes, prodRes]) => {
+        setProfiles(profRes.data || [])
+        setAllProducts(prodRes.data || [])
+      })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false))
   }, [])
@@ -136,7 +139,7 @@ export default function ExpertsPage() {
   const stats = [
     { val: loading ? '…' : `${EXPERTS.length}`,   label: t('experts_tab') },
     { val: loading ? '…' : `${SUPPLIERS.length}`, label: t('experts_suppliers_tab') },
-    { val: PRODUCTS.length,                        label: t('experts_section_treatments_title') },
+    { val: loading ? '…' : `${allProducts.length}`, label: t('experts_section_treatments_title') },
   ]
 
   return (
@@ -470,44 +473,72 @@ export default function ExpertsPage() {
               </div>
               <div className="h-px mb-8" style={{ background: 'linear-gradient(to right, #7c3aed, #558b2f, transparent)' }} />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {PRODUCTS.map((p) => (
-                  <div key={p.id} className="bg-white hover-lift flex flex-col overflow-hidden" style={cardStyle}>
-                    {/* Product image area */}
-                    <div
-                      className="h-28 flex items-center justify-center relative"
-                      style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #f0f0f0' }}
-                    >
-                      <span className="text-5xl">{p.img}</span>
-                      <span
-                        className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-md"
-                        style={{ backgroundColor: p.tagBg, color: p.tagColor }}
-                      >
-                        {t(p.tagKey)}
-                      </span>
-                    </div>
+              {allProducts.length === 0 ? (
+                <p className="text-sm text-neutral-400 text-center py-8">{t('experts_products_empty')}</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {allProducts.map((p) => {
+                    const supplierProfile = profiles.find(pr => pr.id === p.profile_id)
+                    const telegram = supplierProfile?.telegram || ''
+                    const name = lang === 'km' ? (p.name_km || p.name_en) : p.name_en
+                    const desc = lang === 'km' ? (p.desc_km || p.desc_en) : p.desc_en
+                    const supplierName = lang === 'km'
+                      ? (supplierProfile?.name_km || supplierProfile?.name_en || '—')
+                      : (supplierProfile?.name_en || '—')
+                    return (
+                      <div key={p.id} className="bg-white hover-lift flex flex-col overflow-hidden" style={cardStyle}>
+                        {/* Product image area */}
+                        <div
+                          className="h-28 flex items-center justify-center relative"
+                          style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #f0f0f0' }}
+                        >
+                          {p.image_url
+                            ? <img src={p.image_url} alt={name} className="w-full h-full object-cover" />
+                            : <Package size={40} style={{ color: '#558b2f', opacity: 0.35 }} />
+                          }
+                          {p.category && (
+                            <span
+                              className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-md"
+                              style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}
+                            >
+                              {p.category}
+                            </span>
+                          )}
+                        </div>
 
-                    {/* Product info */}
-                    <div className="p-4 flex flex-col flex-1">
-                      <h4 className="font-semibold text-neutral-900 text-sm leading-snug">{p.name}</h4>
-                      <p className="text-xs text-neutral-400 mt-0.5">{p.supplier}</p>
-                      {p.price
-                        ? <p className="mt-2 font-bold text-xl" style={{ color: '#558b2f' }}>{p.price}</p>
-                        : <p className="mt-2 text-xs text-neutral-400 italic">{t('experts_price_on_request')}</p>
-                      }
-                      <a
-                        href={`https://t.me/${p.telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${p.name}. Please send me details and pricing.`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-auto pt-3 w-full inline-flex items-center justify-center gap-1.5 py-2.5 text-white text-xs font-semibold rounded-xl no-underline transition-opacity hover:opacity-85 cursor-pointer"
-                        style={{ backgroundColor: '#558b2f' }}
-                      >
-                        <ShoppingBag size={13} /> {p.price ? t('suppliers_buy') : t('suppliers_inquire')}
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        {/* Product info */}
+                        <div className="p-4 flex flex-col flex-1">
+                          <h4 className="font-semibold text-neutral-900 text-sm leading-snug">{name}</h4>
+                          <p className="text-xs text-neutral-400 mt-0.5">{supplierName}</p>
+                          {desc && (
+                            <p className="mt-1.5 text-xs text-neutral-500 leading-relaxed" style={{
+                              display: '-webkit-box', WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                            }}>
+                              {desc}
+                            </p>
+                          )}
+                          {p.price
+                            ? <p className="mt-2 font-bold text-xl" style={{ color: '#558b2f' }}>{p.price}</p>
+                            : <p className="mt-2 text-xs text-neutral-400 italic">{t('experts_price_on_request')}</p>
+                          }
+                          {telegram && (
+                            <a
+                              href={`https://t.me/${telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${p.name_en}. Please send me details and pricing.`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-auto pt-3 w-full inline-flex items-center justify-center gap-1.5 py-2.5 text-white text-xs font-semibold rounded-xl no-underline transition-opacity hover:opacity-85 cursor-pointer"
+                              style={{ backgroundColor: '#558b2f' }}
+                            >
+                              <ShoppingBag size={13} /> {p.price ? t('suppliers_buy') : t('suppliers_inquire')}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -773,6 +804,14 @@ export default function ExpertsPage() {
                                 style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
                                 {p.category}
                               </span>
+                            )}
+                            {(lang === 'km' ? (p.desc_km || p.desc_en) : p.desc_en) && (
+                              <p className="text-[10px] text-neutral-500 leading-relaxed" style={{
+                                display: '-webkit-box', WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                              }}>
+                                {lang === 'km' ? (p.desc_km || p.desc_en) : p.desc_en}
+                              </p>
                             )}
                             <p className="text-xs font-bold mt-auto" style={{ color: p.price ? '#558b2f' : '#9ca3af' }}>
                               {p.price || t('experts_price_on_request')}
