@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from api.models.profile import ProfileType
 
 
@@ -95,5 +95,18 @@ class ProfileOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     specializations: list[SpecializationOut] = []
+
+    @field_validator("specializations", mode="before")
+    @classmethod
+    def unwrap_junction(cls, v):
+        """ORM loads ProfileSpecialization junction objects; unwrap to Specialization."""
+        result = []
+        for item in v:
+            spec = getattr(item, "specialization", None)
+            if spec is not None:
+                result.append(spec)
+            elif hasattr(item, "id") and hasattr(item, "name"):
+                result.append(item)
+        return result
 
     model_config = {"from_attributes": True}
