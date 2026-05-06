@@ -69,11 +69,13 @@ rice_dss/
 │   │   ├── user.py              User model (firebase_uid bridge)
 │   │   ├── resource.py          Resource, ResourceTranslation, Category models
 │   │   ├── profile.py           Profile, Specialization, ProfileSpecialization models
-│   │   └── analysis.py          AnalysisHistory model (JSONB result column)
+│   │   ├── analysis.py          AnalysisHistory model (JSONB result column)
+│   │   └── product.py           Product model (FK to profiles, JSONB nutrients)
 │   ├── routers/                 FastAPI route handlers
 │   │   ├── auth.py              POST/GET /auth/me — Firebase token exchange
 │   │   ├── resources.py         GET /resources, /resources/:id + admin CRUD
 │   │   ├── profiles.py          GET /profiles, /profiles/:id + admin CRUD
+│   │   ├── products.py          GET /products, /products/:id + admin CRUD
 │   │   ├── admin_users.py       GET/PATCH /admin/users — user management
 │   │   └── admin_analysis.py    POST/GET/DELETE /analyses — history + admin view
 │   └── dependencies/            Reusable FastAPI dependencies
@@ -82,7 +84,8 @@ rice_dss/
 │
 ├── alembic/                     Database migrations
 │   ├── versions/
-│   │   └── c68ef0ab3962_initial_schema.py   8-table initial schema
+│   │   ├── c68ef0ab3962_initial_schema.py   8-table initial schema
+│   │   └── 3f8a1c9b2d45_add_products_table.py  products table + Vigor seed data
 │   ├── env.py
 │   └── alembic.ini
 │
@@ -243,6 +246,8 @@ All DSS endpoints accept an optional `?lang=km` query parameter to return Khmer 
 | `/resources/{id}` | GET | Single resource with translations |
 | `/profiles` | GET | List all active expert/supplier profiles |
 | `/profiles/{id}` | GET | Single active profile |
+| `/products` | GET | List all products (optional `?profile_id=UUID` filter by supplier) |
+| `/products/{id}` | GET | Single product |
 
 ### Analysis History (Authenticated Users)
 
@@ -259,6 +264,7 @@ All DSS endpoints accept an optional `?lang=km` query parameter to return Khmer 
 |----------|--------|-------------|
 | `/admin/resources` | GET/POST/PATCH/DELETE | Manage all resources (all statuses) |
 | `/admin/profiles` | GET/POST/PATCH/DELETE | Manage expert/supplier profiles |
+| `/admin/products` | GET/POST/PATCH/DELETE | Manage supplier products |
 | `/admin/users` | GET | List all registered users |
 | `/admin/users/{id}` | PATCH | Update user role or active status |
 | `/admin/analysis` | GET | View all analyses across all users |
@@ -465,6 +471,7 @@ service cloud.firestore {
 | `/admin` | Admin Dashboard | Summary stats — requires role=ADMIN |
 | `/admin/resources` | Resource Manager | Create/edit/publish/delete learning resources |
 | `/admin/profiles` | Profile Manager | Create/edit expert and supplier profiles |
+| `/admin/products` | Product Manager | Create/edit supplier products (bilingual + nutrients JSON) |
 | `/admin/users` | User Manager | View users, change roles, deactivate accounts |
 | `/admin/analysis` | Analysis Log | View all DSS runs across all users |
 
@@ -503,10 +510,13 @@ gcloud config set project YOUR_PROJECT_ID
 
 ### Additional Requirements
 
-The backend now also requires:
-- **Neon PostgreSQL** — set `DATABASE_URL=postgresql+asyncpg://<neon_url>` on Cloud Run
-- **Firebase service account** — stored in Google Secret Manager, mounted at `/app/serviceAccountKey.json`; set `GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json`
-- **JWT secret** — set `JWT_SECRET`, `JWT_ALGORITHM=HS256`, `JWT_EXPIRE_MINUTES=1440`
+The backend requires these env vars on Cloud Run:
+- **Neon PostgreSQL** — `DATABASE_URL=postgresql+asyncpg://<neon_url>`
+- **Firebase service account** — stored in Google Secret Manager (`firebase-service-account` secret), mounted at `/secrets/firebase-service-account`; set `GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-service-account`
+- **JWT** — `JWT_SECRET`, `JWT_ALGORITHM=HS256`, `JWT_EXPIRE_MINUTES=1440`
+- **CORS** — `CORS_ORIGINS=https://rice-dss.vercel.app`
+
+> **Warning:** `gcloud run deploy --set-env-vars` **replaces all env vars**. To add or change individual vars without wiping others, always use `gcloud run services update --update-env-vars`.
 
 See [CHANGES.md](CHANGES.md) for full deployment steps and Secret Manager setup.
 

@@ -304,7 +304,7 @@ Every mode also logs the run via `dss_logger.log_run()` and appends a `mode_used
 
 The API has two responsibilities:
 1. **DSS endpoints** — a thin HTTP layer over the frozen DSS logic (original)
-2. **Content + user API** — PostgreSQL-backed endpoints for users, resources, profiles, and analysis history (added later)
+2. **Content + user API** — PostgreSQL-backed endpoints for users, resources, profiles, products, and analysis history (added later)
 
 The original DSS endpoints contain **no diagnosis logic** — they only receive requests, validate them with Pydantic, delegate to `run_dss()`, and return the result. The new content endpoints add user management, content management, and analysis history.
 
@@ -317,7 +317,7 @@ Empty file that makes `api` a Python package.
 
 The file registers two groups of routes:
 1. **Original DSS endpoints** (defined inline in main.py) — 12 endpoints covering diagnosis, image upload, explanation, and health check
-2. **New routers** (registered at the bottom via `app.include_router()`) — auth, resources, profiles, admin_users, admin_analysis
+2. **New routers** (registered at the bottom via `app.include_router()`) — auth, resources, profiles, products, admin_users, admin_analysis
 
 **Key features of the original endpoints:**
 - **CORS** — reads `CORS_ORIGINS` environment variable (comma-separated), defaults to `*` for development
@@ -329,7 +329,9 @@ The file registers two groups of routes:
 **Naming note:** The original `api/schemas.py` was a single file. When the `api/schemas/` directory was created, Python resolved the package directory before the file, silently shadowing it and causing `ImportError`. The fix:
 - `api/schemas_legacy.py` — the original DSS Pydantic models (renamed from `schemas.py`)
 - `api/schemas/__init__.py` — re-exports all original classes from `schemas_legacy`, so all existing import paths continue to work
-- `api/schemas/user.py`, `resource.py`, `profile.py`, `analysis.py` — new Pydantic schemas for the content API
+- `api/schemas/user.py`, `resource.py`, `profile.py`, `analysis.py`, `product.py` — new Pydantic schemas for the content API
+
+**ProfileOut junction bug fix:** `Profile.specializations` in SQLAlchemy returns `list[ProfileSpecialization]` (junction objects), not `list[Specialization]`. Pydantic v2 failed to find `.id` and `.name` on junction objects, causing a 500 on any profile with specializations. Fixed with a `@field_validator("specializations", mode="before")` in `ProfileOut` that reads the `.specialization` relationship attribute from each junction object before Pydantic validates the list.
 
 **DSS schemas (in schemas_legacy.py):**
 - `QuestionnaireRequest` — incoming payload; all fields Optional, DSS handles missing values safely
@@ -351,12 +353,14 @@ Exposes `engine`, `AsyncSessionLocal` (session factory), and `Base` (declarative
 - **`resource.py`** — `Resource`, `ResourceTranslation`, `Category` models. One resource can have both EN and KM translations via a one-to-many relationship.
 - **`profile.py`** — `Profile`, `Specialization`, `ProfileSpecialization`. Specializations are shared tags reused across multiple profiles (many-to-many).
 - **`analysis.py`** — `AnalysisHistory`. Uses PostgreSQL's native `JSONB` column for the `result` field so the full DSS response is stored without schema changes.
+- **`product.py`** — `Product` model. FK to `profiles.id` (SET NULL on delete, nullable) so products can be linked to a supplier profile but remain in the DB if that profile is deleted. Bilingual fields (`name_en/km`, `desc_en/km`, `usage_instructions_en/km`), `category`, `price` (string, nullable), `image_url`, and `nutrients_json` (JSONB).
 
 ### `api/routers/` — Route Handlers
 
 - **`auth.py`** — `POST /auth/me` (Firebase token → backend JWT + upsert user row) and `GET /auth/me` (return user profile). Firebase Admin SDK is initialised here; wrapped in `try/except` so missing credentials in CI do not crash the import.
 - **`resources.py`** — Public `GET /resources` (published only) and `GET /resources/{id}`; admin CRUD at `/admin/resources`. Scheduling logic: `_is_visible()` returns true for PUBLISHED status or SCHEDULED with `scheduled_at <= now()`.
 - **`profiles.py`** — Public `GET /profiles` (active only) and `GET /profiles/{id}`; admin CRUD at `/admin/profiles`. Specialization tags are synced on each update via `_sync_specializations()`.
+- **`products.py`** — Public `GET /products` (accepts optional `?profile_id=UUID` filter) and `GET /products/{id}`; admin CRUD at `/admin/products` (`require_admin`). Products remain in DB if their supplier profile is deleted (FK SET NULL).
 - **`admin_users.py`** — `GET /admin/users` and `PATCH /admin/users/{id}` for role and active-status management.
 - **`admin_analysis.py`** — User endpoints (`POST/GET/DELETE /analyses`) and admin view (`GET /admin/analysis`). User endpoints are scoped to the current user — users cannot read or delete other users' analyses.
 
@@ -666,11 +670,24 @@ The API is deployed on Google Cloud Run at:
 | `JWT_EXPIRE_MINUTES` | `1440` (24 hours) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to Firebase service account JSON inside container |
 
-**Firebase service account:** Stored in Google Secret Manager (`firebase-service-account` secret) and mounted into the container at `/app/serviceAccountKey.json` via a volume mount. See `CHANGES.md` for setup commands.
+**Firebase service account:** Stored in Google Secret Manager (`firebase-service-account` secret) and mounted into the container at `/secrets/firebase-service-account` via a volume mount. `GOOGLE_APPLICATION_CREDENTIALS` must point to this path.
 
-**To redeploy after changes:**
+> **CRITICAL — `--set-env-vars` vs `--update-env-vars`:**
+> `gcloud run deploy --set-env-vars` **replaces all env vars** with only what you specify. Never use it for partial updates — it will wipe `DATABASE_URL`, `GOOGLE_APPLICATION_CREDENTIALS`, and all other vars not listed. Always use `gcloud run services update --update-env-vars` to add or change individual vars without touching the rest.
+
+**To redeploy after code changes** (preserves existing env vars):
 ```bash
-gcloud run deploy rice-dss --source . --platform managed --region asia-southeast1 --memory 1Gi --allow-unauthenticated --set-env-vars "CORS_ORIGINS=https://rice-dss.vercel.app"
+# Deploy new code without touching env vars
+gcloud run deploy rice-dss --source . --platform managed --region asia-southeast1 --memory 1Gi --allow-unauthenticated
+
+# Then update only the vars you want to change
+gcloud run services update rice-dss --region=asia-southeast1 --update-env-vars "CORS_ORIGINS=https://rice-dss.vercel.app"
+```
+
+**To add or update individual env vars:**
+```bash
+gcloud run services update rice-dss --region=asia-southeast1 \
+  --update-env-vars "KEY=value,ANOTHER_KEY=another_value"
 ```
 
 ### Neon PostgreSQL
@@ -680,7 +697,12 @@ The live database is hosted on [Neon](https://neon.tech) (serverless PostgreSQL)
 postgresql+asyncpg://<user>:<password>@<host>.neon.tech/neondb?ssl=require
 ```
 
-The schema was created by running `alembic upgrade head` once against the live database. All 8 tables are in place: `users`, `categories`, `resources`, `resource_translations`, `profiles`, `specializations`, `profile_specializations`, `analysis_history`.
+The schema was created by running `alembic upgrade head` once against the live database. All 9 tables are in place: `users`, `categories`, `resources`, `resource_translations`, `profiles`, `specializations`, `profile_specializations`, `analysis_history`, `products`.
+
+**Alembic migrations applied (3 total):**
+- `c68ef0ab3962` — Initial 8-table schema
+- `164ea74f2169` — (intermediate migration)
+- `3f8a1c9b2d45` — `products` table + Vigor 8 Living Soil supplier profile + 7 Vigor product rows seeded
 
 ### Vercel (Frontend Deployment)
 

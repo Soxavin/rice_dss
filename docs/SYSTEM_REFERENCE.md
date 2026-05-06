@@ -783,7 +783,7 @@ mode_used: str
 
 ### 6.2 main.py (496 lines)
 
-**10 Endpoints:**
+**DSS Endpoints (12 total):**
 
 | Endpoint | Method | Content-Type | Purpose |
 |----------|--------|-------------|---------|
@@ -793,12 +793,25 @@ mode_used: str
 | `/hybrid` | POST | application/json | Full hybrid (recommended) |
 | `/predict-image` | POST | multipart/form-data | Image upload → ML diagnosis |
 | `/hybrid-image` | POST | multipart/form-data | Image + questionnaire combined |
+| `/predict-images` | POST | multipart/form-data | Multi-image (2–5) averaged ML diagnosis |
+| `/hybrid-images` | POST | multipart/form-data | Multi-image + questionnaire combined |
 | `/explain` | POST | application/json | Signal-level score breakdown |
 | `/logs/summary` | GET | — | Aggregated run statistics |
 | `/logs/runs` | GET | — | Recent run history |
 | `/health` | GET | — | System status + model availability |
 
 **All DSS endpoints accept `?lang=km` for Khmer output (default: `en`).**
+
+**Content & User API (via routers):**
+
+| Router | Public Endpoints | Admin Endpoints |
+|--------|-----------------|----------------|
+| `auth.py` | `POST/GET /auth/me` | — |
+| `resources.py` | `GET /resources`, `GET /resources/{id}` | `GET/POST/PATCH/DELETE /admin/resources` |
+| `profiles.py` | `GET /profiles`, `GET /profiles/{id}` | `GET/POST/PATCH/DELETE /admin/profiles` |
+| `products.py` | `GET /products`, `GET /products/{id}` | `GET/POST/PATCH/DELETE /admin/products` |
+| `admin_users.py` | — | `GET /admin/users`, `PATCH /admin/users/{id}` |
+| `admin_analysis.py` | `POST/GET/DELETE /analyses` | `GET /admin/analysis` |
 
 **Image Upload Protections:**
 - MIME type check: only JPEG, PNG, WebP accepted
@@ -970,8 +983,9 @@ These values are scientifically validated and must not be modified:
 | **ml/gradcam.py** | 281 | Grad-CAM heatmap generation + overlay |
 | **ml/evaluate.py** | 203 | Classification report + confusion matrix |
 | **ml/experiment.py** | 136 | Experiment tracking + comparison |
-| **api/main.py** | 496 | FastAPI — 10 endpoints + CORS + image upload |
-| **api/schemas.py** | 339 | Pydantic v2 request/response models |
+| **api/main.py** | 496 | FastAPI — 12 DSS endpoints + CORS + image upload + router registration |
+| **api/schemas_legacy.py** | 339 | Pydantic v2 DSS request/response models (original) |
+| **api/schemas/product.py** | — | ProductBase, ProductCreate, ProductUpdate, ProductOut |
 | **translations/core.py** | 300 | Bilingual string parsing + translation logic |
 | **translations/en.py** | 384 | English UI labels + recommendation refinements |
 | **translations/km.py** | 383 | Khmer translations (full) |
@@ -988,15 +1002,24 @@ These values are scientifically validated and must not be modified:
 
 **Live URL:** `https://rice-dss-137747818788.asia-southeast1.run.app`
 
-**Deploy command:**
+**Required env vars on Cloud Run:**
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | `postgresql+asyncpg://<neon_url>` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | `/secrets/firebase-service-account` |
+| `JWT_SECRET` | (secret string) |
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_EXPIRE_MINUTES` | `1440` |
+| `CORS_ORIGINS` | `https://rice-dss.vercel.app` |
+
+**Firebase service account** is stored in Google Secret Manager (`firebase-service-account`) and mounted as a volume at `/secrets/firebase-service-account`.
+
+> **Warning:** `gcloud run deploy --set-env-vars` replaces ALL env vars — use `gcloud run services update --update-env-vars` for partial updates.
+
+**To deploy after code changes:**
 ```bash
-gcloud run deploy rice-dss \
-  --source . \
-  --platform managed \
-  --region asia-southeast1 \
-  --memory 1Gi \
-  --allow-unauthenticated \
-  --set-env-vars "CORS_ORIGINS=*"
+gcloud run deploy rice-dss --source . --platform managed --region asia-southeast1 --memory 1Gi --allow-unauthenticated
 ```
 
 **Container:** python:3.12-slim + TensorFlow CPU. Dockerfile + docker-compose.yml included.
@@ -1004,6 +1027,8 @@ gcloud run deploy rice-dss \
 **Cold starts:** ~15-20s (TensorFlow loading). Subsequent requests are fast.
 
 **CI/CD:** GitHub Actions (`/.github/workflows/ci.yml`) runs `pytest` on every push/PR.
+
+**Database:** Neon (serverless PostgreSQL), 9 tables: `users`, `categories`, `resources`, `resource_translations`, `profiles`, `specializations`, `profile_specializations`, `analysis_history`, `products`. Schema managed by Alembic (3 migrations applied).
 
 ---
 

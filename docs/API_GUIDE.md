@@ -65,6 +65,8 @@ CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
 | `/resources/{id}` | GET | Single resource with all translations |
 | `/profiles` | GET | List all active expert/supplier profiles |
 | `/profiles/{id}` | GET | Single active profile with specializations |
+| `/products` | GET | List all products (optional `?profile_id=UUID` to filter by supplier) |
+| `/products/{id}` | GET | Single product |
 
 ### Analysis History (Backend JWT Required)
 
@@ -88,6 +90,10 @@ CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
 | `/admin/users` | GET | All registered users |
 | `/admin/users/{id}` | PATCH | Update user role or is_active |
 | `/admin/analysis` | GET | All analyses across all users (filterable by mode) |
+| `/admin/products` | GET | All products (no active filter) |
+| `/admin/products` | POST | Create a product |
+| `/admin/products/{id}` | PATCH | Update a product |
+| `/admin/products/{id}` | DELETE | Delete a product |
 
 ---
 
@@ -595,4 +601,73 @@ await fetch(`.../analyses/${id}`, { method: 'DELETE', headers });
 
 // Clear all
 await fetch('.../analyses', { method: 'DELETE', headers });
+```
+
+---
+
+## 13. Content API — Products
+
+Public endpoints — no authentication required. Used by the Experts & Support page to show treatment products.
+
+```javascript
+// List all products (optionally filtered by supplier profile)
+const res = await fetch('.../products');
+const products = await res.json();
+
+// Filter by supplier
+const supplierProducts = await fetch(`.../products?profile_id=${supplierId}`);
+
+// Get a single product
+const detail = await fetch(`.../products/${id}`);
+```
+
+**Response shape:**
+```json
+[{
+  "id": "uuid",
+  "profile_id": "uuid",
+  "name_en": "Vigor BioYield+",
+  "name_km": "វីហ្គីប យអូមហ ផល",
+  "desc_en": "A biotechnology-based natural fertilizer...",
+  "desc_km": "...",
+  "category": "Yield Booster",
+  "price": null,
+  "image_url": null,
+  "usage_instructions_en": "Apply 500ml per 20L water...",
+  "usage_instructions_km": "...",
+  "nutrients_json": {
+    "N": "0.63%", "P": "0.48%", "K": "3.6%", "MgO": "3500ppm"
+  },
+  "created_at": "2026-05-06T00:00:00Z",
+  "updated_at": "2026-05-06T00:00:00Z"
+}]
+```
+
+**Admin CRUD** (requires `Authorization: Bearer <admin_jwt>`):
+
+```javascript
+const headers = {
+  'Authorization': `Bearer ${adminJwt}`,
+  'Content-Type': 'application/json',
+};
+
+// Create
+await fetch('.../admin/products', {
+  method: 'POST',
+  headers,
+  body: JSON.stringify({
+    name_en: 'Product Name',
+    name_km: 'ឈ្មោះផលិតផល',
+    desc_en: 'Description...',
+    category: 'Yield Booster',
+    profile_id: 'supplier-uuid',   // optional FK to profiles
+    nutrients_json: { N: '0.63%' }, // optional
+  }),
+});
+
+// Update
+await fetch(`.../admin/products/${id}`, { method: 'PATCH', headers, body: JSON.stringify({...}) });
+
+// Delete
+await fetch(`.../admin/products/${id}`, { method: 'DELETE', headers });
 ```
