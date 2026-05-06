@@ -59,7 +59,7 @@ export default function Step3Results() {
       savedRef.current = true
       const rawMode = sessionStorage.getItem('detect_mode') || 'questionnaire'
       const modeMap = { hybrid: 'HYBRID', ml: 'ML', questionnaire: 'QUESTIONNAIRE' }
-      adminRequest(getBackendToken, 'post', '/analyses', {
+      adminRequest(getBackendToken, 'post', '/admin/analyses', {
         mode: modeMap[rawMode] ?? 'QUESTIONNAIRE',
         result: parsed,
         confidence: parsed.score ?? null,

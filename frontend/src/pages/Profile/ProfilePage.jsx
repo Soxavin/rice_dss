@@ -295,7 +295,7 @@ export default function ProfilePage() {
   // Load analysis history (first page)
   useEffect(() => {
     if (!user) return
-    adminRequest(getBackendToken, 'get', `/analyses?limit=${PAGE_SIZE}&offset=0`)
+    adminRequest(getBackendToken, 'get', `/admin/analyses?limit=${PAGE_SIZE}&offset=0`)
       .then(res => {
         const items = (res.data || []).map(normaliseAnalysis)
         setAnalyses(items)
@@ -367,7 +367,7 @@ export default function ProfilePage() {
   const handleLoadMore = async () => {
     setLoadingMore(true)
     try {
-      const res = await adminRequest(getBackendToken, 'get', `/analyses?limit=${PAGE_SIZE}&offset=${analyses.length}`)
+      const res = await adminRequest(getBackendToken, 'get', `/admin/analyses?limit=${PAGE_SIZE}&offset=${analyses.length}`)
       const items = (res.data || []).map(normaliseAnalysis)
       setAnalyses(prev => [...prev, ...items])
       setHasMore(items.length === PAGE_SIZE)
@@ -382,13 +382,13 @@ export default function ProfilePage() {
     // Commit any already-pending delete before starting a new one
     if (undoPending) {
       clearTimeout(undoPending.timerId)
-      adminRequest(getBackendToken, 'delete', `/analyses/${undoPending.id}`).catch(() => {})
+      adminRequest(getBackendToken, 'delete', `/admin/analyses/${undoPending.id}`).catch(() => {})
       setUndoPending(null)
     }
     const snapshot = analyses
     setAnalyses(prev => prev.filter(a => a.id !== id))
     const timerId = setTimeout(() => {
-      adminRequest(getBackendToken, 'delete', `/analyses/${id}`).catch(() => setHistoryError(t('profile_history_error')))
+      adminRequest(getBackendToken, 'delete', `/admin/analyses/${id}`).catch(() => setHistoryError(t('profile_history_error')))
       setUndoPending(null)
     }, 5000)
     setUndoPending({ id, snapshot, timerId })
@@ -405,12 +405,12 @@ export default function ProfilePage() {
     // Commit any pending delete first
     if (undoPending) {
       clearTimeout(undoPending.timerId)
-      await adminRequest(getBackendToken, 'delete', `/analyses/${undoPending.id}`).catch(() => {})
+      await adminRequest(getBackendToken, 'delete', `/admin/analyses/${undoPending.id}`).catch(() => {})
       setUndoPending(null)
     }
     setClearing(true)
     try {
-      await adminRequest(getBackendToken, 'delete', '/analyses')
+      await adminRequest(getBackendToken, 'delete', '/admin/analyses')
       setAnalyses([])
       setHasMore(false)
       setFilterMode('all')

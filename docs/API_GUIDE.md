@@ -72,10 +72,12 @@ CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/analyses` | POST | Save a DSS result for the current user |
-| `/analyses?limit=15&offset=0` | GET | Paginated analysis history for the current user |
-| `/analyses/{id}` | DELETE | Delete one of your own analyses |
-| `/analyses` | DELETE | Clear all of your analyses |
+| `/admin/analyses` | POST | Save a DSS result for the current user |
+| `/admin/analyses?limit=15&offset=0` | GET | Paginated analysis history for the current user |
+| `/admin/analyses/{id}` | DELETE | Delete one of your own analyses |
+| `/admin/analyses` | DELETE | Clear all of your analyses |
+
+> **Note:** Although these endpoints are under the `/admin/` URL prefix, they do **not** require admin role — any authenticated user can access their own analyses. The `/admin` prefix is an artefact of how the router is registered in `main.py`. Access control is per-endpoint (user endpoints use `get_current_user`, admin endpoints use `require_admin`).
 
 ### Admin Endpoints (role=ADMIN JWT Required)
 
@@ -582,7 +584,7 @@ All endpoints require `Authorization: Bearer <backend_jwt>`.
 const headers = { 'Authorization': `Bearer ${backendJwt}` };
 
 // Save a result
-await fetch('.../analyses', {
+await fetch('.../admin/analyses', {
   method: 'POST',
   headers: { ...headers, 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -593,14 +595,14 @@ await fetch('.../analyses', {
 });
 
 // Get paginated history
-const history = await fetch('.../analyses?limit=15&offset=0', { headers });
+const history = await fetch('.../admin/analyses?limit=15&offset=0', { headers });
 // Returns: [{ id, mode, result, confidence, created_at }]
 
 // Delete one entry
-await fetch(`.../analyses/${id}`, { method: 'DELETE', headers });
+await fetch(`.../admin/analyses/${id}`, { method: 'DELETE', headers });
 
 // Clear all
-await fetch('.../analyses', { method: 'DELETE', headers });
+await fetch('.../admin/analyses', { method: 'DELETE', headers });
 ```
 
 ---
