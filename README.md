@@ -136,7 +136,10 @@ rice_dss/
 ├── .dockerignore                Docker build exclusions
 ├── .github/workflows/ci.yml    GitHub Actions CI (pytest on push/PR)
 │
-├── requirements.txt             Python dependencies
+├── pyproject.toml               Python dependencies (uv — source of truth)
+├── uv.lock                      Locked dependency versions (reproducible installs)
+├── .python-version              Pins Python 3.12 for uv
+├── requirements.txt             Legacy pip reference (superseded by pyproject.toml)
 ├── run_local.py                 Local sanity check + demo script
 └── .gitignore                   Git exclusions
 ```
@@ -159,32 +162,31 @@ rice_dss/
 ### Prerequisites
 
 - Python 3.12
-- (Optional) TensorFlow 2.16+ for ML features
+- [uv](https://docs.astral.sh/uv/) — install once with `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- (Optional) TensorFlow 2.16+ for ML features (included in the `ml` extra)
 
 ### 1. Set up the environment
 
 ```bash
 cd rice_dss
-python3.12 -m venv .venv312
-source .venv312/bin/activate
-pip install -r requirements.txt
-pip install tensorflow    # Required for ML features
+uv sync --extra dev          # installs all dependencies + creates .venv
+uv sync --extra dev --extra ml   # also installs TensorFlow + numpy (ML features)
 ```
 
 ### 2. Verify the system
 
 ```bash
-# Run the full test suite (162 tests)
-pytest tests/ -v --tb=short
+# Run the full test suite
+uv run pytest tests/ -v --tb=short
 
 # Run the local sanity check
-python run_local.py
+uv run python run_local.py
 ```
 
 ### 3. Start the API server
 
 ```bash
-uvicorn api.main:app --reload --port 8000
+uv run uvicorn api.main:app --reload --port 8000
 ```
 
 - Swagger docs: http://localhost:8000/docs
@@ -193,7 +195,7 @@ uvicorn api.main:app --reload --port 8000
 ### 4. Start the Streamlit UI
 
 ```bash
-streamlit run ui/app.py
+uv run streamlit run ui/app.py
 ```
 
 Opens at http://localhost:8501

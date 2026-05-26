@@ -20,13 +20,12 @@ http://localhost:8000
 
 **Start the API server locally:**
 ```bash
-source .venv312/bin/activate
-uvicorn api.main:app --reload --port 8000
+uv run uvicorn api.main:app --reload --port 8000
 ```
 
 **CORS:** All origins are allowed in development (`*`). For production, set the `CORS_ORIGINS` environment variable:
 ```bash
-CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uvicorn api.main:app
+CORS_ORIGINS="https://yourdomain.com,http://localhost:3000" uv run uvicorn api.main:app
 ```
 
 ---

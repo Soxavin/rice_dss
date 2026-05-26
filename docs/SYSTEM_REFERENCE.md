@@ -879,7 +879,7 @@ The translations layer:
 
 **How to Run:**
 ```bash
-source .venv312/bin/activate && streamlit run ui/app.py
+uv run streamlit run ui/app.py
 ```
 Opens at http://localhost:8501
 

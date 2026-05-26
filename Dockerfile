@@ -1,18 +1,18 @@
 FROM python:3.12-slim
 
-WORKDIR /app
-
 # Install system deps for TensorFlow CPU
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libhdf5-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    tensorflow-cpu>=2.16.0 \
-    numpy>=1.26.0 \
-    streamlit>=1.32.0
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+# Install Python dependencies (lockfile-based, reproducible)
+COPY pyproject.toml uv.lock .python-version ./
+RUN uv sync --frozen --no-dev --extra ml
 
 # Copy project source
 COPY api/ api/
@@ -30,4 +30,4 @@ RUN mkdir -p logs
 # Cloud Run injects PORT env var; default to 8000 for local dev
 ENV PORT=8000
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "uv run uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]

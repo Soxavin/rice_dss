@@ -709,7 +709,7 @@ The schema was created by running `alembic upgrade head` once against the live d
 The React frontend is deployed on Vercel, auto-deploying on every push to `main`. A `frontend/vercel.json` catch-all rewrite (`/(.*) → /index.html`) ensures all SPA routes (including `/admin`) load correctly on direct navigation or page refresh.
 
 ### `Dockerfile`
-Builds a container image based on `python:3.12-slim` with TensorFlow CPU. Copies all project code (excluding data, venvs, caches via `.dockerignore`). Default command starts the API server on port 8000.
+Builds a container image based on `python:3.12-slim`. Installs `uv` from the official image, then runs `uv sync --frozen --no-dev --extra ml` for reproducible, lockfile-based installs of all production + ML dependencies. Default command starts the API server on port 8000 via `uv run uvicorn`.
 
 ### `docker-compose.yml`
 Defines two services:
@@ -722,21 +722,26 @@ Excludes from Docker build: `.venv*`, `data/`, `__pycache__/`, `.git/`, `*.pyc`,
 ### `.github/workflows/ci.yml`
 GitHub Actions workflow that runs on every push/PR to `main`:
 1. Checks out the code
-2. Sets up Python 3.12
-3. Installs dependencies + `tensorflow-cpu`
-4. Runs `pytest tests/ -v --tb=short`
+2. Installs `uv` via `astral-sh/setup-uv@v5`
+3. Installs dependencies with `uv sync --frozen --extra dev`
+4. Runs `uv run pytest tests/ -v --tb=short`
 
 **CI stability note:** The `api.main` import is safe in CI (no `DATABASE_URL`, no Firebase credentials) because `database.py` falls back to in-memory SQLite and `auth.py` wraps Firebase init in `try/except`.
 
+### `pyproject.toml`
+Source of truth for all Python dependencies (replaces `requirements.txt`). Uses [uv](https://docs.astral.sh/uv/) for dependency management. Dependencies are split into groups:
+- **Core** — `fastapi`, `uvicorn`, `pydantic`, `sqlalchemy`, `asyncpg`, `aiosqlite`, `alembic`, `firebase-admin`, `python-jose`, `passlib`, `python-dotenv`, `httpx`
+- **`[ml]` extra** — `tensorflow-cpu`, `numpy`, `scikit-learn`, `matplotlib`, `Pillow`, `opencv-python-headless` (install with `uv sync --extra ml`)
+- **`[dev]` extra** — `pytest`, `pytest-asyncio`, `numpy` (install with `uv sync --extra dev`)
+
+### `uv.lock`
+Auto-generated lockfile pinning exact versions of all resolved packages. Commit this file — it ensures every developer and CI run installs identical versions.
+
+### `.python-version`
+Pins the project to Python 3.12 for uv. Ensures `uv sync` always uses the correct interpreter.
+
 ### `requirements.txt`
-Python package dependencies. Main packages:
-- `fastapi`, `uvicorn`, `python-multipart` — API server
-- `pydantic` — request/response validation
-- `httpx`, `pytest`, `pytest-asyncio` — testing
-- `sqlalchemy`, `asyncpg`, `aiosqlite` — PostgreSQL (production) and SQLite (CI fallback)
-- `alembic` — database migrations
-- `firebase-admin` — Firebase token verification
-- `python-jose`, `passlib` — JWT signing and verification
+Legacy pip reference — superseded by `pyproject.toml`. Kept for reference only; do not use for new installs.
 
 ### `run_local.py`
 Quick-start script for local development:
