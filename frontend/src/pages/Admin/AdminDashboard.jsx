@@ -31,10 +31,12 @@ export default function AdminDashboard() {
   const { t } = useLanguage()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [failedSources, setFailedSources] = useState([])
 
   useEffect(() => {
     async function load() {
       try {
+        const SOURCES = ['Users', 'Resources', 'Profiles', 'Analyses', 'Recent analyses']
         const [usersRes, resourcesRes, profilesRes, analysesRes, recentRes] = await Promise.allSettled([
           adminRequest(getBackendToken, 'get', '/admin/users'),
           adminRequest(getBackendToken, 'get', '/admin/resources'),
@@ -42,6 +44,15 @@ export default function AdminDashboard() {
           adminRequest(getBackendToken, 'get', '/admin/analysis?limit=200'),
           adminRequest(getBackendToken, 'get', '/admin/analysis?limit=5'),
         ])
+
+        const results = [usersRes, resourcesRes, profilesRes, analysesRes, recentRes]
+        const failed = results
+          .map((r, i) => (r.status === 'rejected' ? SOURCES[i] : null))
+          .filter(Boolean)
+        setFailedSources(failed)
+        if (failed.length) {
+          console.error('AdminDashboard: failed to load', failed, results.filter(r => r.status === 'rejected'))
+        }
 
         const users     = usersRes.value?.data ?? []
         const resources = resourcesRes.value?.data ?? []
@@ -82,6 +93,15 @@ export default function AdminDashboard() {
           {t('admin_dash_subtitle')}
         </p>
       </div>
+
+      {!loading && failedSources.length > 0 && (
+        <div
+          className="mb-6 px-4 py-3 rounded-xl text-sm"
+          style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}
+        >
+          Failed to load: {failedSources.join(', ')}. Some numbers below may be incomplete — check the console or retry.
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-5">
