@@ -6,7 +6,7 @@ import { adminRequest } from '../../api/adminClient'
 import { AlertCircle, CheckCircle, Leaf, Phone, ArrowRight, Download, TriangleAlert, Info, ChevronLeft, ImageDown, ChevronDown, ChevronUp, Lock } from 'lucide-react'
 import DetectionProgress from '../../components/detection/DetectionProgress'
 import html2canvas from 'html2canvas'
-import { explainScores } from '../../api/client'
+import { explainScores, getProducts, getProfiles } from '../../api/client'
 
 // ─── Confidence level colours ─────────────────────────────────────────────────
 const CONF_STYLE = {
@@ -17,19 +17,21 @@ const CONF_STYLE = {
   ml_only:  { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af', dot: '#3b82f6' },
 }
 
-// ─── Products — filtered by condition ────────────────────────────────────────
-const PRODUCTS = [
-  { name: 'Tricyclazole Fungicide 75WP', price: '$12.00', img: '🧪', supplier: 'GreenGrowth Agri-Supply',   telegram: 'greengrowth_supply', conditions: ['blast'] },
-  { name: 'Copper-based Bactericide',    price: '$15.00', img: '🧴', supplier: 'AgriTech Solutions KH',     telegram: 'agritech_kh',        conditions: ['bacterial_blight'] },
-  { name: 'Zineb Fungicide 3 kg/ha',     price: '$9.50',  img: '🌿', supplier: 'PhnomPenh AgroShop',        telegram: 'ppagro_kh',          conditions: ['brown_spot', 'blast'] },
-  { name: 'Urea / Nitrogen Fertilizer',  price: '$8.00',  img: '🌱', supplier: 'Cambodia Farm Supplies',    telegram: 'cam_farmsupply',     conditions: ['n_deficiency', 'brown_spot'] },
-  { name: 'Gypsum / Calcium Amendment',  price: '$10.00', img: '🪨', supplier: 'SoilCare Cambodia',         telegram: 'soilcare_kh',        conditions: ['salt_toxicity', 'iron_toxicity'] },
-]
+// ─── Real Vigor products — fetched from the backend, filtered by condition_keys ──
+const PRODUCT_IMAGES = {
+  'Vigor BioYield+':  '/images/product1-bioyield.png',
+  'Vigor BioLatex':   '/images/product2-biolatex.png',
+  'Vigor BioControl': '/images/product3-biocontrol.png',
+  'Vigor BioBooster': '/images/product4-biobooster.png',
+  'Vigor BioGuard':   '/images/product5-bioguard.png',
+  'Vigor BioCombat':  '/images/product6-biocombat.png',
+  'Vigor BioGo':      '/images/product7-biogo.png',
+}
 
 const FALLBACK_IMG = '/images/analysis-leaf.jpg'
 
 export default function Step3Results() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const navigate = useNavigate()
   const { isAuthenticated, user, getBackendToken } = useAuth()
   const [result, setResult] = useState(null)
@@ -40,6 +42,21 @@ export default function Step3Results() {
   const savedRef = useRef(false) // guard against StrictMode double-fire
   const resultRef = useRef(null)
   const [explainer, setExplainer] = useState(null)
+  const [allProducts, setAllProducts] = useState([])
+  const [supplierTelegramById, setSupplierTelegramById] = useState({})
+
+  useEffect(() => {
+    Promise.all([getProducts(), getProfiles()])
+      .then(([prodRes, profRes]) => {
+        setAllProducts(prodRes.data || [])
+        const map = {}
+        for (const p of profRes.data || []) {
+          if (p.type === 'SUPPLIER' && p.telegram) map[p.id] = p.telegram
+        }
+        setSupplierTelegramById(map)
+      })
+      .catch(() => { setAllProducts([]); setSupplierTelegramById({}) })
+  }, [])
   const [explainOpen, setExplainOpen] = useState(false)
 
   useEffect(() => {
@@ -169,8 +186,7 @@ export default function Step3Results() {
     return raw
   }
 
-  const products      = PRODUCTS.filter(p => p.conditions.includes(condKey))
-  const displayProducts = products.length > 0 ? products : PRODUCTS.slice(0, 2)
+  const displayProducts = allProducts.filter(p => p.condition_keys?.includes(condKey))
 
   // Translatable short condition names for the All Scores panel
   const condLabel = (key) => ({
@@ -536,34 +552,48 @@ export default function Step3Results() {
           </div>
 
           {/* Recommended products */}
-          <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
-            <h3 className="font-semibold text-sm text-neutral-900">{t('detect_recommended_products')}</h3>
-            <div className="mt-3 space-y-3">
-              {displayProducts.map((p) => (
-                <div key={p.name} className="rounded-lg p-3" style={{ border: '1px solid #f0f0f0', backgroundColor: '#fafafa' }}>
-                  <div className="flex items-start gap-2">
-                    <span className="text-xl shrink-0">{p.img}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-1">
-                        <h4 className="text-sm font-medium text-neutral-900 leading-snug">{p.name}</h4>
-                        <span className="text-sm font-bold shrink-0" style={{ color: '#558b2f' }}>{p.price}</span>
+          {displayProducts.length > 0 && (
+            <div className="rounded-xl p-5 bg-white" style={{ border: '1px solid #e0e0e0', borderLeft: '3px solid #a8d060' }}>
+              <h3 className="font-semibold text-sm text-neutral-900">{t('detect_recommended_products')}</h3>
+              <div className="mt-3 space-y-3">
+                {displayProducts.map((p) => {
+                  const name = lang === 'km' && p.name_km ? p.name_km : p.name_en
+                  const desc = lang === 'km' && p.desc_km ? p.desc_km : p.desc_en
+                  const telegram = supplierTelegramById[p.profile_id]
+                  return (
+                    <div key={p.id} className="rounded-lg p-3" style={{ border: '1px solid #f0f0f0', backgroundColor: '#fafafa' }}>
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={p.image_url || PRODUCT_IMAGES[p.name_en] || FALLBACK_IMG}
+                          alt={name}
+                          className="w-10 h-10 rounded-lg object-cover shrink-0"
+                          style={{ border: '1px solid #e0e0e0' }}
+                          onError={(e) => { e.target.src = FALLBACK_IMG }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-neutral-900 leading-snug">{name}</h4>
+                          {desc && (
+                            <p className="text-xs mt-0.5 line-clamp-2" style={{ color: '#9e9e9e' }}>{desc}</p>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs mt-0.5" style={{ color: '#9e9e9e' }}>{p.supplier}</p>
+                      {telegram && (
+                        <a
+                          href={`https://t.me/${telegram}?text=${encodeURIComponent(`Hi, I need ${name} for treating ${result.primary_condition || 'rice disease'}. Please send details and pricing.`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-medium no-underline hover:underline"
+                          style={{ color: '#558b2f' }}
+                        >
+                          {t('detect_contact_telegram')} <ArrowRight size={10} />
+                        </a>
+                      )}
                     </div>
-                  </div>
-                  <a
-                    href={`https://t.me/${p.telegram}?text=${encodeURIComponent(`Hi, I need ${p.name} for treating ${result.primary_condition || 'rice disease'}. Please send details and pricing.`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-xs font-medium no-underline hover:underline"
-                    style={{ color: '#558b2f' }}
-                  >
-                    {t('detect_contact_telegram')} <ArrowRight size={10} />
-                  </a>
-                </div>
-              ))}
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Expert help */}
           <div className="rounded-xl p-5" style={{ backgroundColor: '#f7fbe7', border: '1px solid #d4e6a5' }}>

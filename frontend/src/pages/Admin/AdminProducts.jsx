@@ -10,7 +10,10 @@ const EMPTY_FORM = {
   name_en: '', name_km: '', desc_en: '', desc_km: '',
   usage_instructions_en: '', usage_instructions_km: '',
   image_url: '', price: '', category: '', nutrients_json: '', profile_id: '',
+  condition_keys: [],
 }
+
+const CONDITION_KEYS = ['blast', 'brown_spot', 'bacterial_blight', 'iron_toxicity', 'n_deficiency', 'salt_toxicity']
 
 const inputStyle = { borderColor: '#e0e0e0', backgroundColor: '#fafafa', borderRadius: 8 }
 
@@ -85,6 +88,7 @@ export default function AdminProducts() {
       category:                 product.category || '',
       nutrients_json:           product.nutrients_json ? JSON.stringify(product.nutrients_json, null, 2) : '',
       profile_id:               product.profile_id || '',
+      condition_keys:           product.condition_keys || [],
     })
     setEditing(product.id)
     setModal('edit')
@@ -113,6 +117,7 @@ export default function AdminProducts() {
       category:              form.category.trim() || null,
       nutrients_json:        nutrients,
       profile_id:            form.profile_id || null,
+      condition_keys:        form.condition_keys.length ? form.condition_keys : null,
     }
 
     setSaving(true)
@@ -300,6 +305,36 @@ export default function AdminProducts() {
                 <Field label={t('admin_products_f_usage_en')} field="usage_instructions_en" rows={3} form={form} setForm={setForm} />
                 <Field label={t('admin_products_f_usage_km')} field="usage_instructions_km" rows={3} form={form} setForm={setForm} />
                 <Field label={`${t('admin_products_f_nutrients')} (JSON)`} field="nutrients_json" rows={4} form={form} setForm={setForm} placeholder='{"N": "0.63%", "P2O5": "0.48%"}' />
+
+                {/* Condition tagging — drives "Recommended Products" on the results page */}
+                <div>
+                  <label className="text-xs font-semibold block mb-1" style={{ color: '#616161' }}>
+                    Applies to conditions
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {CONDITION_KEYS.map(key => {
+                      const active = form.condition_keys.includes(key)
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setForm(p => ({
+                            ...p,
+                            condition_keys: active
+                              ? p.condition_keys.filter(k => k !== key)
+                              : [...p.condition_keys, key],
+                          }))}
+                          className="text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-colors"
+                          style={active
+                            ? { backgroundColor: '#558b2f', color: '#fff', border: '1px solid #558b2f' }
+                            : { backgroundColor: '#fafafa', color: '#616161', border: '1px solid #e0e0e0' }}
+                        >
+                          {t(`cond_name_${key}`)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
 
               {/* Modal footer */}

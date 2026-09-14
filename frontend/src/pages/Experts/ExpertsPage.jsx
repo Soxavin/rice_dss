@@ -74,7 +74,6 @@ export default function ExpertsPage() {
   const [allProducts, setAllProducts]           = useState([])
   const panelRef     = useRef(null)
   const panelCloseRef = useRef(null)
-  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     Promise.all([getProfiles(), getProducts()])
@@ -111,20 +110,6 @@ export default function ExpertsPage() {
       .catch(() => setSupplierProducts([]))
       .finally(() => setProductsLoading(false))
   }, [selectedExpert])
-
-  useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch("http://localhost:8000/products");
-      const data = await res.json();
-      setProducts(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchProducts();
-}, []);
 
   const handlePanelKeyDown = (e) => {
     if (e.key !== 'Tab' || !panelRef.current) return
@@ -514,10 +499,12 @@ export default function ExpertsPage() {
 
             {/* card */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {products.length === 0 ? (
+              {allProducts.length === 0 ? (
                 <p className="text-sm text-neutral-400">No products available.</p>
               ) : (
-                products.slice(0, 8).map((p) => (
+                allProducts.slice(0, 8).map((p) => {
+                const supplierTelegram = profiles.find(pr => pr.id === p.profile_id)?.telegram
+                return (
                 <div
                   key={p.id}
                   className="
@@ -564,27 +551,27 @@ export default function ExpertsPage() {
                     </div>
 
                     {/* CTA */}
-                    <div className="mt-6">
-                      <a
-                        href={`https://t.me/${p.telegram}?text=${encodeURIComponent(
-                          `Hi, I'm interested in ${p.name_en}. Please send me details.`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all"
-                        style={{ backgroundColor: '#558b2f' }}
-                      >
-                        <ShoppingBag size={14} />
-                        Telegram
-                      </a>
-                    </div>
+                    {supplierTelegram && (
+                      <div className="mt-6">
+                        <a
+                          href={`https://t.me/${supplierTelegram}?text=${encodeURIComponent(
+                            `Hi, I'm interested in ${p.name_en}. Please send me details.`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full inline-flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all"
+                          style={{ backgroundColor: '#558b2f' }}
+                        >
+                          <ShoppingBag size={14} />
+                          Telegram
+                        </a>
+                      </div>
+                    )}
 
                   </div>
                 </div>
-
-
-
-                ))
+                )
+                })
               )}
             </div>
           </section>

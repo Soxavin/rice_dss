@@ -16,6 +16,7 @@ class ProductBase(BaseModel):
     usage_instructions_en: str | None = None
     usage_instructions_km: str | None = None
     nutrients_json: dict[str, Any] | None = None
+    condition_keys: list[str] | None = None
 
 
 class ProductCreate(ProductBase):
@@ -34,6 +35,7 @@ class ProductUpdate(BaseModel):
     usage_instructions_en: str | None = None
     usage_instructions_km: str | None = None
     nutrients_json: dict[str, Any] | None = None
+    condition_keys: list[str] | None = None
 
 
 class ProductOut(ProductBase):
