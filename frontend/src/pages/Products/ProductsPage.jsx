@@ -32,12 +32,6 @@ export default function ProductsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (!selectedProduct) return
-    const onKey = (e) => { if (e.key === 'Escape') setSelectedProduct(null) }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [selectedProduct])
 
   return (
     <div>

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import { Phone, Send, Search, MapPin, ArrowRight, Star, X, BookOpen, Globe, Clock, Package } from 'lucide-react'
 import { getProfiles, getProducts } from '../../api/client'
 import ProductDetailModal from './ProductDetailModal'
+import Modal from '../../components/ui/Modal'
 
 /* Shared inline styles — matches site-wide design language */
 const cardStyle = {
@@ -72,8 +73,6 @@ export default function ExpertsPage() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [supplierProducts, setSupplierProducts] = useState([])
   const [productsLoading, setProductsLoading]   = useState(false)
-  const panelRef     = useRef(null)
-  const panelCloseRef = useRef(null)
 
   useEffect(() => {
     getProfiles()
@@ -81,24 +80,6 @@ export default function ExpertsPage() {
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false))
   }, [])
-
-  useEffect(() => {
-    if (!selectedExpert && !selectedProduct) return
-    const onKey = (e) => {
-      if (e.key !== 'Escape') return
-      if (selectedProduct) setSelectedProduct(null)
-      else setSelectedExpert(null)
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [selectedExpert, selectedProduct])
-
-  useEffect(() => {
-    if (selectedExpert) {
-      const t = setTimeout(() => panelCloseRef.current?.focus(), 60)
-      return () => clearTimeout(t)
-    }
-  }, [selectedExpert])
 
   useEffect(() => {
     if (!selectedExpert || selectedExpert.type !== 'SUPPLIER') {
@@ -111,21 +92,6 @@ export default function ExpertsPage() {
       .catch(() => setSupplierProducts([]))
       .finally(() => setProductsLoading(false))
   }, [selectedExpert])
-
-  const handlePanelKeyDown = (e) => {
-    if (e.key !== 'Tab' || !panelRef.current) return
-    const focusable = Array.from(panelRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    )).filter(el => !el.disabled)
-    if (!focusable.length) return
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    if (e.shiftKey) {
-      if (document.activeElement === first) { e.preventDefault(); last.focus() }
-    } else {
-      if (document.activeElement === last) { e.preventDefault(); first.focus() }
-    }
-  }
 
   const bil = (obj) => (typeof obj === 'object' ? obj[lang] || obj.en : obj)
 
@@ -557,44 +523,15 @@ export default function ExpertsPage() {
         </section>
       </div>
 
-      {/* ═══════════════ EXPERT PROFILE BOTTOM SHEET ═══════════════ */}
+      {/* ═══════════════ EXPERT / SUPPLIER PROFILE MODAL ═══════════════ */}
       {selectedExpert && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
-            onClick={() => setSelectedExpert(null)}
-          />
-
-          {/* Bottom sheet */}
-          <div
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="expert-panel-name"
-            onKeyDown={handlePanelKeyDown}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white flex flex-col"
-            style={{
-              maxHeight: '78vh',
-              borderRadius: '20px 20px 0 0',
-              boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
-              transform: 'translateY(0)',
-              transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
-            }}
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1 rounded-full" style={{ backgroundColor: '#d4d4d4' }} />
-            </div>
-
-            {/* Sheet header — dark green banner */}
+        <Modal open onClose={() => setSelectedExpert(null)} labelledBy="expert-panel-name" contentClassName="max-w-2xl">
+            {/* Header — dark green banner */}
             <div
               className="relative px-6 py-4 shrink-0"
               style={{ background: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a1e 100%)' }}
             >
               <button
-                ref={panelCloseRef}
                 onClick={() => setSelectedExpert(null)}
                 aria-label="Close"
                 className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none transition-colors"
@@ -776,8 +713,7 @@ export default function ExpertsPage() {
                 {t('experts_profile_close')}
               </button>
             </div>
-          </div>
-        </>
+        </Modal>
       )}
 
       {/* ═══════════════ PRODUCT DETAIL MODAL ═══════════════ */}
