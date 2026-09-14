@@ -111,6 +111,13 @@ export default function Navbar() {
             </div>
 
             <Link
+              to="/products"
+              className={`text-sm font-medium no-underline transition-colors ${isActive('/products') ? 'text-primary-600' : 'text-neutral-700 hover:text-primary-600'}`}
+            >
+              {t('nav_products')}
+            </Link>
+
+            <Link
               to="/experts"
               className={`text-sm font-medium no-underline transition-colors ${isActive('/experts') ? 'text-primary-600' : 'text-neutral-700 hover:text-primary-600'}`}
             >
@@ -323,6 +330,9 @@ export default function Navbar() {
           </Link>
           <Link to="/learn" className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
             {t('service_learning')}
+          </Link>
+          <Link to="/products" className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
+            {t('nav_products')}
           </Link>
           <Link to="/experts" className="block text-sm font-medium text-neutral-700 no-underline py-2.5 px-3 rounded-lg hover:bg-neutral-50" onClick={() => setMobileOpen(false)}>
             {t('service_expert')}

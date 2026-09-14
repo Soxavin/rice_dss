@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
-import { Phone, Send, Search, MapPin, ShoppingBag, ArrowRight, Star, X, BookOpen, Globe, Clock, Package, FlaskConical } from 'lucide-react'
-import { PRODUCTS } from '../../data/searchData'
+import { Phone, Send, Search, MapPin, ArrowRight, Star, X, BookOpen, Globe, Clock, Package } from 'lucide-react'
 import { getProfiles, getProducts } from '../../api/client'
+import ProductDetailModal from './ProductDetailModal'
 
 /* Shared inline styles — matches site-wide design language */
 const cardStyle = {
@@ -72,16 +72,12 @@ export default function ExpertsPage() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [supplierProducts, setSupplierProducts] = useState([])
   const [productsLoading, setProductsLoading]   = useState(false)
-  const [allProducts, setAllProducts]           = useState([])
   const panelRef     = useRef(null)
   const panelCloseRef = useRef(null)
 
   useEffect(() => {
-    Promise.all([getProfiles(), getProducts()])
-      .then(([profRes, prodRes]) => {
-        setProfiles(profRes.data || [])
-        setAllProducts(prodRes.data || [])
-      })
+    getProfiles()
+      .then((profRes) => setProfiles(profRes.data || []))
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false))
   }, [])
@@ -155,7 +151,6 @@ export default function ExpertsPage() {
   const stats = [
     { val: loading ? '…' : `${EXPERTS.length}`,   label: t('experts_tab') },
     { val: loading ? '…' : `${SUPPLIERS.length}`, label: t('experts_suppliers_tab') },
-    { val: loading ? '…' : `${allProducts.length}`, label: t('experts_section_treatments_title') },
   ]
 
   return (
@@ -476,120 +471,6 @@ export default function ExpertsPage() {
         )}
           
 
-          {/* ─── TREATMENTS / PRODUCTS SECTION ─── */}
-          {(tab === 'All' || tab === 'Products') && (
-          <section className="mt-14">
-            {/* Header */}
-            <div className="flex items-start gap-3 mb-4">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl"
-                style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)', border: '1px solid #ddd6fe' }}
-              >
-                <FlaskConical size={20} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-neutral-900">
-                  {t('experts_section_treatments_title')}
-                </h3>
-                <p className="text-sm text-neutral-500 mt-0.5">
-                  {t('experts_section_treatments_desc')}
-                </p>
-              </div>
-            </div>
-
-            <div
-              className="h-px mb-8"
-              style={{ background: 'linear-gradient(to right, #e8be3f, #558b2f)' }}
-            />
-
-            {/* card */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {allProducts.length === 0 ? (
-                <p className="text-sm text-neutral-400">No products available.</p>
-              ) : (
-                allProducts.slice(0, 8).map((p) => {
-                const supplierTelegram = profiles.find(pr => pr.id === p.profile_id)?.telegram
-                const name = lang === 'km' && p.name_km ? p.name_km : p.name_en
-                const desc = lang === 'km' && p.desc_km ? p.desc_km : p.desc_en
-                return (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedProduct(p)}
-                  role="button"
-                  className="
-                    bg-white rounded-xl overflow-hidden flex flex-col border border-gray-400 min-h-[320px]
-                    transition-all duration-300 ease-out cursor-pointer
-                    hover:shadow-xl hover:-translate-y-1
-                  "
-                >
-                  {/* Image */}
-                  <div className="w-full h-38 bg-neutral-20 flex items-center justify-center overflow-hidden p-2">
-                    <img
-                      src={
-                        p.image_url ||
-                        productImages[p.name_en] ||
-                        "/images/hero-bg.jpg"
-                      }
-                      alt={name}
-                      className="max-h-full max-w-full object-contain"
-                      onError={(e) => (e.target.src = "/images/hero-bg.jpg")}
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6 flex flex-col flex-1 min-h-[200px]">
-
-                    {/* Top content */}
-                    <div className="space-y-4">
-                      {/* Category */}
-                      <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-md w-fit">
-                        {lang === 'km' && p.category_km ? p.category_km : p.category}
-                      </span>
-
-                      {/* Title */}
-                      <h4 className="mt-3 text-lg font-semibold text-neutral-900 leading-snug">
-                        {name}
-                      </h4>
-
-                      {/* Description */}
-                      {desc && (
-                        <p className="text-xs text-neutral-600 leading-relaxed line-clamp-2">
-                          {desc}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* CTA */}
-                    {supplierTelegram && (
-                      <div className="mt-6">
-                        <a
-                          href={`https://t.me/${supplierTelegram}?text=${encodeURIComponent(
-                            `Hi, I'm interested in ${name}. Please send me details.`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full inline-flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all"
-                          style={{ backgroundColor: '#558b2f' }}
-                        >
-                          <ShoppingBag size={14} />
-                          Telegram
-                        </a>
-                      </div>
-                    )}
-
-                  </div>
-                </div>
-                )
-                })
-              )}
-            </div>
-          </section>
-          )}
-           
-            
-        
-
         {/* ═══════════════ CONTACT & JOIN CTA ═══════════════ */}
         <section
           className="mt-10 rounded-2xl overflow-hidden"
@@ -900,110 +781,13 @@ export default function ExpertsPage() {
       )}
 
       {/* ═══════════════ PRODUCT DETAIL MODAL ═══════════════ */}
-      {selectedProduct && (() => {
-        const p = selectedProduct
-        const name = lang === 'km' && p.name_km ? p.name_km : p.name_en
-        const desc = lang === 'km' && p.desc_km ? p.desc_km : p.desc_en
-        const usage = lang === 'km' && p.usage_instructions_km ? p.usage_instructions_km : p.usage_instructions_en
-        const telegram = profiles.find(pr => pr.id === p.profile_id)?.telegram
-        const nutrients = p.nutrients_json && typeof p.nutrients_json === 'object' ? Object.entries(p.nutrients_json) : []
-        return (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-[60]"
-              style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-              onClick={() => setSelectedProduct(null)}
-            />
-
-            {/* Centered modal */}
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-              <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="product-modal-name"
-                className="card-shadow page-enter bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
-              >
-                {/* Image */}
-                <div className="relative w-full h-56 shrink-0 bg-neutral-50 flex items-center justify-center p-4">
-                  <img
-                    src={p.image_url || productImages[p.name_en] || "/images/hero-bg.jpg"}
-                    alt={name}
-                    className="max-h-full max-w-full object-contain"
-                    onError={(e) => (e.target.src = "/images/hero-bg.jpg")}
-                  />
-                  <button
-                    onClick={() => setSelectedProduct(null)}
-                    aria-label="Close"
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none shadow"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#424242' }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                {/* Scrollable body */}
-                <div className="overflow-y-auto flex-1 p-6 space-y-4">
-                  {p.category && (
-                    <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-md w-fit inline-block">
-                      {lang === 'km' && p.category_km ? p.category_km : p.category}
-                    </span>
-                  )}
-                  <h2 id="product-modal-name" className="text-xl font-bold text-neutral-900 leading-snug">{name}</h2>
-
-                  {desc && (
-                    <p className="text-sm text-neutral-600 leading-relaxed">{desc}</p>
-                  )}
-
-                  {usage && (
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
-                        {t('product_modal_usage')}
-                      </h3>
-                      <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-line">{usage}</p>
-                    </div>
-                  )}
-
-                  {nutrients.length > 0 && (
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
-                        {t('product_modal_nutrients')}
-                      </h3>
-                      <div className="grid grid-cols-3 gap-2">
-                        {nutrients.map(([key, value]) => (
-                          <div key={key} className="rounded-lg p-2 text-center" style={{ backgroundColor: '#f0f7e6', border: '1px solid #c5e09a' }}>
-                            <p className="text-[10px] uppercase text-neutral-500">{key}</p>
-                            <p className="text-sm font-bold" style={{ color: '#33691e' }}>{String(value)}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <p className="text-lg font-bold" style={{ color: p.price ? '#558b2f' : '#9ca3af' }}>
-                    {p.price || t('experts_price_on_request')}
-                  </p>
-                </div>
-
-                {/* Footer */}
-                {telegram && (
-                  <div className="px-6 py-4 shrink-0" style={{ borderTop: '1px solid #f0f0f0' }}>
-                    <a
-                      href={`https://t.me/${telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${name}. Please send me details.`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg no-underline hover:opacity-90 transition-all"
-                      style={{ backgroundColor: '#0088cc' }}
-                    >
-                      <Send size={14} /> {t('experts_telegram')}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )
-      })()}
+      {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          profiles={profiles}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </div>
   )
 }

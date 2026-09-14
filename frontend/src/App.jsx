@@ -17,6 +17,7 @@ const ResourcesList  = lazy(() => import('./pages/Learning/ResourcesList'))
 const ArticleDetail  = lazy(() => import('./pages/Learning/ArticleDetail'))
 const VideoDetail    = lazy(() => import('./pages/Learning/VideoDetail'))
 const ExpertsPage    = lazy(() => import('./pages/Experts/ExpertsPage'))
+const ProductsPage   = lazy(() => import('./pages/Products/ProductsPage'))
 const ProfilePage    = lazy(() => import('./pages/Profile/ProfilePage'))
 const NotFound       = lazy(() => import('./pages/NotFound'))
 
@@ -54,6 +55,7 @@ export default function App() {
                 <Route path="/learn/article/:id" element={<ArticleDetail />} />
                 <Route path="/learn/video/:id" element={<VideoDetail />} />
                 <Route path="/experts" element={<ExpertsPage />} />
+                <Route path="/products" element={<ProductsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
