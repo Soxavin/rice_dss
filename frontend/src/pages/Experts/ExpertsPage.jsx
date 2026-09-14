@@ -674,7 +674,7 @@ export default function ExpertsPage() {
                             <div className="p-2.5 space-y-1">
                               <p className="text-xs font-semibold text-neutral-900 truncate">{name}</p>
                               {p.category && (
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block"
+                                <span className="inline-block max-w-full truncate text-[10px] font-medium px-1.5 py-0.5 rounded-full align-top"
                                   style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
                                   {lang === 'km' && p.category_km ? p.category_km : p.category}
                                 </span>
