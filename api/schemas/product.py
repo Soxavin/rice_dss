@@ -13,6 +13,7 @@ class ProductBase(BaseModel):
     desc_km: str | None = None
     price: str | None = None
     category: str | None = None
+    category_km: str | None = None
     usage_instructions_en: str | None = None
     usage_instructions_km: str | None = None
     nutrients_json: dict[str, Any] | None = None
@@ -32,6 +33,7 @@ class ProductUpdate(BaseModel):
     desc_km: str | None = None
     price: str | None = None
     category: str | None = None
+    category_km: str | None = None
     usage_instructions_en: str | None = None
     usage_instructions_km: str | None = None
     nutrients_json: dict[str, Any] | None = None

@@ -19,6 +19,7 @@ class Product(Base):
     desc_km: Mapped[str | None] = mapped_column(Text)
     price: Mapped[str | None] = mapped_column(String(50))
     category: Mapped[str | None] = mapped_column(String(100))
+    category_km: Mapped[str | None] = mapped_column(String(100), nullable=True)
     usage_instructions_en: Mapped[str | None] = mapped_column(Text)
     usage_instructions_km: Mapped[str | None] = mapped_column(Text)
     nutrients_json: Mapped[dict | None] = mapped_column(JSON)

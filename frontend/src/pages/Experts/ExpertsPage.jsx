@@ -543,7 +543,7 @@ export default function ExpertsPage() {
                     <div className="space-y-4">
                       {/* Category */}
                       <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-md w-fit">
-                        {p.category}
+                        {lang === 'km' && p.category_km ? p.category_km : p.category}
                       </span>
 
                       {/* Title */}
@@ -856,7 +856,7 @@ export default function ExpertsPage() {
                               {p.category && (
                                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block"
                                   style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
-                                  {p.category}
+                                  {lang === 'km' && p.category_km ? p.category_km : p.category}
                                 </span>
                               )}
                             </div>
@@ -946,7 +946,7 @@ export default function ExpertsPage() {
                 <div className="overflow-y-auto flex-1 p-6 space-y-4">
                   {p.category && (
                     <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-md w-fit inline-block">
-                      {p.category}
+                      {lang === 'km' && p.category_km ? p.category_km : p.category}
                     </span>
                   )}
                   <h2 id="product-modal-name" className="text-xl font-bold text-neutral-900 leading-snug">{name}</h2>

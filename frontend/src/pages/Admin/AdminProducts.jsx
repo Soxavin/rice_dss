@@ -9,7 +9,7 @@ import { adminRequest } from '../../api/adminClient'
 const EMPTY_FORM = {
   name_en: '', name_km: '', desc_en: '', desc_km: '',
   usage_instructions_en: '', usage_instructions_km: '',
-  image_url: '', price: '', category: '', nutrients_json: '', profile_id: '',
+  image_url: '', price: '', category: '', category_km: '', nutrients_json: '', profile_id: '',
   condition_keys: [],
 }
 
@@ -86,6 +86,7 @@ export default function AdminProducts() {
       image_url:                product.image_url || '',
       price:                    product.price || '',
       category:                 product.category || '',
+      category_km:              product.category_km || '',
       nutrients_json:           product.nutrients_json ? JSON.stringify(product.nutrients_json, null, 2) : '',
       profile_id:               product.profile_id || '',
       condition_keys:           product.condition_keys || [],
@@ -115,6 +116,7 @@ export default function AdminProducts() {
       image_url:             form.image_url.trim() || null,
       price:                 form.price.trim() || null,
       category:              form.category.trim() || null,
+      category_km:           form.category_km.trim() || null,
       nutrients_json:        nutrients,
       profile_id:            form.profile_id || null,
       condition_keys:        form.condition_keys.length ? form.condition_keys : null,
@@ -280,9 +282,12 @@ export default function AdminProducts() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label={t('admin_products_f_category')} field="category" form={form} setForm={setForm} />
-                  <Field label={t('admin_products_f_price')} field="price" form={form} setForm={setForm} placeholder="e.g. $42.00" />
+                  <Field label={`${t('admin_products_f_category')} (KM)`} field="category_km" form={form} setForm={setForm} />
                 </div>
-                <Field label={t('admin_products_f_image')} field="image_url" form={form} setForm={setForm} placeholder="https://..." />
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label={t('admin_products_f_price')} field="price" form={form} setForm={setForm} placeholder="e.g. $42.00" />
+                  <Field label={t('admin_products_f_image')} field="image_url" form={form} setForm={setForm} placeholder="https://..." />
+                </div>
 
                 {/* Supplier dropdown */}
                 <div>
