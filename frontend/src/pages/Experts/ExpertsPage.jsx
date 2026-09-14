@@ -69,6 +69,7 @@ export default function ExpertsPage() {
   const [contactForm, setContactForm]       = useState({ name: '', email: '', message: '' })
   const [contactSubmitted, setContactSubmitted] = useState(false)
   const [selectedExpert, setSelectedExpert] = useState(null)
+  const [selectedProduct, setSelectedProduct] = useState(null)
   const [supplierProducts, setSupplierProducts] = useState([])
   const [productsLoading, setProductsLoading]   = useState(false)
   const [allProducts, setAllProducts]           = useState([])
@@ -86,11 +87,15 @@ export default function ExpertsPage() {
   }, [])
 
   useEffect(() => {
-    if (!selectedExpert) return
-    const onKey = (e) => { if (e.key === 'Escape') setSelectedExpert(null) }
+    if (!selectedExpert && !selectedProduct) return
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (selectedProduct) setSelectedProduct(null)
+      else setSelectedExpert(null)
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [selectedExpert])
+  }, [selectedExpert, selectedProduct])
 
   useEffect(() => {
     if (selectedExpert) {
@@ -195,7 +200,7 @@ export default function ExpertsPage() {
             {/* Stats */}
             <div className="flex gap-8 shrink-0 sm:pt-1">
               {stats.map(({ val, label }) => (
-                <div key={val} className="text-center">
+                <div key={label} className="text-center">
                   <p className="text-2xl font-bold text-white">{val}</p>
                   <p className="text-[11px] mt-0.5 leading-tight max-w-[72px]" style={{ color: '#a8c89a' }}>{label}</p>
                 </div>
@@ -504,12 +509,16 @@ export default function ExpertsPage() {
               ) : (
                 allProducts.slice(0, 8).map((p) => {
                 const supplierTelegram = profiles.find(pr => pr.id === p.profile_id)?.telegram
+                const name = lang === 'km' && p.name_km ? p.name_km : p.name_en
+                const desc = lang === 'km' && p.desc_km ? p.desc_km : p.desc_en
                 return (
                 <div
                   key={p.id}
+                  onClick={() => setSelectedProduct(p)}
+                  role="button"
                   className="
                     bg-white rounded-xl overflow-hidden flex flex-col border border-gray-400 min-h-[320px]
-                    transition-all duration-300 ease-out
+                    transition-all duration-300 ease-out cursor-pointer
                     hover:shadow-xl hover:-translate-y-1
                   "
                 >
@@ -521,7 +530,7 @@ export default function ExpertsPage() {
                         productImages[p.name_en] ||
                         "/images/hero-bg.jpg"
                       }
-                      alt={p.name_en}
+                      alt={name}
                       className="max-h-full max-w-full object-contain"
                       onError={(e) => (e.target.src = "/images/hero-bg.jpg")}
                     />
@@ -529,7 +538,7 @@ export default function ExpertsPage() {
 
                   {/* Content */}
                   <div className="p-6 flex flex-col flex-1 min-h-[200px]">
-                    
+
                     {/* Top content */}
                     <div className="space-y-4">
                       {/* Category */}
@@ -539,13 +548,13 @@ export default function ExpertsPage() {
 
                       {/* Title */}
                       <h4 className="mt-3 text-lg font-semibold text-neutral-900 leading-snug">
-                        {p.name_en}
+                        {name}
                       </h4>
 
                       {/* Description */}
-                      {p.desc_en && (
+                      {desc && (
                         <p className="text-xs text-neutral-600 leading-relaxed line-clamp-2">
-                          {p.desc_en}
+                          {desc}
                         </p>
                       )}
                     </div>
@@ -555,10 +564,11 @@ export default function ExpertsPage() {
                       <div className="mt-6">
                         <a
                           href={`https://t.me/${supplierTelegram}?text=${encodeURIComponent(
-                            `Hi, I'm interested in ${p.name_en}. Please send me details.`
+                            `Hi, I'm interested in ${name}. Please send me details.`
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="w-full inline-flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all"
                           style={{ backgroundColor: '#558b2f' }}
                         >
@@ -815,57 +825,44 @@ export default function ExpertsPage() {
                       <Package size={13} /> {t('experts_products_title')}
                     </h3>
                     {productsLoading ? (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         {[1, 2, 3, 4].map(i => (
-                          <div key={i} className="rounded-xl animate-pulse h-24" style={{ backgroundColor: '#f0f0f0' }} />
+                          <div key={i} className="rounded-xl animate-pulse h-28" style={{ backgroundColor: '#f0f0f0' }} />
                         ))}
                       </div>
                     ) : supplierProducts.length === 0 ? (
                       <p className="text-sm text-neutral-400 italic">{t('experts_products_empty')}</p>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {supplierProducts.map((p) => (
-                          <div key={p.id} className="rounded-xl p-3 flex flex-col gap-1.5" style={{ border: '1px solid #e8f5e9', backgroundColor: '#f9fdf5' }}>
-                            {p.image_url ? (
-                              <img src={p.image_url} alt={p.name_en} className="w-full h-20 object-cover rounded-lg" style={{ border: '1px solid #e0e0e0' }} />
-                            ) : (
-                              <div className="w-full h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f0f7e6', border: '1px solid #c5e09a' }}>
-                                <Package size={28} style={{ color: '#558b2f' }} />
-                              </div>
-                            )}
-                            <p className="text-xs font-semibold text-neutral-900 leading-snug">
-                              {lang === 'km' ? (p.name_km || p.name_en) : p.name_en}
-                            </p>
-                            {p.category && (
-                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full self-start"
-                                style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
-                                {p.category}
-                              </span>
-                            )}
-                            {(lang === 'km' ? (p.desc_km || p.desc_en) : p.desc_en) && (
-                              <p className="text-[10px] text-neutral-500 leading-relaxed" style={{
-                                display: '-webkit-box', WebkitLineClamp: 3,
-                                WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                              }}>
-                                {lang === 'km' ? (p.desc_km || p.desc_en) : p.desc_en}
-                              </p>
-                            )}
-                            <p className="text-xs font-bold mt-auto" style={{ color: p.price ? '#558b2f' : '#9ca3af' }}>
-                              {p.price || t('experts_price_on_request')}
-                            </p>
-                            {selectedExpert.telegram && (
-                              <a
-                                href={`https://t.me/${selectedExpert.telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${p.name_en}. Please send me details.`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold text-white rounded-lg no-underline transition-opacity hover:opacity-85"
-                                style={{ backgroundColor: '#0088cc' }}
-                              >
-                                <Send size={10} /> {t('suppliers_inquire')}
-                              </a>
-                            )}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {supplierProducts.map((p) => {
+                          const name = lang === 'km' && p.name_km ? p.name_km : p.name_en
+                          return (
+                          <div
+                            key={p.id}
+                            onClick={() => setSelectedProduct(p)}
+                            role="button"
+                            className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                          >
+                            <div className="w-full h-24 bg-neutral-50 flex items-center justify-center p-2">
+                              <img
+                                src={p.image_url || productImages[p.name_en] || "/images/hero-bg.jpg"}
+                                alt={name}
+                                className="max-h-full max-w-full object-contain"
+                                onError={(e) => (e.target.src = "/images/hero-bg.jpg")}
+                              />
+                            </div>
+                            <div className="p-2.5 space-y-1">
+                              <p className="text-xs font-semibold text-neutral-900 truncate">{name}</p>
+                              {p.category && (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block"
+                                  style={{ backgroundColor: '#f0f7e6', color: '#33691e', border: '1px solid #c5e09a' }}>
+                                  {p.category}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -901,6 +898,112 @@ export default function ExpertsPage() {
           </div>
         </>
       )}
+
+      {/* ═══════════════ PRODUCT DETAIL MODAL ═══════════════ */}
+      {selectedProduct && (() => {
+        const p = selectedProduct
+        const name = lang === 'km' && p.name_km ? p.name_km : p.name_en
+        const desc = lang === 'km' && p.desc_km ? p.desc_km : p.desc_en
+        const usage = lang === 'km' && p.usage_instructions_km ? p.usage_instructions_km : p.usage_instructions_en
+        const telegram = profiles.find(pr => pr.id === p.profile_id)?.telegram
+        const nutrients = p.nutrients_json && typeof p.nutrients_json === 'object' ? Object.entries(p.nutrients_json) : []
+        return (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-[60]"
+              style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+              onClick={() => setSelectedProduct(null)}
+            />
+
+            {/* Centered modal */}
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="product-modal-name"
+                className="card-shadow page-enter bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+              >
+                {/* Image */}
+                <div className="relative w-full h-56 shrink-0 bg-neutral-50 flex items-center justify-center p-4">
+                  <img
+                    src={p.image_url || productImages[p.name_en] || "/images/hero-bg.jpg"}
+                    alt={name}
+                    className="max-h-full max-w-full object-contain"
+                    onError={(e) => (e.target.src = "/images/hero-bg.jpg")}
+                  />
+                  <button
+                    onClick={() => setSelectedProduct(null)}
+                    aria-label="Close"
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none shadow"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#424242' }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Scrollable body */}
+                <div className="overflow-y-auto flex-1 p-6 space-y-4">
+                  {p.category && (
+                    <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-md w-fit inline-block">
+                      {p.category}
+                    </span>
+                  )}
+                  <h2 id="product-modal-name" className="text-xl font-bold text-neutral-900 leading-snug">{name}</h2>
+
+                  {desc && (
+                    <p className="text-sm text-neutral-600 leading-relaxed">{desc}</p>
+                  )}
+
+                  {usage && (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
+                        {t('product_modal_usage')}
+                      </h3>
+                      <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-line">{usage}</p>
+                    </div>
+                  )}
+
+                  {nutrients.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#558b2f' }}>
+                        {t('product_modal_nutrients')}
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {nutrients.map(([key, value]) => (
+                          <div key={key} className="rounded-lg p-2 text-center" style={{ backgroundColor: '#f0f7e6', border: '1px solid #c5e09a' }}>
+                            <p className="text-[10px] uppercase text-neutral-500">{key}</p>
+                            <p className="text-sm font-bold" style={{ color: '#33691e' }}>{String(value)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-lg font-bold" style={{ color: p.price ? '#558b2f' : '#9ca3af' }}>
+                    {p.price || t('experts_price_on_request')}
+                  </p>
+                </div>
+
+                {/* Footer */}
+                {telegram && (
+                  <div className="px-6 py-4 shrink-0" style={{ borderTop: '1px solid #f0f0f0' }}>
+                    <a
+                      href={`https://t.me/${telegram}?text=${encodeURIComponent(`Hi, I'm interested in ${name}. Please send me details.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg no-underline hover:opacity-90 transition-all"
+                      style={{ backgroundColor: '#0088cc' }}
+                    >
+                      <Send size={14} /> {t('experts_telegram')}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )
+      })()}
     </div>
   )
 }
