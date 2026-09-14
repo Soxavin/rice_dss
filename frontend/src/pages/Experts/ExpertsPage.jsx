@@ -528,7 +528,7 @@ export default function ExpertsPage() {
         <Modal open onClose={() => setSelectedExpert(null)} labelledBy="expert-panel-name" contentClassName="max-w-2xl">
             {/* Header — dark green banner */}
             <div
-              className="relative px-6 py-4 shrink-0"
+              className="relative pl-6 pr-14 py-4 shrink-0"
               style={{ background: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a1e 100%)' }}
             >
               <button
@@ -542,10 +542,12 @@ export default function ExpertsPage() {
 
               <div className="flex items-center gap-4">
                 <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
                   style={{ background: 'linear-gradient(135deg, #f7fbe7, #eef5d3)', border: '2px solid #a8d060' }}
                 >
-                  {selectedExpert.img}
+                  {selectedExpert.img
+                    ? <img src={selectedExpert.img} alt={expertName(selectedExpert)} className="w-full h-full object-cover" />
+                    : (selectedExpert.type === 'SUPPLIER' ? '🏪' : '🧑‍🌾')}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
