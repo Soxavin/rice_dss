@@ -55,7 +55,7 @@ export default function Modal({ open, onClose, labelledBy, contentClassName = 'm
       />
 
       {/* Centered dialog */}
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={onClose}>
         <div
           ref={dialogRef}
           role="dialog"
