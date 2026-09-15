@@ -9,6 +9,7 @@ from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from api.config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRE_MIN
 from api.dependencies.db import get_db
 from api.limiter import limiter
 from api.logging_config import get_logger
@@ -17,10 +18,6 @@ from api.schemas.user import TokenResponse, UserOut
 
 router = APIRouter()
 logger = get_logger("api.auth")
-
-JWT_SECRET      = os.getenv("JWT_SECRET", "change-me")
-JWT_ALGORITHM   = os.getenv("JWT_ALGORITHM", "HS256")
-JWT_EXPIRE_MIN  = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))
 
 # Initialise Firebase Admin SDK once (idempotent).
 # Wrapped in try/except so the module imports cleanly in CI environments where

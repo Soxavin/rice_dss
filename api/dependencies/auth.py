@@ -1,15 +1,12 @@
-import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from api.config import JWT_SECRET, JWT_ALGORITHM
 from api.dependencies.db import get_db
 from api.models.user import User, UserRole
-
-JWT_SECRET    = os.getenv("JWT_SECRET", "change-me")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 bearer_scheme = HTTPBearer()
 
