@@ -4,6 +4,7 @@ import { Phone, Send, Search, MapPin, ArrowRight, Star, X, BookOpen, Globe, Cloc
 import { getProfiles, getProducts } from '../../api/client'
 import ProductDetailModal from './ProductDetailModal'
 import Modal from '../../components/ui/Modal'
+import { PRODUCT_IMAGES } from '../../data/productImages'
 
 /* Shared inline styles — matches site-wide design language */
 const cardStyle = {
@@ -27,16 +28,6 @@ const btnTelegram = {
   fontSize: '12px',
   border: 'none',
 }
-
-const productImages = {
-  "Vigor BioYield+": "/images/product1-bioyield.png",
-  "Vigor BioLatex": "/images/product2-biolatex.png",
-  "Vigor BioControl": "/images/product3-biocontrol.png",
-  "Vigor BioBooster": "/images/product4-biobooster.png",
-  "Vigor BioGuard": "/images/product5-bioguard.png",
-  "Vigor BioCombat": "/images/product6-biocombat.png",
-  "Vigor BioGo": "/images/product7-biogo.png",
-};
 
 function normalizeProfile(p, lang) {
   const bil = (en, km) => lang === 'km' ? (km || en || '') : (en || '')
@@ -665,7 +656,7 @@ export default function ExpertsPage() {
                           >
                             <div className="w-full h-24 bg-neutral-50 flex items-center justify-center p-2">
                               <img
-                                src={p.image_url || productImages[p.name_en] || "/images/hero-bg.jpg"}
+                                src={p.image_url || PRODUCT_IMAGES[p.name_en] || "/images/hero-bg.jpg"}
                                 alt={name}
                                 className="max-h-full max-w-full object-contain"
                                 onError={(e) => (e.target.src = "/images/hero-bg.jpg")}

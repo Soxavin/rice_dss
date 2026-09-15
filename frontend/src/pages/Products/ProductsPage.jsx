@@ -3,16 +3,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { ShoppingBag, FlaskConical } from 'lucide-react'
 import { getProfiles, getProducts } from '../../api/client'
 import ProductDetailModal from '../Experts/ProductDetailModal'
-
-const productImages = {
-  "Vigor BioYield+": "/images/product1-bioyield.png",
-  "Vigor BioLatex": "/images/product2-biolatex.png",
-  "Vigor BioControl": "/images/product3-biocontrol.png",
-  "Vigor BioBooster": "/images/product4-biobooster.png",
-  "Vigor BioGuard": "/images/product5-bioguard.png",
-  "Vigor BioCombat": "/images/product6-biocombat.png",
-  "Vigor BioGo": "/images/product7-biogo.png",
-}
+import { PRODUCT_IMAGES } from '../../data/productImages'
 
 export default function ProductsPage() {
   const { lang, t } = useLanguage()
@@ -124,7 +115,7 @@ export default function ProductsPage() {
                   {/* Image */}
                   <div className="w-full h-38 bg-neutral-20 flex items-center justify-center overflow-hidden p-2">
                     <img
-                      src={p.image_url || productImages[p.name_en] || "/images/hero-bg.jpg"}
+                      src={p.image_url || PRODUCT_IMAGES[p.name_en] || "/images/hero-bg.jpg"}
                       alt={name}
                       className="max-h-full max-w-full object-contain"
                       onError={(e) => (e.target.src = "/images/hero-bg.jpg")}

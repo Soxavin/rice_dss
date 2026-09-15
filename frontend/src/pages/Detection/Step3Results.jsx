@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle, Leaf, Phone, ArrowRight, Download, TriangleAl
 import DetectionProgress from '../../components/detection/DetectionProgress'
 import html2canvas from 'html2canvas'
 import { explainScores, getProducts, getProfiles } from '../../api/client'
+import { PRODUCT_IMAGES } from '../../data/productImages'
 
 // ─── Confidence level colours ─────────────────────────────────────────────────
 const CONF_STYLE = {
@@ -15,17 +16,6 @@ const CONF_STYLE = {
   possible: { bg: '#fff7ed', border: '#fdba74', text: '#9a3412', dot: '#f97316' },
   low:      { bg: '#fef2f2', border: '#fca5a5', text: '#991b1b', dot: '#ef4444' },
   ml_only:  { bg: '#eff6ff', border: '#93c5fd', text: '#1e40af', dot: '#3b82f6' },
-}
-
-// ─── Real Vigor products — fetched from the backend, filtered by condition_keys ──
-const PRODUCT_IMAGES = {
-  'Vigor BioYield+':  '/images/product1-bioyield.png',
-  'Vigor BioLatex':   '/images/product2-biolatex.png',
-  'Vigor BioControl': '/images/product3-biocontrol.png',
-  'Vigor BioBooster': '/images/product4-biobooster.png',
-  'Vigor BioGuard':   '/images/product5-bioguard.png',
-  'Vigor BioCombat':  '/images/product6-biocombat.png',
-  'Vigor BioGo':      '/images/product7-biogo.png',
 }
 
 const FALLBACK_IMG = '/images/analysis-leaf.jpg'
