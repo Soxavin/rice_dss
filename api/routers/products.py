@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import require_admin
+from api.utils.db_errors import safe_commit
 from api.models.product import Product
 from api.models.user import User
 from api.schemas.product import ProductCreate, ProductUpdate, ProductOut
@@ -59,7 +60,7 @@ async def create_product(
 ):
     product = Product(**body.model_dump())
     db.add(product)
-    await db.commit()
+    await safe_commit(db)
     await db.refresh(product)
     return product
 
@@ -77,7 +78,7 @@ async def update_product(
         raise HTTPException(status_code=404, detail="Product not found")
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(product, field, value)
-    await db.commit()
+    await safe_commit(db)
     await db.refresh(product)
     return product
 
@@ -93,4 +94,4 @@ async def delete_product(
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     await db.delete(product)
-    await db.commit()
+    await safe_commit(db)

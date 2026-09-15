@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import require_admin
+from api.utils.db_errors import safe_commit
 from api.models.user import User, UserRole
 from api.schemas.user import UserOut, UserUpdate
 
@@ -62,6 +63,6 @@ async def update_user(
     for field, val in body.model_dump(exclude_unset=True).items():
         setattr(target, field, val)
 
-    await db.commit()
+    await safe_commit(db)
     await db.refresh(target)
     return target

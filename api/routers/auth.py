@@ -3,13 +3,14 @@ from datetime import datetime, timedelta, timezone
 
 import firebase_admin
 from firebase_admin import auth as firebase_auth, credentials
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from api.dependencies.db import get_db
+from api.limiter import limiter
 from api.models.user import User, UserRole
 from api.schemas.user import TokenResponse, UserOut
 
@@ -44,7 +45,9 @@ def _issue_jwt(firebase_uid: str) -> str:
 
 
 @router.post("/me", response_model=TokenResponse)
+@limiter.limit("20/minute")
 async def exchange_firebase_token(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer),
     db: AsyncSession = Depends(get_db),
 ):

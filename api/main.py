@@ -29,9 +29,13 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
+from api.limiter import limiter
 from api.schemas import (
     QuestionnaireRequest, DSSResponse, ExplainResponse, ImagePredictionResponse,
     MultiImagePredictionResponse,
@@ -72,6 +76,10 @@ app = FastAPI(
         "name": "Academic Use Only",
     }
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS CONFIGURATION
 # In development, defaults to ["*"] (allow all origins) so the Streamlit UI
@@ -144,15 +152,17 @@ async def root():
     ),
     tags=["DSS Endpoints"]
 )
+@limiter.limit("30/minute")
 async def questionnaire_endpoint(
-    request: QuestionnaireRequest,
+    request: Request,
+    body: QuestionnaireRequest,
     lang: str = Query("en", description="Response language: 'en' or 'km'"),
 ) -> dict:
     """
     Questionnaire-only mode.
     Explicitly disables ML fusion — ml_probabilities field is ignored.
     """
-    raw = _request_to_dict(request)
+    raw = _request_to_dict(body)
     try:
         output = run_dss(raw, mode="questionnaire")
         return translate_output(output, lang)
@@ -174,8 +184,10 @@ async def questionnaire_endpoint(
     ),
     tags=["DSS Endpoints"]
 )
+@limiter.limit("30/minute")
 async def ml_only_endpoint(
-    request: QuestionnaireRequest,
+    request: Request,
+    body: QuestionnaireRequest,
     lang: str = Query("en", description="Response language: 'en' or 'km'"),
 ) -> dict:
     """
@@ -183,7 +195,7 @@ async def ml_only_endpoint(
     Uses ml_probabilities field exclusively.
     Always warns that non-biotic stresses cannot be detected.
     """
-    raw = _request_to_dict(request)
+    raw = _request_to_dict(body)
     try:
         output = run_dss(raw, mode="ml")
         return translate_output(output, lang)
@@ -205,8 +217,10 @@ async def ml_only_endpoint(
     ),
     tags=["DSS Endpoints"]
 )
+@limiter.limit("30/minute")
 async def hybrid_endpoint(
-    request: QuestionnaireRequest,
+    request: Request,
+    body: QuestionnaireRequest,
     lang: str = Query("en", description="Response language: 'en' or 'km'"),
 ) -> dict:
     """
@@ -214,7 +228,7 @@ async def hybrid_endpoint(
     Runs full questionnaire scoring + ML fusion via generate_output().
     Falls back to questionnaire-only if ml_probabilities is None.
     """
-    raw = _request_to_dict(request)
+    raw = _request_to_dict(body)
     try:
         output = run_dss(raw, mode="hybrid")
         return translate_output(output, lang)
@@ -240,8 +254,10 @@ async def hybrid_endpoint(
     ),
     tags=["DSS Endpoints"]
 )
+@limiter.limit("30/minute")
 async def explain_endpoint(
-    request: QuestionnaireRequest,
+    request: Request,
+    body: QuestionnaireRequest,
     lang: str = Query("en", description="Response language: 'en' or 'km'"),
 ) -> dict:
     """
@@ -249,7 +265,7 @@ async def explain_endpoint(
     Validates the incoming answers, then returns signal-level breakdown
     for all six conditions without running the decision engine.
     """
-    raw = _request_to_dict(request)
+    raw = _request_to_dict(body)
     try:
         validated = validate_answers(raw)
         breakdown = explain_scores(validated)
@@ -357,7 +373,9 @@ def get_inference_model():
     ),
     tags=["Image Endpoints"]
 )
+@limiter.limit("10/minute")
 async def predict_image(
+    request: Request,
     image: UploadFile = File(...),
     lang: str = Query("en", description="Response language: 'en' or 'km'"),
 ):
@@ -427,7 +445,9 @@ async def predict_image(
     ),
     tags=["Image Endpoints"]
 )
+@limiter.limit("10/minute")
 async def hybrid_image(
+    request: Request,
     image: UploadFile = File(...),
     questionnaire: str = Form(
         ...,
@@ -555,7 +575,9 @@ async def _validate_multi_images(images: list[UploadFile]) -> list[bytes]:
     ),
     tags=["Image Endpoints"]
 )
+@limiter.limit("5/minute")
 async def predict_images(
+    request: Request,
     images: list[UploadFile] = File(..., description="2–5 leaf images (different angles)"),
     lang: str = Query("en", description="Response language: 'en' or 'km'"),
 ):
@@ -601,7 +623,9 @@ async def predict_images(
     ),
     tags=["Image Endpoints"]
 )
+@limiter.limit("5/minute")
 async def hybrid_images(
+    request: Request,
     images: list[UploadFile] = File(..., description="2–5 leaf images (different angles)"),
     questionnaire: str = Form(
         ...,

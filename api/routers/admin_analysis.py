@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import get_current_user, require_admin
+from api.utils.db_errors import safe_commit
 from api.models.analysis import AnalysisHistory, AnalysisMode
 from api.models.user import User
 from api.schemas.analysis import AnalysisCreate, AnalysisOut, AdminAnalysisOut
@@ -30,7 +31,7 @@ async def save_analysis(
         image_url=body.image_url,
     )
     db.add(record)
-    await db.commit()
+    await safe_commit(db)
     await db.refresh(record)
     return record
 
@@ -68,7 +69,7 @@ async def delete_analysis(
     if not record:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Analysis not found")
     await db.delete(record)
-    await db.commit()
+    await safe_commit(db)
 
 
 @router.delete("/analyses", status_code=status.HTTP_204_NO_CONTENT)
@@ -80,7 +81,7 @@ async def clear_all_analyses(
     await db.execute(
         sql_delete(AnalysisHistory).where(AnalysisHistory.user_id == current_user.id)
     )
-    await db.commit()
+    await safe_commit(db)
 
 
 # ─── Admin endpoints ──────────────────────────────────────────────────────────

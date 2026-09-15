@@ -17,6 +17,7 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "firebase-admin>=6.5.0",
     "greenlet>=3.5.1",
+    "slowapi>=0.1.10",
 ]
 
 [project.optional-dependencies]

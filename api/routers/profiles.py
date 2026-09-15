@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import require_admin
+from api.utils.db_errors import safe_commit
 from api.models.profile import Profile, ProfileSpecialization, Specialization
 from api.models.user import User
 from api.schemas.profile import ProfileCreate, ProfileUpdate, ProfileOut
@@ -80,7 +81,7 @@ async def create_profile(
     db.add(profile)
     await db.flush()
     await _sync_specializations(db, profile, body.specialization_names)
-    await db.commit()
+    await safe_commit(db)
     await db.refresh(profile)
     result = await db.execute(
         select(Profile).where(Profile.id == profile.id)
@@ -108,7 +109,7 @@ async def update_profile(
     if body.specialization_names is not None:
         await _sync_specializations(db, profile, body.specialization_names)
 
-    await db.commit()
+    await safe_commit(db)
     result = await db.execute(
         select(Profile).where(Profile.id == profile_id)
         .options(selectinload(Profile.specializations).selectinload(ProfileSpecialization.specialization))
@@ -127,4 +128,4 @@ async def delete_profile(
     if not profile:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Profile not found")
     await db.delete(profile)
-    await db.commit()
+    await safe_commit(db)
