@@ -1,8 +1,16 @@
-import { db } from '../firebase'
+import { app } from '../firebase'
 import {
+  getFirestore,
   collection, addDoc, getDocs, query, orderBy, limit, startAfter,
   serverTimestamp, doc, getDoc, setDoc, deleteDoc, writeBatch,
 } from 'firebase/firestore'
+
+// Firestore is only used here (analysis history + farm profile), and this
+// module is only reached via the already-lazy-loaded ProfilePage route —
+// keeping the getFirestore() call local to this file (instead of in
+// firebase.js, which is imported eagerly app-wide via AuthContext) keeps
+// firebase/firestore out of the main bundle for every anonymous visitor.
+const db = getFirestore(app)
 
 // ── Analysis history ──────────────────────────────────────────────────────────
 

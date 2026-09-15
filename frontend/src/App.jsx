@@ -4,6 +4,7 @@ import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/layout/Layout'
 import AdminRoute from './components/AdminRoute'
+import ErrorBoundary from './components/common/ErrorBoundary'
 
 // C9: route-level code splitting — each page chunk is loaded only when first visited
 const Landing        = lazy(() => import('./pages/Landing'))
@@ -39,44 +40,46 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <Suspense fallback={null}>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Landing />} />
-                <Route path="/search" element={<SearchResults />} />
-                <Route path="/detect" element={<Step1Upload />} />
-                <Route path="/detect/questions" element={<Step2Questions />} />
-                <Route path="/detect/results" element={<Step3Results />} />
-                <Route path="/learn" element={<ResourcesList />} />
-                <Route path="/learn/article/:id" element={<ArticleDetail />} />
-                <Route path="/learn/video/:id" element={<VideoDetail />} />
-                <Route path="/experts" element={<ExpertsPage />} />
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-              {/* Auth pages — no navbar/footer layout */}
-              <Route path="/sign-in" element={<SignIn />} />
-              <Route path="/sign-up" element={<SignUp />} />
-              {/* Admin — role-gated, own layout */}
-              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="resources" element={<AdminResources />} />
-                <Route path="resources/new" element={<ResourceEditor />} />
-                <Route path="resources/:id" element={<ResourceEditor />} />
-                <Route path="profiles" element={<AdminProfiles />} />
-                <Route path="products" element={<AdminProducts />} />
-                <Route path="analysis" element={<AdminAnalysis />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </AuthProvider>
-    </LanguageProvider>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <Suspense fallback={null}>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/search" element={<SearchResults />} />
+                  <Route path="/detect" element={<Step1Upload />} />
+                  <Route path="/detect/questions" element={<Step2Questions />} />
+                  <Route path="/detect/results" element={<Step3Results />} />
+                  <Route path="/learn" element={<ResourcesList />} />
+                  <Route path="/learn/article/:id" element={<ArticleDetail />} />
+                  <Route path="/learn/video/:id" element={<VideoDetail />} />
+                  <Route path="/experts" element={<ExpertsPage />} />
+                  <Route path="/products" element={<ProductsPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+                {/* Auth pages — no navbar/footer layout */}
+                <Route path="/sign-in" element={<SignIn />} />
+                <Route path="/sign-up" element={<SignUp />} />
+                {/* Admin — role-gated, own layout */}
+                <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="resources" element={<AdminResources />} />
+                  <Route path="resources/new" element={<ResourceEditor />} />
+                  <Route path="resources/:id" element={<ResourceEditor />} />
+                  <Route path="profiles" element={<AdminProfiles />} />
+                  <Route path="products" element={<AdminProducts />} />
+                  <Route path="analysis" element={<AdminAnalysis />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </LanguageProvider>
+    </ErrorBoundary>
   )
 }
