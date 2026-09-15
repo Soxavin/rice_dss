@@ -6,11 +6,13 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import require_admin
+from api.logging_config import get_logger
 from api.utils.db_errors import safe_commit
 from api.models.user import User, UserRole
 from api.schemas.user import UserOut, UserUpdate
 
 router = APIRouter()
+logger = get_logger("api.admin_users")
 
 
 @router.get("/users", response_model=list[UserOut])
@@ -53,16 +55,32 @@ async def update_user(
 
     # Only SUPER_ADMIN can change roles
     if body.role is not None and current_user.role != UserRole.SUPER_ADMIN:
+        logger.warning(
+            "Blocked role-change attempt: admin=%s (role=%s) tried to set target=%s to role=%s",
+            current_user.id, current_user.role, target.id, body.role,
+        )
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only super admins can change roles")
 
     # ADMIN cannot modify other ADMINs or SUPER_ADMINs
     if (current_user.role == UserRole.ADMIN
             and target.role in (UserRole.ADMIN, UserRole.SUPER_ADMIN)):
+        logger.warning(
+            "Blocked cross-admin modification: admin=%s tried to modify target=%s (role=%s)",
+            current_user.id, target.id, target.role,
+        )
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Cannot modify admin or super admin accounts")
 
-    for field, val in body.model_dump(exclude_unset=True).items():
+    changed_fields = body.model_dump(exclude_unset=True)
+    previous_role = target.role
+    for field, val in changed_fields.items():
         setattr(target, field, val)
 
     await safe_commit(db)
     await db.refresh(target)
+    if body.role is not None and body.role != previous_role:
+        logger.info(
+            "Role changed: target=%s %s -> %s by super_admin=%s",
+            target.id, previous_role, target.role, current_user.id,
+        )
+    logger.info("User updated: target=%s fields=%s by admin=%s", target.id, list(changed_fields), current_user.id)
     return target

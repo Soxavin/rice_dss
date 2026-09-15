@@ -7,12 +7,14 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import get_current_user, require_admin
+from api.logging_config import get_logger
 from api.utils.db_errors import safe_commit
 from api.models.analysis import AnalysisHistory, AnalysisMode
 from api.models.user import User
 from api.schemas.analysis import AnalysisCreate, AnalysisOut, AdminAnalysisOut
 
 router = APIRouter()
+logger = get_logger("api.admin_analysis")
 
 
 # ─── User endpoint: save own analysis ─────────────────────────────────────────
@@ -33,6 +35,7 @@ async def save_analysis(
     db.add(record)
     await safe_commit(db)
     await db.refresh(record)
+    logger.info("Analysis saved: id=%s user=%s mode=%s", record.id, current_user.id, body.mode)
     return record
 
 
@@ -70,6 +73,7 @@ async def delete_analysis(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Analysis not found")
     await db.delete(record)
     await safe_commit(db)
+    logger.info("Analysis deleted: id=%s user=%s", analysis_id, current_user.id)
 
 
 @router.delete("/analyses", status_code=status.HTTP_204_NO_CONTENT)
@@ -82,6 +86,7 @@ async def clear_all_analyses(
         sql_delete(AnalysisHistory).where(AnalysisHistory.user_id == current_user.id)
     )
     await safe_commit(db)
+    logger.info("All analyses cleared for user=%s", current_user.id)
 
 
 # ─── Admin endpoints ──────────────────────────────────────────────────────────

@@ -6,12 +6,14 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import require_admin
+from api.logging_config import get_logger
 from api.utils.db_errors import safe_commit
 from api.models.product import Product
 from api.models.user import User
 from api.schemas.product import ProductCreate, ProductUpdate, ProductOut
 
 router = APIRouter()
+logger = get_logger("api.products")
 
 
 # ─── Public endpoints ────────────────────────────────────────────────────────
@@ -56,12 +58,13 @@ async def admin_list_products(
 async def create_product(
     body: ProductCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ):
     product = Product(**body.model_dump())
     db.add(product)
     await safe_commit(db)
     await db.refresh(product)
+    logger.info("Product created: id=%s name=%s by admin=%s", product.id, product.name_en, admin.id)
     return product
 
 
@@ -70,16 +73,18 @@ async def update_product(
     product_id: uuid.UUID,
     body: ProductUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ):
     result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    changed_fields = body.model_dump(exclude_unset=True)
+    for field, value in changed_fields.items():
         setattr(product, field, value)
     await safe_commit(db)
     await db.refresh(product)
+    logger.info("Product updated: id=%s fields=%s by admin=%s", product.id, list(changed_fields), admin.id)
     return product
 
 
@@ -87,7 +92,7 @@ async def update_product(
 async def delete_product(
     product_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ):
     result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
@@ -95,3 +100,4 @@ async def delete_product(
         raise HTTPException(status_code=404, detail="Product not found")
     await db.delete(product)
     await safe_commit(db)
+    logger.info("Product deleted: id=%s by admin=%s", product_id, admin.id)

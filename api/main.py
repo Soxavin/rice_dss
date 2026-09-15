@@ -27,6 +27,8 @@ import base64
 import io
 import json
 import os
+import time
+import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form, Query
@@ -36,6 +38,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from api.limiter import limiter
+from api.logging_config import configure_logging, get_logger, request_id_ctx
 from api.schemas import (
     QuestionnaireRequest, DSSResponse, ExplainResponse, ImagePredictionResponse,
     MultiImagePredictionResponse,
@@ -47,6 +50,9 @@ from dss.logger import dss_logger
 from translations import translate_output
 from dotenv import load_dotenv
 load_dotenv()
+
+configure_logging()
+logger = get_logger("api")
 
 
 # =============================================================================
@@ -94,6 +100,35 @@ app.add_middleware(
     allow_methods=["*"],     # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],     # Allow all headers (Authorization, Content-Type, etc.)
 )
+
+
+# REQUEST-CONTEXT MIDDLEWARE
+# Generates a request ID per request, exposes it via the X-Request-ID response
+# header, and logs one line per request (method, path, status, duration).
+# Any logger.* call made anywhere during that request automatically carries
+# the same request ID (see api/logging_config.py's _RequestIdFilter) — so a
+# production error report can be traced end-to-end via `gcloud logging read`.
+@app.middleware("http")
+async def request_context_middleware(request: Request, call_next):
+    req_id = str(uuid.uuid4())
+    token = request_id_ctx.set(req_id)
+    start = time.monotonic()
+    try:
+        try:
+            response = await call_next(request)
+        except Exception:
+            logger.exception("Unhandled exception processing %s %s", request.method, request.url.path)
+            raise
+        duration_ms = (time.monotonic() - start) * 1000
+        response.headers["X-Request-ID"] = req_id
+        logger.info(
+            "%s %s -> %s (%.1fms) client=%s",
+            request.method, request.url.path, response.status_code, duration_ms,
+            request.client.host if request.client else "-",
+        )
+        return response
+    finally:
+        request_id_ctx.reset(token)
 
 
 # =============================================================================
@@ -169,6 +204,7 @@ async def questionnaire_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("DSS error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 
@@ -202,6 +238,7 @@ async def ml_only_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("DSS error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 
@@ -235,6 +272,7 @@ async def hybrid_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("DSS error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 
@@ -273,6 +311,7 @@ async def explain_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("Explainer error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"Explainer error: {str(e)}")
 
 
@@ -431,6 +470,7 @@ async def predict_image(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("DSS error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 
@@ -513,6 +553,7 @@ async def hybrid_image(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("DSS error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 
@@ -609,6 +650,7 @@ async def predict_images(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("DSS error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 
@@ -667,6 +709,7 @@ async def hybrid_images(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("DSS error on %s", request.url.path)
         raise HTTPException(status_code=500, detail=f"DSS error: {str(e)}")
 
 

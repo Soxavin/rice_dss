@@ -11,10 +11,12 @@ from sqlalchemy import select
 
 from api.dependencies.db import get_db
 from api.limiter import limiter
+from api.logging_config import get_logger
 from api.models.user import User, UserRole
 from api.schemas.user import TokenResponse, UserOut
 
 router = APIRouter()
+logger = get_logger("api.auth")
 
 JWT_SECRET      = os.getenv("JWT_SECRET", "change-me")
 JWT_ALGORITHM   = os.getenv("JWT_ALGORITHM", "HS256")
@@ -55,6 +57,7 @@ async def exchange_firebase_token(
     try:
         decoded = firebase_auth.verify_id_token(credentials.credentials)
     except Exception:
+        logger.exception("Firebase token verification failed")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid Firebase token")
 
     firebase_uid = decoded["uid"]
@@ -69,8 +72,12 @@ async def exchange_firebase_token(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        logger.info("New user created via token exchange: uid=%s email=%s", firebase_uid, email)
     elif not user.is_active:
+        logger.info("Token exchange rejected: deactivated account uid=%s", firebase_uid)
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Account is deactivated")
+    else:
+        logger.info("Token exchange succeeded: uid=%s", firebase_uid)
 
     return TokenResponse(access_token=_issue_jwt(firebase_uid))
 
@@ -85,6 +92,7 @@ async def get_me(
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         firebase_uid: str = payload.get("sub")
     except Exception:
+        logger.info("Rejected /auth/me request: invalid or expired JWT")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
 
     result = await db.execute(select(User).where(User.firebase_uid == firebase_uid))

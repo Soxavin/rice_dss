@@ -7,12 +7,14 @@ from sqlalchemy.orm import selectinload
 
 from api.dependencies.db import get_db
 from api.dependencies.auth import require_admin
+from api.logging_config import get_logger
 from api.utils.db_errors import safe_commit
 from api.models.profile import Profile, ProfileSpecialization, Specialization
 from api.models.user import User
 from api.schemas.profile import ProfileCreate, ProfileUpdate, ProfileOut
 
 router = APIRouter()
+logger = get_logger("api.profiles")
 
 
 async def _sync_specializations(db: AsyncSession, profile: Profile, names: list[str]):
@@ -75,7 +77,7 @@ async def admin_list_profiles(
 async def create_profile(
     body: ProfileCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ):
     profile = Profile(**{k: v for k, v in body.model_dump().items() if k != "specialization_names"})
     db.add(profile)
@@ -83,6 +85,7 @@ async def create_profile(
     await _sync_specializations(db, profile, body.specialization_names)
     await safe_commit(db)
     await db.refresh(profile)
+    logger.info("Profile created: id=%s name=%s type=%s by admin=%s", profile.id, profile.name_en, profile.type, admin.id)
     result = await db.execute(
         select(Profile).where(Profile.id == profile.id)
         .options(selectinload(Profile.specializations).selectinload(ProfileSpecialization.specialization))
@@ -95,7 +98,7 @@ async def update_profile(
     profile_id: uuid.UUID,
     body: ProfileUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ):
     result = await db.execute(select(Profile).where(Profile.id == profile_id))
     profile = result.scalar_one_or_none()
@@ -110,6 +113,10 @@ async def update_profile(
         await _sync_specializations(db, profile, body.specialization_names)
 
     await safe_commit(db)
+    logger.info(
+        "Profile updated: id=%s fields=%s specializations_changed=%s by admin=%s",
+        profile_id, list(update_data), body.specialization_names is not None, admin.id,
+    )
     result = await db.execute(
         select(Profile).where(Profile.id == profile_id)
         .options(selectinload(Profile.specializations).selectinload(ProfileSpecialization.specialization))
@@ -121,7 +128,7 @@ async def update_profile(
 async def delete_profile(
     profile_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ):
     result = await db.execute(select(Profile).where(Profile.id == profile_id))
     profile = result.scalar_one_or_none()
@@ -129,3 +136,4 @@ async def delete_profile(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Profile not found")
     await db.delete(profile)
     await safe_commit(db)
+    logger.info("Profile deleted: id=%s by admin=%s", profile_id, admin.id)
