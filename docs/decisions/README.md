@@ -60,3 +60,4 @@ Keep entries short enough to read in under a minute. Link related entries with
 | [0010](0010-in-memory-sqlite-test-fixtures.md) | Router tests run on in-memory SQLite with a JSONB compatibility shim, not a real Postgres | 2026-09-15 | `d4cbf6b` |
 | [0011](0011-contextvar-request-id-logging.md) | Structured logging via a ContextVar-based request ID, not per-call plumbing | 2026-09-15 | `db93155` |
 | [0012](0012-lazy-load-firestore-at-point-of-use.md) | Shrink the main bundle by moving Firestore init to its sole consumer, not a dynamic-import wrapper | 2026-09-15 | `99dc2f5` |
+| [0013](0013-jwt-secret-was-unset-in-production.md) | Production `JWT_SECRET` was never set (full auth bypass) — rotated live, not batched into a later deploy | 2026-09-17 | infra only |
